@@ -1,0 +1,5 @@
+within IOCSmod.ComponentModels.Thermal.SizeOpt.Borefields;
+package HeatTransfer "Package with ground heat transfer models"
+extends Modelica.Icons.VariantsPackage;
+
+end HeatTransfer;

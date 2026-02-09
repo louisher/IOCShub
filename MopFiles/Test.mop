@@ -1,0 +1,25 @@
+optimization Test(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="8760*1", tolerance=1e-1)
+	extends IOCSmod.Optimization.Test(sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//BEL_VLG_Uccle.064470_TMYx.2007-2021.mos"));
+	
+	output Real QsolCol = solCol1.vol[1].heatPort.Q_flow + solCol1.vol[2].heatPort.Q_flow + solCol1.vol[3].heatPort.Q_flow;
+	output Real Qpvt = pvt.vol[1].heatPort.Q_flow + pvt.vol[2].heatPort.Q_flow + pvt.vol[3].heatPort.Q_flow;
+	output Real P_PV = pv.P;
+	output Real P_PVT = pvt.P;
+
+	output Real Tcell_PV = pv.T_cell;
+	output Real Tcell_PVT = sum(pvt.T_cell)/3;
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+	/// Overall objective ///
+	output Real ObjInt = -QsolCol -Qpvt ;
+	
+	output Real Off_hours = OfficeHours.y[1];
+	output Real Papp = P_appliances_profile.y[1];
+
+	output Real Tamb  = sim.Te;
+	output Real QGloHor = sim.weaBus.solGloHor;
+	
+
+end Test;

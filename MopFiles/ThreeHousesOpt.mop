@@ -1,0 +1,458 @@
+optimization ThreeHousesOpt(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="8760*1", tolerance=1e-1, truncationDelta=1e-2)
+	extends IOCSmod.Optimization.ThreeHousesOpt(addDummyEquation=false,
+											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//BEL_VLG_Uccle.064470_TMYx.2007-2021.mos"),
+											enerHub.Qnom_AsHp_init_kW=11.6,
+											enerHub.Qnom_GsHp_init_kW=4.2,
+											enerHub.GsHp.Size=GsHpSize,
+											enerHub.AsHp.Size=AsHpSize,
+											enerHub.tan.Size=TankSize,
+											enerHub.pv.Size=PVSize,
+											enerHub.bat.Size=BatSize,
+											enerHub.TotArea_STC=0.01,
+											enerHub.TotArea_PVT=0.01,
+											enerHub.hasBat=true,
+											enerHub.P_max_bat_kW=5,
+											enerHub.TBorMin=273.73082815877075,
+											enerHub.borFieDat.conDat.hBor=65,
+											enerHub.borFieDat.conDat.nBor=2,
+											enerHub.groTemResDat.rCel.rCel={1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0, 2048.0, 4096.0, 8192.0, 16384.0, 32768.0, 65536.0, 131072.0, 88257.0},
+											enerHub.groTemResDat.kappa.kappa={0.0005591440363851919, 0.0002445431893549236, 0.00022042170474059557, 0.00021568914313827773, 0.0002158543078123014, 0.00021687838883031733, 0.00021735600326330535, 0.00021721477718503407, 0.00021851681886615867, 0.00023509193581452243, 0.00027354011757311104, 0.00031129882874264417, 0.00032797988433042264, 0.0003194414201798811, 0.00028809911368467885, 0.00023823352412714015, 0.0001740916162971881, 0.00010727553445021281, 2.8360931012270593e-05},
+                                            enerHub.borFieDat.conDat.cooBor=[0,0; 0,6]
+											);
+
+	// Optimisation variables
+	// Already included in the models
+
+	////////////////////////////////
+	// Demand Output variables    //
+	////////////////////////////////
+
+	/// Electrical ///
+	// House1 //
+	output Real P_PV1 = buildings.House1.PVinverter.P_out; 	// Electricity from PV after inverter
+	output Real P_ac1 = buildings.House1.Pac.P;				// Electricity demand
+	output Real P_pum1 = buildings.House1.pum.P;			// Electricity use circulation pump house1
+	output Real P_bhp1 = buildings.House1.bhp.bhp.PEl;
+	output Real P_Net1 = buildings.House1.P; // Positive value means net offtake
+
+	// House2 //
+	output Real P_PV2 = buildings.House2.PVinverter.P_out; 	// Electricity from PV after inverter
+	output Real P_ac2 = buildings.House2.Pac.P;				// Electricity demand
+	output Real P_pum2 = buildings.House2.pum.P;			// Electricity use circulation pump house2
+	output Real P_bhp2 = buildings.House2.bhp.bhp.PEl;
+	output Real P_Net2 = buildings.House2.P; // Positive value means net offtake
+
+	// House3 //
+	output Real P_PV3 = buildings.House3.PVinverter.P_out; 	// Electricity from PV after inverter
+	output Real P_ac3 = buildings.House3.Pac.P;				// Electricity demand
+	output Real P_pum3 = buildings.House3.pum.P;			// Electricity use circulation pump house3
+	output Real P_bhp3 = buildings.House3.bhp.bhp.PEl;
+	output Real P_Net3 = buildings.House3.P; // Positive value means net offtake
+
+	output Real P_bhp_tot = P_bhp1 + P_bhp2 + P_bhp3;
+	output Real COP_BHP1 = buildings.House1.bhp.bhp.COP;
+	output Real COP_BHP2 = buildings.House2.bhp.bhp.COP;
+	output Real COP_BHP3 = buildings.House3.bhp.bhp.COP;
+	
+	//Overall //
+	output Real P_Net_Houses = P_Net1 + P_Net2 + P_Net3; // Powitive value means net offtake
+
+	// House1 //
+	output Real Q_subSt1 = buildings.House1.subStation.Q_flow;
+	output Real Q_SH11 = buildings.House1.floHea1.QTot;
+	output Real Q_SH12 = buildings.House1.floHea2.QTot;
+	output Real Q_BHPCon1 = buildings.House1.bhp.bhp.QCon;
+	output Real Q_BHPEva1 = buildings.House1.bhp.bhp.Q_eva.y;
+	output Real Q_BHPConDem1 = buildings.House1.bhp.Qcon_profile.y[1];
+
+	output Real y_SH11 = buildings.House1.valSH1.y;
+	output Real y_SH12 = buildings.House1.valSH2.y;
+
+	output Real m_flow_SH11 = buildings.House1.valSH1.port_a.m_flow;
+	output Real m_flow_SH12 = buildings.House1.valSH2.port_a.m_flow;
+	output Real m_flow_subSt_house1 = buildings.House1.subStation.port_a2.m_flow;
+	output Real m_flow_subSt_network1 = buildings.House1.subStation.port_a1.m_flow;
+	output Real m_flow_BHPEva1 = buildings.House1.bhp.bhp.m1_flow;
+	output Real m_flow_BHPCon1 = buildings.House1.bhp.bhp.m2_flow;
+
+	output Real T_DayZone1 = buildings.House1.bui.DayZone.TSensor-273.15;
+	output Real T_NightZone1 = buildings.House1.bui.NightZone.TSensor-273.15;
+
+	output Real T_setSHDay1 = buildings.House1.TSetSHDayExpr.y-273.15;
+	output Real T_setSHNight1 = buildings.House1.TSetSHNightExpr.y-273.15;
+	output Real T_setSCDay1 = buildings.House1.TSetSCNightExpr.y-273.15;
+	output Real T_setSCNight1 = buildings.House1.TSetSCNightExpr.y-273.15;
+
+	output Real DiscmfHeaDay1 = max(0,T_setSHDay1-T_DayZone1);
+	output Real DiscmfHeaNight1 = max(0,T_setSHNight1-T_NightZone1);
+	output Real DiscmfCooDay1 = max(0, T_DayZone1 - T_setSCDay1);
+	output Real DiscmfCooNight1 = max(0, T_NightZone1 - T_setSCNight1);
+
+	output Real T_supSH11 = buildings.House1.TSupSH1.T-273.15;
+	output Real T_supSH12 = buildings.House1.TSupSH2.T-273.15;
+	output Real T_retSH11 = buildings.House1.TRetSH1.T-273.15;
+	output Real T_retSH12 = buildings.House1.TRetSH2.T-273.15;
+	output Real T_supSubSt1 = buildings.House1.TSupSubSt.T-273.15;
+	output Real T_retSubSt1 = buildings.House1.TRetSubSt.T-273.15;
+	output Real T_supNetwork1 = buildings.House1.TSupNetwork.T-273.15;
+	output Real T_retNetwork1 = buildings.House1.TRetNetwork.T-273.15;
+	output Real T_supBHP1 = buildings.House1.bhp.senTBhpEvaIn.T-273.15;
+	output Real T_retBHP1 = buildings.House1.bhp.senTBhpEvaOut.T-273.15;
+
+	output Real occ11 = buildings.House1.occ1.y;
+	output Real occ12 = buildings.House1.occ2.y;
+
+	output Real Q_IntAppConDay1 = buildings.House1.applianceHeatGains.heatPortCon[1].Q_flow;
+	output Real Q_IntAppConNight1 = buildings.House1.applianceHeatGains.heatPortCon[2].Q_flow;
+	output Real Q_IntAppRadDay1 = buildings.House1.applianceHeatGains.heatPortRad[1].Q_flow;
+	output Real Q_IntAppRadNight1 = buildings.House1.applianceHeatGains.heatPortRad[2].Q_flow;
+	
+	// House2 //
+	output Real Q_subSt2 = buildings.House2.subStation.Q_flow;
+	output Real Q_SH21 = buildings.House2.floHea1.QTot;
+	output Real Q_SH22 = buildings.House2.floHea2.QTot;
+	output Real Q_BHPCon2 = buildings.House2.bhp.bhp.QCon;
+	output Real Q_BHPEva2 = buildings.House2.bhp.bhp.Q_eva.y;
+	output Real Q_BHPConDem2 = buildings.House2.bhp.Qcon_profile.y[1];
+
+	output Real y_SH21 = buildings.House2.valSH1.y;
+	output Real y_SH22 = buildings.House2.valSH2.y;
+
+	output Real m_flow_SH21 = buildings.House2.valSH1.port_a.m_flow;
+	output Real m_flow_SH22 = buildings.House2.valSH2.port_a.m_flow;
+	output Real m_flow_subSt_house2 = buildings.House2.subStation.port_a2.m_flow;
+	output Real m_flow_subSt_network2 = buildings.House2.subStation.port_a1.m_flow;
+	output Real m_flow_BHPEva2 = buildings.House2.bhp.bhp.m1_flow;
+	output Real m_flow_BHPCon2 = buildings.House2.bhp.bhp.m2_flow;
+
+	output Real T_DayZone2 = buildings.House2.bui.DayZone.TSensor-273.15;
+	output Real T_NightZone2 = buildings.House2.bui.NightZone.TSensor-273.15;
+
+	output Real T_setSHDay2 = buildings.House2.TSetSHDayExpr.y-273.15;
+	output Real T_setSHNight2 = buildings.House2.TSetSHNightExpr.y-273.15;
+	output Real T_setSCDay2 = buildings.House2.TSetSCNightExpr.y-273.15;
+	output Real T_setSCNight2 = buildings.House2.TSetSCNightExpr.y-273.15;
+
+	output Real DiscmfHeaDay2 = max(0,T_setSHDay2-T_DayZone2);
+	output Real DiscmfHeaNight2 = max(0,T_setSHNight2-T_NightZone2);
+	output Real DiscmfCooDay2 = max(0, T_DayZone2 - T_setSCDay2);
+	output Real DiscmfCooNight2 = max(0, T_NightZone2 - T_setSCNight2);
+
+	output Real T_supSH21 = buildings.House2.TSupSH1.T-273.15;
+	output Real T_supSH22 = buildings.House2.TSupSH2.T-273.15;
+	output Real T_retSH21 = buildings.House2.TRetSH1.T-273.15;
+	output Real T_retSH22 = buildings.House2.TRetSH2.T-273.15;
+	output Real T_supSubSt2 = buildings.House2.TSupSubSt.T-273.15;
+	output Real T_retSubSt2 = buildings.House2.TRetSubSt.T-273.15;
+	output Real T_supNetwork2 = buildings.House2.TSupNetwork.T-273.15;
+	output Real T_retNetwork2 = buildings.House2.TRetNetwork.T-273.15;
+	output Real T_supBHP2 = buildings.House2.bhp.senTBhpEvaIn.T-273.15;
+	output Real T_retBHP2 = buildings.House2.bhp.senTBhpEvaOut.T-273.15;
+
+	output Real occ21 = buildings.House2.occ1.y;
+	output Real occ22 = buildings.House2.occ2.y;
+
+	output Real Q_IntAppConDay2 = buildings.House2.applianceHeatGains.heatPortCon[1].Q_flow;
+	output Real Q_IntAppConNight2 = buildings.House2.applianceHeatGains.heatPortCon[2].Q_flow;
+	output Real Q_IntAppRadDay2 = buildings.House2.applianceHeatGains.heatPortRad[1].Q_flow;
+	output Real Q_IntAppRadNight2 = buildings.House2.applianceHeatGains.heatPortRad[2].Q_flow;
+
+	// House3 //
+	output Real Q_subSt3 = buildings.House3.subStation.Q_flow;
+	output Real Q_SH31 = buildings.House3.floHea1.QTot;
+	output Real Q_SH32 = buildings.House3.floHea2.QTot;
+	output Real Q_BHPCon3 = buildings.House3.bhp.bhp.QCon;
+	output Real Q_BHPEva3 = buildings.House3.bhp.bhp.Q_eva.y;
+	output Real Q_BHPConDem3 = buildings.House3.bhp.Qcon_profile.y[1];
+
+	output Real y_SH31 = buildings.House3.valSH1.y;
+	output Real y_SH32 = buildings.House3.valSH2.y;
+
+	output Real m_flow_SH31 = buildings.House3.valSH1.port_a.m_flow;
+	output Real m_flow_SH32 = buildings.House3.valSH2.port_a.m_flow;
+	output Real m_flow_subSt_house3 = buildings.House3.subStation.port_a2.m_flow;
+	output Real m_flow_subSt_network3 = buildings.House3.subStation.port_a1.m_flow;
+	output Real m_flow_BHPEva3 = buildings.House3.bhp.bhp.m1_flow;
+	output Real m_flow_BHPCon3 = buildings.House3.bhp.bhp.m2_flow;
+
+	output Real T_DayZone3 = buildings.House3.bui.DayZone.TSensor-273.15;
+	output Real T_NightZone3 = buildings.House3.bui.NightZone.TSensor-273.15;
+
+	output Real T_setSHDay3 = buildings.House3.TSetSHDayExpr.y-273.15;
+	output Real T_setSHNight3 = buildings.House3.TSetSHNightExpr.y-273.15;
+	output Real T_setSCDay3 = buildings.House3.TSetSCNightExpr.y-273.15;
+	output Real T_setSCNight3 = buildings.House3.TSetSCNightExpr.y-273.15;
+
+	output Real DiscmfHeaDay3 = max(0,T_setSHDay3-T_DayZone3);
+	output Real DiscmfHeaNight3 = max(0,T_setSHNight3-T_NightZone3);
+	output Real DiscmfCooDay3 = max(0, T_DayZone3 - T_setSCDay3);
+	output Real DiscmfCooNight3 = max(0, T_NightZone3 - T_setSCNight3);
+
+	output Real T_supSH31 = buildings.House3.TSupSH1.T-273.15;
+	output Real T_supSH32 = buildings.House3.TSupSH2.T-273.15;
+	output Real T_retSH31 = buildings.House3.TRetSH1.T-273.15;
+	output Real T_retSH32 = buildings.House3.TRetSH2.T-273.15;
+	output Real T_supSubSt3 = buildings.House3.TSupSubSt.T-273.15;
+	output Real T_retSubSt3 = buildings.House3.TRetSubSt.T-273.15;
+	output Real T_supNetwork3 = buildings.House3.TSupNetwork.T-273.15;
+	output Real T_retNetwork3 = buildings.House3.TRetNetwork.T-273.15;
+	output Real T_supBHP3 = buildings.House3.bhp.senTBhpEvaIn.T-273.15;
+	output Real T_retBHP3 = buildings.House3.bhp.senTBhpEvaOut.T-273.15;
+
+	output Real occ31 = buildings.House3.occ1.y;
+	output Real occ32 = buildings.House3.occ2.y;
+
+	output Real Q_IntAppConDay3 = buildings.House3.applianceHeatGains.heatPortCon[1].Q_flow;
+	output Real Q_IntAppConNight3 = buildings.House3.applianceHeatGains.heatPortCon[2].Q_flow;
+	output Real Q_IntAppRadDay3 = buildings.House3.applianceHeatGains.heatPortRad[1].Q_flow;
+	output Real Q_IntAppRadNight3 = buildings.House3.applianceHeatGains.heatPortRad[2].Q_flow;
+
+	
+	//////////////////////////////////
+	// Energy Hub Output variables	//
+	//////////////////////////////////
+
+	// General
+	output Real P_Net_enerHub = enerHub.P;
+	output Real Q_enerHub = enerHub.QEnergyHub;
+	
+	// GSHP
+	output Real QNom_GSHP_kW = enerHub.GsHp.Size;
+	output Real P_GSHP = enerHub.GsHp.GsHp.PEl;
+	output Real E_GSHP_kWh = enerHub.GsHp.EGsHp_kWh.y;
+	output Real QCon_GSHP = enerHub.GsHp.GsHp.QCon;
+	output Real QEva_GSHP = -enerHub.GsHp.GsHp.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_GSHP = enerHub.GsHp.GsHp.COP;
+
+	output Real P_pumCoo = enerHub.GsHp.pumHexCooEva.P;
+	output Real E_pumCoo_kWh = enerHub.GsHp.EpumCoo_kWh.y;
+	output Real QhexCoo = enerHub.GsHp.hexCoo.Q2_flow; // will be positive if heat is added to the borefield i.e. cooling of buffertank is happening
+
+	output Real TGsHpConIn = enerHub.GsHp.senTGsHpConIn.T - 273.15; //°C
+	output Real TGsHpConOut = enerHub.GsHp.senTGsHpConOut.T - 273.15; //°C
+	output Real TGsHpEvaIn = enerHub.GsHp.senTGsHpEvaIn.T - 273.15; //°C
+	output Real TGsHpEvaOut = enerHub.GsHp.senTGsHpEvaOut.T - 273.15; //°C
+
+	output Real TBorIn = enerHub.GsHp.senTBorIn.T - 273.15; //°C
+	output Real TBorOut = enerHub.GsHp.senTBorOut.T - 273.15; //°C
+
+	output Real THexCooConIn = enerHub.GsHp.senTHexCooConIn.T - 273.15; //°C
+	output Real THexCooConOut = enerHub.GsHp.senTHexCooConOut.T - 273.15; //°C
+	output Real THexCooEvaIn = enerHub.GsHp.senTHexCooEvaIn.T - 273.15; //°C
+	output Real THexCooEvaOut = enerHub.GsHp.senTHexCooEvaOut.T - 273.15; //°C
+
+	output Real mFlowGsHpCon = enerHub.GsHp.GsHp.m2_flow;
+	output Real mFlowGsHpEva = enerHub.GsHp.GsHp.m1_flow;
+	output Real mFlowBor = enerHub.GsHp.pumBor.m_flow;
+
+	output Real mFlowHexCooCon = enerHub.GsHp.hexCoo.m2_flow;
+	output Real mFlowHexCooEva = enerHub.GsHp.hexCoo.m1_flow;
+
+	output Real chBor_delTBor = enerHub.GsHp.borefield.groTemRes.delTBor;
+	output Real chBor_QAggFlow1 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[1];
+	output Real chBor_QAggFlow2 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[2];
+	output Real chBor_QAggFlow3 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[3];
+
+	// ASHP
+	output Real QNom_ASHP_kW = enerHub.AsHp.Size;
+	output Real P_ASHP = enerHub.AsHp.AsHp.PEl;
+	output Real E_ASHP_kWh = enerHub.AsHp.EAsHp_kWh.y;
+	output Real QCon_ASHP = enerHub.AsHp.AsHp.QCon;
+	output Real QEva_ASHP = -enerHub.AsHp.AsHp.HP.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_ASHP = enerHub.AsHp.AsHp.COP;
+
+	output Real TAsHpConIn = enerHub.AsHp.senTAsHpConIn.T - 273.15; //°C
+	output Real TAsHpConOut = enerHub.AsHp.senTAsHpConOut.T - 273.15; //°C
+	output Real TAsHpEvaIn = enerHub.AsHp.AsHp.HP.TEvaIn.T - 273.15; //°C
+	output Real TAsHpEvaOut = enerHub.AsHp.AsHp.HP.TEvaOut.T - 273.15; //°C
+
+	output Real mFlowAsHpCon = enerHub.AsHp.AsHp.HP.m2_flow;
+	
+	// Tank
+	output Real Ttank = enerHub.tan.vol.T - 273.15; //°C
+	output Real Vtank = enerHub.tan.VTan;
+	output Real hTank = enerHub.tan.hTan;
+	output Real RTank = enerHub.tan.RTan;
+	output Real UTank = enerHub.tan.vol.U;	
+	output Real TMedTank = enerHub.tan.vol.dynBal.medium.T -273.15;
+	output Real uMedTank = enerHub.tan.vol.dynBal.medium.u;
+
+	// PV panels
+	output Real A_PV = enerHub.pv.PVArea;
+	output Real P_PV_DC = enerHub.pv.solarPower.y;
+	output Real P_PV_AC = enerHub.pv.P;
+	output Real n_PV = enerHub.pv.n;
+
+	// Battery 
+	output Real Bat_present = if enerHub.hasBat then 1 else 0;
+	output Real Bat_cap = enerHub.bat.EBat_max_kWh ;
+	output Real Bat_P_max = enerHub.bat.P_max;
+	output Real Bat_soc = enerHub.bat.SoC ;
+	output Real Bat_eff = enerHub.bat.eff ;
+	output Real Bat_Pcha = enerHub.bat.PCha ;
+	output Real Bat_PtoE = enerHub.bat.PtoE;
+	output Real Bat_EBat = enerHub.bat.EBat;
+	output Real Bat_PDem = enerHub.bat.PDem ;
+	output Real Bat_PGrid = enerHub.bat.PGrid ;
+	output Real Bat_SOCmax = enerHub.bat.SoC_max;
+	output Real Bat_SOCmin = enerHub.bat.SoC_min;
+
+	// STC panels
+	output Real A_STC = enerHub.stc.panels.totalArea;
+	output Real QStc = enerHub.stc.panels.QTot;
+
+	output Real QStcHex = enerHub.stc.hex.Q2_flow;
+
+	output Real TStcIn = enerHub.stc.senTPanelsIn.T - 273.15; //°C
+	output Real TStcOut = enerHub.stc.senTPanelsOut.T - 273.15; //°C
+	output Real TStcRegIn = enerHub.stc.senTRegIn.T - 273.15; //°C
+	output Real TStcRegOut = enerHub.stc.senTRegOut.T - 273.15; //°C
+	output Real TStcHeaIn = enerHub.stc.senTHeaIn.T - 273.15; //°C
+	output Real TStcHeaOut = enerHub.stc.senTHeaOut.T - 273.15; //°C
+	output Real TStcHexIn = enerHub.stc.senTHexIn.T -273.15; //°C
+	output Real TStcHexOut = enerHub.stc.senTHexOut.T -273.15; //°C
+
+	output Real mFlowStc = enerHub.stc.pumPanels.m_flow;
+	output Real mFlowStcHex = enerHub.stc.hex.m2_flow;
+	output Real mFlowStcHeaIn = enerHub.stc.valSupHea.m_flow;
+	output Real mFlowStcHeaOut = enerHub.stc.valRetHea.m_flow;
+	output Real mFlowStcRegIn = enerHub.stc.valSupReg.m_flow;
+	output Real mFlowStcRegOut = enerHub.stc.valRetReg.m_flow;
+
+	// PVT
+	output Real A_PVT = enerHub.pvt.panels.totalArea;
+	output Real QPvt = enerHub.pvt.panels.QTot;
+	output Real PPvt = enerHub.pvt.P;
+	
+	output Real QPvtHex = enerHub.pvt.hex.Q2_flow;
+
+	output Real TPvtIn = enerHub.pvt.senTPanelsIn.T - 273.15; //°C
+	output Real TPvtOut = enerHub.pvt.senTPanelsOut.T - 273.15; //°C
+	output Real TPvtHexIn = enerHub.pvt.senTHexIn.T - 273.15; //°C
+	output Real TPvtHexOut = enerHub.pvt.senTHexOut.T - 273.15; //°C
+	output Real TPvtRegIn = enerHub.pvt.senTRegIn.T - 273.15; //°C
+	output Real TPvtRegOut = enerHub.pvt.senTRegOut.T - 273.15; //°C
+	output Real TPvtHeaIn = enerHub.pvt.senTHeaIn.T - 273.15; //°C
+	output Real TPvtHeaOut = enerHub.pvt.senTHeaOut.T - 273.15; //°C
+
+	output Real mFlowPvt = enerHub.pvt.pumPanels.m_flow;
+	output Real mFlowPvtHex = enerHub.pvt.hex.m2_flow;
+	output Real mFlowPvtHeaIn = enerHub.pvt.valSupHea.m_flow;
+	output Real mFlowPvtHeaOut = enerHub.pvt.valRetHea.m_flow;
+	output Real mFlowPvtRegIn = enerHub.pvt.valSupReg.m_flow;
+	output Real mFlowPVtRegOut = enerHub.pvt.valRetReg.m_flow;
+
+	///////////////////////////////////
+	// IOCS definitions //
+	///////////////////////////////////
+	// demand data:
+	output Real QDem = Q_subSt1 + Q_subSt2 + Q_subSt3; 		// Demand profile for heat and cold: heat should be positive, cold should be negative
+	output Real PDem = P_Net_Houses; 						// Demand profile for electricity in the buildings only, offtake should be positive
+	output Real QBor = enerHub.GsHp.QBorefield;
+	
+	// temperature data for COP calculation	
+	output Real T_COP_Sup = Ttank;			// Temperatures should be in °C
+	output Real T_COP_Bor = TBorOut;		// Temperatures should be in °C
+	output Real T_COP_Air = TAsHpEvaIn;		// Temperatures should be in °C
+	
+	// overall result data:
+	output Real DiscmfHea = DiscmfHeaDay1 + DiscmfHeaNight1 + DiscmfHeaDay2 + DiscmfHeaNight2 + DiscmfHeaDay3 + DiscmfHeaNight3; // Heating discomort in Kh
+	output Real DiscmfCoo = DiscmfCooDay1 + DiscmfCooNight1 + DiscmfCooDay2 + DiscmfCooNight2 + DiscmfCooDay3 + DiscmfCooNight3; // Cooling discomfort in Kh
+	output Real ElecUse = TotalPower; // Overall energy use of the entire district (buildings + energy hub), offtake should be positive
+
+
+	///////////////////////////////////
+	////////  INVESTMENT COSTS ////////
+	///////////////////////////////////
+
+	// General values for cost calculations:
+	output Real interest_rate = 0.05;
+	parameter Real r = interest_rate;
+	parameter Integer observation_time = 40; // Years
+
+
+	// Values for scaling investment cost:
+	output Real lifetime=20;
+	output Real cost_to_per_second_scaler = 1/lifetime/(8760*3600);
+	output Real inv_scaler = 36000000;
+	
+	parameter input Real GsHpSize(free=true, min=0.01, max=25, start=5,nominal=0.0714); // nominal: 1/(GsHp_inv*cost_to_per_second_scaler*inv_scaler)
+	parameter Real GsHp_inv = 250; // euro per kW
+	parameter Integer GsHp_lifetime = 20;
+	output Real GsHp_rel_inv_cost= enerHub.GsHp.inv.annInvCost "Relative annual investement cost of GsHp";
+	output Real GsHp_inv_cost_ann = GsHp_rel_inv_cost * GsHpSize "Annualized investment cost of GsHp";
+
+	parameter input Real AsHpSize(free=true, min=0.01, max=25, start=5, nominal=0.01752); // nominal: 1/(AsHp_inv*cost_to_per_second_scaler*inv_scaler)
+	parameter Real AsHp_inv = 900; // euro per kW
+	parameter Integer AsHp_lifetime = 20;
+	output Real AsHp_rel_inv_cost= enerHub.AsHp.inv.annInvCost "Relative annual investement cost of AsHp";
+	output Real AsHp_inv_cost_ann = AsHp_rel_inv_cost * AsHpSize "Annualized investment cost of AsHp";
+
+	parameter input Real TankSize(free=true, min=0.01, max=10, start=10, nominal=0.035);
+	parameter Real Tank_inv = 500; // euro per m3
+	parameter Integer Tank_lifetime = 20;
+	output Real Tank_rel_inv_cost= enerHub.tan.inv.annInvCost "Relative annual investement cost of Tank";
+	output Real Tank_inv_cost_ann = Tank_rel_inv_cost * TankSize "Annualized investment cost of Tank";
+
+	parameter input Real PVSize(free=true, min=1, max=50, start=17, nominal=0.0834); // nominal: 1/(AsHp_inv*cost_to_per_second_scaler*inv_scaler)
+	parameter Real PV_inv = 210; // euro per m2
+	parameter Integer PV_lifetime = 20;
+	output Real PV_rel_inv_cost= enerHub.pv.inv.annInvCost "Relative annual investement cost of PV";
+	output Real PV_inv_cost_ann = PV_rel_inv_cost * PVSize "Annualized investment cost of PV";
+
+	parameter input Real BatSize(free=true, min=1, max=15, start=10, nominal=0.035);
+	parameter Real Bat_inv = 500; // euro per kWh
+	parameter Integer Bat_lifetime = 20;
+	output Real Bat_rel_inv_cost = enerHub.bat.inv.annInvCost "Relative annual investement cost of Bat";
+	output Real Bat_inv_cost_ann = Bat_rel_inv_cost * BatSize "Annualized investment cost of Bat";
+
+	output Real Total_annualized_investment = GsHp_inv_cost_ann + AsHp_inv_cost_ann + Tank_inv_cost_ann + PV_inv_cost_ann + Bat_inv_cost_ann;
+	output Real inv_cost_per_second = Total_annualized_investment/(8760*3600); // euro per second
+
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+	
+	/// Investment ///
+	output Real ObjInv = inv_scaler*inv_cost_per_second;
+
+	/// Electricity ///
+	output Real TotalPower = P_Net_enerHub + P_Net_Houses;
+
+	output Real tariff_scaler = 36000000;
+	output Real p_offtake = 5.555555555e-8 * tariff_scaler;
+	output Real p_inj = 1.38888888e-8 * tariff_scaler;
+	output Real b = 5; // transition parameter
+	output Real smoothPrice = p_inj + (p_offtake - p_inj) * 0.5 *(1 + TotalPower / (sqrt(TotalPower^2 + b^2)) );
+
+	output Real ObjIntElecCost = TotalPower*smoothPrice;
+
+	// Battery //
+	output Real weight_bat = 100000;
+	output Real ObjBatMax = weight_bat*max(0, Bat_soc - Bat_SOCmax)^2;
+	output Real ObjBatMin = weight_bat*max(0, Bat_SOCmin - Bat_soc)^2;
+	output Real ObjIntBat = ObjBatMax + ObjBatMin;
+
+	// Supply temperature	
+	output Real TSupMax = 60;
+	output Real ObjIntTSupMax = 10000*max(0, Ttank - TSupMax)^2;
+
+	// Borefield temperature
+	output Real TBorMin_degC = enerHub.TBorMin - 273.15;
+	output Real TBorAvg = (TBorIn + TBorOut)/2;
+	output Real ObjIntTBorMin = 10000*max(0, TBorMin_degC - TBorAvg)^2;
+
+
+	/// Comfort ///
+	output Real weight_hea = 10000;
+	output Real weight_coo = 10000;
+	
+	output Real ObjIntComfSHea = weight_hea*(DiscmfHeaDay1^2 + DiscmfHeaNight1^2 + DiscmfHeaDay2^2 + DiscmfHeaNight2^2 + DiscmfHeaDay3^2 + DiscmfHeaNight3^2); 
+	output Real ObjIntComfSCoo = weight_coo*(DiscmfCooDay1^2 + DiscmfCooNight1^2 + DiscmfCooDay2^2 + DiscmfCooNight2^2 + DiscmfCooDay3^2 + DiscmfCooNight3^2);
+
+	/// Overall objective ///
+	output Real ObjInt = ObjInv + ObjIntElecCost + ObjIntComfSCoo + ObjIntComfSHea + ObjIntBat + ObjIntTSupMax + ObjIntTBorMin;
+
+
+end ThreeHousesOpt;

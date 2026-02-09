@@ -1,0 +1,68 @@
+optimization OneHouseIdeal(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="8760*1", tolerance=1e-1)
+	extends IOCSmod.Optimization.OneHouseIdeal(addDummyEquation=false);
+
+	// Optimisation variables
+	// Already included in the models
+
+	////////////////////////////////
+	// Demand Output variables    //
+	////////////////////////////////
+
+	/// Electrical ///
+	// House1 //
+
+	output Real P_PV1 = buildings.House1.PVinverter.P_out; 	// Electricity from PV after inverter
+	output Real P_ac1 = buildings.House1.Pac.P;				// Electricity demand
+	output Real P_Net1 = buildings.House1.P; // Positive value means net offtake
+
+	// House1 //
+
+	output Real Q_SHDay1 = buildings.House1.QHeaZone1.Q_flow;
+	output Real Q_SHNight1 = buildings.House1.QHeaZone2.Q_flow;
+	output Real Q_SCDay1 = buildings.House1.QCooZone1.Q_flow;
+	output Real Q_SCNight1 = buildings.House1.QCooZone2.Q_flow;
+	output Real T_DayZone1 = buildings.House1.bui.DayZone.TSensor-273.15;
+	output Real T_NightZone1 = buildings.House1.bui.NightZone.TSensor-273.15;
+
+	output Real T_setSHDay1 = buildings.House1.TSetSHDayExpr.y-273.15;
+	output Real T_setSHNight1 = buildings.House1.TSetSHNightExpr.y-273.15;
+	output Real T_setSCDay1 = buildings.House1.TSetSCNightExpr.y-273.15;
+	output Real T_setSCNight1 = buildings.House1.TSetSCNightExpr.y-273.15;
+
+	output Real DiscmfHeaDay1 = max(0,T_setSHDay1-T_DayZone1);
+	output Real DiscmfHeaNight1 = max(0,T_setSHNight1-T_NightZone1);
+	output Real DiscmfCooDay1 = max(0, T_DayZone1 - T_setSCDay1);
+	output Real DiscmfCooNight1 = max(0, T_NightZone1 - T_setSCNight1);
+
+	output Real Q_IntAppConDay1 = buildings.House1.applianceHeatGains.heatPortCon[1].Q_flow;
+	output Real Q_IntAppConNight1 = buildings.House1.applianceHeatGains.heatPortCon[2].Q_flow;
+	output Real Q_IntAppRadDay1 = buildings.House1.applianceHeatGains.heatPortRad[1].Q_flow;
+	output Real Q_IntAppRadNight1 = buildings.House1.applianceHeatGains.heatPortRad[2].Q_flow;
+
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+
+	/// Power ///
+	output Real QDemHea = Q_SHDay1 + Q_SHNight1;
+	output Real QDemCoo = -Q_SCDay1 - Q_SCNight1 ;
+	output Real ElecDem = P_Net1; // positive value means net offtake
+
+	output Real ObjIntP = QDemHea/5 + QDemCoo/5 + ElecDem;
+
+	/// Comfort ///
+	output Real weight_hea = 10000;
+	output Real weight_coo = 10000;
+	
+	output Real DiscmfHea = DiscmfHeaDay1 + DiscmfHeaNight1;
+	output Real DiscmfCoo = DiscmfCooDay1 + DiscmfCooNight1;
+	output Real ObjIntComfSHea = weight_hea*(DiscmfHeaDay1^2 + DiscmfHeaNight1^2); /// Kh/jaar
+	output Real ObjIntComfSCoo = weight_coo*(DiscmfCooDay1^2 + DiscmfCooNight1^2);
+	
+
+	/// Overall objective ///
+	output Real ObjInt = ObjIntP + ObjIntComfSCoo + ObjIntComfSHea;
+
+
+end OneHouseIdeal;

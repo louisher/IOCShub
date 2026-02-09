@@ -1,0 +1,73 @@
+optimization VerificationBat(objectiveIntegrand=ObjInt, startTime=15638400, finalTime=startTime+1, timeStep=3600, intervalLengths="168*1", tolerance=1e-4, truncationDelta=1e-2)
+	extends IOCSmod.ComponentModels.Verification.VerificationBat(
+											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//BEL_VLG_Uccle.064470_TMYx.2007-2021.mos"),
+											bat.EBat_max=BatSize*3600000,
+											bat.SoC_start=0);
+	
+	//////////////////////////////////
+	// Energy Hub Output variables	//
+	//////////////////////////////////
+
+	// PV panels 
+	output Real A_PV = pv.PVArea;
+	output Real P_PV_DC = pv.solarPower.y;
+	output Real P_PV_AC = pv.P; // negative value as it is generation of elec
+	output Real n_PV = pv.n;
+
+	// Battery 
+	output Real Bat_EBat = bat.EBat;
+	output Real Bat_cap = bat.EBat_max/3600000;
+	output Real Bat_soc = bat.SoC ;
+	output Real Bat_eff = bat.eff ;
+	output Real Bat_Pcha = bat.PCha ;
+	output Real Bat_PDem = bat.PDem ;
+	output Real Bat_PGrid = bat.PGrid ;
+	output Real Bat_SOCmax = bat.SoC_max;
+	output Real Bat_SOCmin = bat.SoC_min;
+
+	///////////////////////////////////
+	////////  INVESTMENT COSTS ////////
+	///////////////////////////////////
+
+	output Real inv_scaler = 36000000;
+
+	IOCSmod.ComponentModels.BaseClasses.Investment inv(inv_cost=100)
+			annotation (Placement(transformation(extent={{80,110},{100,130}})));
+	
+	parameter Real BatSize = 15;
+	output Real Bat_rel_inv_cost = inv.annInvCost "Relative annual investement cost of Bat";
+	output Real Bat_inv_cost_ann = Bat_rel_inv_cost * BatSize "Annualized investment cost of Bat";
+
+	output Real Total_annualized_investment = Bat_inv_cost_ann;
+	output Real inv_cost_per_second = Total_annualized_investment/(8760*3600); // euro per second
+
+
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+
+	output Real TotalPower = bat.PGrid;
+
+	output Real tariff_scaler = 36000000;
+	output Real p_offtake = 5.555555555e-8 * tariff_scaler;
+	output Real p_inj = 1.38888888e-8 * tariff_scaler;
+	output Real b = 5; // transition parameter
+	output Real smoothPrice = p_inj + (p_offtake - p_inj) * 0.5 *(1 + TotalPower / (sqrt(TotalPower^2 + b^2)) );
+
+	output Real ObjIntElecCost = TotalPower*smoothPrice;
+
+	// Battery //
+	output Real weight_bat = 100000;
+	output Real ObjBatMax = weight_bat*max(0, Bat_soc - Bat_SOCmax)^2;
+	output Real ObjBatMin = weight_bat*max(0, Bat_SOCmin - Bat_soc)^2;
+	output Real ObjIntBat = ObjBatMax + ObjBatMin;
+
+	/// Investment ///
+	output Real ObjInv = inv_scaler*inv_cost_per_second;
+
+	/// Overall objective ///
+	output Real ObjInt = ObjIntElecCost + ObjInv + ObjIntBat;
+
+
+end VerificationBat;

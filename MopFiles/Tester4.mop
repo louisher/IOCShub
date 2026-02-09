@@ -1,0 +1,44 @@
+optimization Tester4(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="8760*1", tolerance=1e-5, truncationDelta=1e-2)
+	extends IOCSmod.Simulation.Tester4(RCnetw.hSeg=BorSize);
+
+	output Real TC1 = RCnetw.capFil1.T - 273.15;
+	output Real TC2 = RCnetw.capFil2.T - 273.15;
+	output Real TC3 = RCnetw.capFil3.T - 273.15;
+	output Real TC4 = RCnetw.capFil4.T - 273.15;
+	
+	output Real Rgb1=RCnetw.Rgb1.R;
+	output Real Rgb2=RCnetw.Rgb2.R;
+	output Real Rgb3=RCnetw.Rgb3.R;
+	output Real Rgb4=RCnetw.Rgb4.R;	
+	output Real Rgg14=RCnetw.Rgg14.R;	
+	output Real Rgg21=RCnetw.Rgg21.R;	
+	output Real Rgg11=RCnetw.Rgg11.R;	
+	output Real Rgg12=RCnetw.Rgg12.R;	
+	output Real Rgg13=RCnetw.Rgg13.R;	
+	output Real Rgg22=RCnetw.Rgg22.R;	
+	output Real RConv1 = borefield.borHol.intHex[1].RConv1.Rc;
+	output Real RConv2 = borefield.borHol.intHex[1].RConv2.Rc;
+	output Real RConv3 = borefield.borHol.intHex[1].RConv3.Rc;
+	output Real RConv4 = borefield.borHol.intHex[1].RConv4.Rc;
+
+	parameter input Real BorSize(free=true, min=125, max=250, start=150, nominal=0.00022); // nominal: 1/(GsHp_inv*cost_to_per_second_scaler*inv_scaler)
+	output Real Bor_rel_inv_cost= 40*10*10/40;
+	output Real Bor_inv_cost_ann = Bor_rel_inv_cost * BorSize "Annualized investment cost of Borefield";
+
+	output Real inv_cost_per_second = Bor_inv_cost_ann/(8760*3600); // euro per second
+
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+	/// Investment ///
+	output Real inv_scaler = 36000000;
+	output Real ObjInv = inv_scaler*inv_cost_per_second;
+	
+	output Real tariff_scaler = 36000000;
+	output Real p_offtake = 5.555555555e-8 * tariff_scaler;
+
+    output Real ObjInt = RCnetw.port_1.Q_flow + ObjInv;
+
+
+end Tester4;

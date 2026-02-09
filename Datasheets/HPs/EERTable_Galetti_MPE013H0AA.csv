@@ -1,0 +1,11 @@
+﻿# Source temperature is the evaporator outlet temperature (not inlet), needed for TACO calibration
+Tsource,Tsink,eff
+0,15,4.05
+7,25,4.97
+16,35,6.15
+,,3.3
+,,3.99
+,,4.95
+,,2.42
+,,2.98
+,,3.78

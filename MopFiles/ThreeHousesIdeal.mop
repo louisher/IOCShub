@@ -1,0 +1,110 @@
+optimization ThreeHousesIdeal(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="8760*1", tolerance=1e-1)
+	extends IOCSmod.Optimization.ThreeHousesIdeal(addDummyEquation=false);
+
+	// Optimisation variables
+	// Already included in the models
+
+	////////////////////////////////
+	// Demand Output variables    //
+	////////////////////////////////
+
+	// House1 //
+	output Real Q_SH11 = threeHouses.House1.QHeaZone1.Q_flow;
+	output Real Q_SH12 = threeHouses.House1.QHeaZone2.Q_flow;
+	output Real Q_SC11 = threeHouses.House1.QCooZone1.Q_flow;
+	output Real Q_SC12 = threeHouses.House1.QCooZone2.Q_flow;
+	output Real Q_BHPCon1 = threeHouses.House1.bhp.bhp.QCon;
+	output Real Q_BHPEva1 = threeHouses.House1.bhp.bhp.Q_eva.y;
+	output Real Q_BHPConDem1 = threeHouses.House1.bhp.Qcon_profile.y[1];
+	output Real P_bhp1 = threeHouses.House1.bhp.bhp.PEl;
+	output Real P_Net1 = threeHouses.House1.P; // Positive value means net offtake
+
+	output Real T_zone11 = threeHouses.House1.bui.TSensor[1]-273.15;
+	output Real T_zone12 = threeHouses.House1.bui.TSensor[2]-273.15;
+
+	output Real T_setSH11 = threeHouses.House1.TSetSpaHea1.y-273.15;
+	output Real T_setSH12 = threeHouses.House1.TSetSpaHea2.y-273.15;
+
+	output Real occ11 = threeHouses.House1.occ1.y;
+	output Real occ12 = threeHouses.House1.occ2.y;
+
+	output Real Q_IntAppConDay1 = buildings.House1.applianceHeatGains.heatPortCon[1].Q_flow;
+	output Real Q_IntAppConNight1 = buildings.House1.applianceHeatGains.heatPortCon[2].Q_flow;
+	output Real Q_IntAppRadDay1 = buildings.House1.applianceHeatGains.heatPortRad[1].Q_flow;
+	output Real Q_IntAppRadNight1 = buildings.House1.applianceHeatGains.heatPortRad[2].Q_flow;
+	
+	// House2 //
+	output Real Q_SH21 = threeHouses.House2.QHeaZone1.Q_flow;
+	output Real Q_SH22 = threeHouses.House2.QHeaZone2.Q_flow;
+	output Real Q_SC21 = threeHouses.House2.QCooZone1.Q_flow;
+	output Real Q_SC22 = threeHouses.House2.QCooZone2.Q_flow;
+	output Real Q_BHPCon2 = threeHouses.House2.bhp.bhp.QCon;
+	output Real Q_BHPEva2 = threeHouses.House2.bhp.bhp.Q_eva.y;
+	output Real Q_BHPConDem2 = threeHouses.House2.bhp.Qcon_profile.y[1];
+	output Real P_bhp2 = threeHouses.House2.bhp.bhp.PEl;
+	output Real P_Net2 = threeHouses.House2.P; // Positive value means net offtake
+
+	output Real T_zone21 = threeHouses.House2.bui.TSensor[1]-273.15;
+	output Real T_zone22 = threeHouses.House2.bui.TSensor[2]-273.15;
+
+	output Real T_setSH21 = threeHouses.House2.TSetSpaHea1.y-273.15;
+	output Real T_setSH22 = threeHouses.House2.TSetSpaHea2.y-273.15;
+
+	output Real occ21 = threeHouses.House2.occ1.y;
+	output Real occ22 = threeHouses.House2.occ2.y;
+
+	output Real Q_IntAppConDay2 = buildings.House2.applianceHeatGains.heatPortCon[1].Q_flow;
+	output Real Q_IntAppConNight2 = buildings.House2.applianceHeatGains.heatPortCon[2].Q_flow;
+	output Real Q_IntAppRadDay2 = buildings.House2.applianceHeatGains.heatPortRad[1].Q_flow;
+	output Real Q_IntAppRadNight2 = buildings.House2.applianceHeatGains.heatPortRad[2].Q_flow;
+
+	// House3 //
+	output Real Q_SH31 = threeHouses.House3.QHeaZone1.Q_flow;
+	output Real Q_SH32 = threeHouses.House3.QHeaZone2.Q_flow;
+	output Real Q_SC31 = threeHouses.House3.QCooZone1.Q_flow;
+	output Real Q_SC32 = threeHouses.House3.QCooZone2.Q_flow;
+	output Real Q_BHPCon3 = threeHouses.House3.bhp.bhp.QCon;
+	output Real Q_BHPEva3 = threeHouses.House3.bhp.bhp.Q_eva.y;
+	output Real Q_BHPConDem3 = threeHouses.House3.bhp.Qcon_profile.y[1];
+	output Real P_bhp3 = threeHouses.House3.bhp.bhp.PEl;
+	output Real P_Net3 = threeHouses.House3.P; // Positive value means net offtake
+
+	output Real T_zone31 = threeHouses.House3.bui.TSensor[1]-273.15;
+	output Real T_zone32 = threeHouses.House3.bui.TSensor[2]-273.15;
+
+	output Real T_setSH31 = threeHouses.House3.TSetSpaHea1.y-273.15;
+	output Real T_setSH32 = threeHouses.House3.TSetSpaHea2.y-273.15;
+
+	output Real occ31 = threeHouses.House3.occ1.y;
+	output Real occ32 = threeHouses.House3.occ2.y;
+
+	output Real Q_IntAppConDay3 = buildings.House3.applianceHeatGains.heatPortCon[1].Q_flow;
+	output Real Q_IntAppConNight3 = buildings.House3.applianceHeatGains.heatPortCon[2].Q_flow;
+	output Real Q_IntAppRadDay3 = buildings.House3.applianceHeatGains.heatPortRad[1].Q_flow;
+	output Real Q_IntAppRadNight3 = buildings.House3.applianceHeatGains.heatPortRad[2].Q_flow;
+
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+
+	/// Power ///
+	output Real QDemHea = Q_SH11 + Q_SH12 + Q_SH21 + Q_SH22 + Q_SH31 + Q_SH32;
+	output Real QDemCoo = -Q_SC11 - Q_SC12 - Q_SC21 - Q_SC22 - Q_SC31 - Q_SC32;
+	output Real ElecDem = P_Net1 + P_Net2 + P_Net3; // positive value means net offtake
+
+	output Real ObjIntP = QDemHea/5 + QDemCoo/5 + ElecDem;
+
+	/// Comfort ///
+	output Real TsetCoo = 25;
+	output Real weight_hea = 10000;
+	output Real weight_coo = 10000;
+	
+	output Real ObjIntComfSHea = weight_hea*(max(0,T_setSH11-T_zone11)^2 + max(0,T_setSH12-T_zone12)^2 + max(0,T_setSH21-T_zone21)^2 + max(0,T_setSH22-T_zone22)^2 + max(0,T_setSH31-T_zone31)^2 + max(0,T_setSH32-T_zone32)^2); /// Kh/jaar
+	output Real ObjIntComfSCoo = weight_coo*(max(0,T_zone11-TsetCoo)^2 + max(0,T_zone12-TsetCoo)^2 + max(0,T_zone21-TsetCoo)^2 + max(0,T_zone22-TsetCoo)^2 + max(0,T_zone31-TsetCoo)^2 + max(0,T_zone32-TsetCoo)^2);
+	
+	/// Overall objective ///
+	output Real ObjInt = ObjIntP + ObjIntComfSCoo + ObjIntComfSHea;
+
+
+end ThreeHousesIdeal;

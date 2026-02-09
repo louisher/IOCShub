@@ -1,0 +1,27 @@
+optimization ChillerTest(objectiveIntegrand=ObjInt, startTime=15724800, finalTime=startTime+1, timeStep=3600, intervalLengths="336*1", tolerance=1e-1)
+	extends IOCSmod.ComponentModels.Thermal.AirSourceChillers.ChillerTest;
+	
+	output Real Tzone = zone.TSensor - 273.15;
+	output Real TFloHeaIn = senTFloHeaIn.T - 273.15;
+	output Real TFloHeaOut = senTFloHeaOut.T - 273.15;
+	output Real TSet = 23;
+	
+
+	output Real QEvaChi = chi.QEva;
+	output Real QConChi = chi.Chi.con.Q_flow;
+	output Real PChi = chi.PEl;
+	output Real EERChi = chi.EER;
+	output Real TConInChi = chi.Chi.TConIn.T -273.15;
+	output Real TEvaOutChi = chi.Chi.TEvaOut.T - 273.15;
+	
+	output Real mFlowPum = pum.m_flow;
+
+	// Objective
+	output Real ObjIntComf = 1000*max(0, Tzone - TSet)^2;
+	
+	output Real ObjInt = ObjIntComf + PChi;
+
+
+
+
+end ChillerTest;

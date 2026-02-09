@@ -1,0 +1,892 @@
+optimization MixedUseOptIterTest(objectiveIntegrand=ObjInt, terminalObjective=termObj, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="8760*1", tolerance=1e-1, truncationDelta=1e-2)
+	extends IOCSmod.Optimization.SizeOpt.MixedUseOpt(addDummyEquation=false,
+											buildings.Houses.house1.hvac.optVar(y=u1),
+											buildings.Houses.house2.hvac.optVar(y=u2),
+											buildings.Houses.house3.hvac.optVar(y=u3),
+											buildings.Houses.office1.hvac.optVar(y=uOff1),
+											buildings.Houses.office2.hvac.optVar(y=uOff2),
+											buildings.Houses.office3.hvac.optVar(y=uOff3),
+											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//BEL_VLG_Uccle.064470_TMYx.2007-2021.mos"),
+											enerHub.path_economic_params_json="/home/louis/software/iocs/input_data/economic_params.json",
+											enerHub.path_devices_json="/home/louis/software/iocs/input_data/devices.json",
+											enerHub.Size_AsHp=AsHpSize,
+											enerHub.AsHp.Size_nominal=5,
+											enerHub.Size_GsHp=GsHpSize,
+											enerHub.GsHp.Size_nominal=5,
+											enerHub.Size_AsChi=AsChiSize,
+											enerHub.AsChi.Size_nominal=5,
+											enerHub.Size_Tank=TankSize,
+											enerHub.Size_PV=PVSize,
+											enerHub.Size_STC=STCSize,
+											enerHub.stc.Size_nominal=10,
+											enerHub.Size_PVT=PVTSize,
+											enerHub.pvt.Size_nominal=10,
+											enerHub.hasBat=false,
+											enerHub.Size_Bat=BatSize,
+											enerHub.P_max_bat_kW=5,
+											enerHub.TBorMin=273.15,
+											enerHub.borFieDat.conDat.nBor=4,
+											enerHub.groTemResDat.rCel.rCel={1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0, 2048.0, 4096.0, 8192.0, 16384.0, 32768.0, 65536.0, 131072.0, 88257.0},
+                                            enerHub.groTemResDat.kappa.kappa={0.00012117729480712768, 5.315575943043797e-05, 4.785087410583819e-05, 4.684645672961804e-05, 4.693814066320326e-05, 4.723811128840786e-05, 4.745763782935296e-05, 4.7624566536216286e-05, 4.886462804239806e-05, 5.8101255446173727e-05, 8.194135556696821e-05, 0.000112950845866406, 0.00013802195155999096, 0.00015095446932675554, 0.00015214103571410957, 0.00014430997436454544, 0.00012941092497862857, 0.00010835450288530475, 3.792544497066433e-05},
+                                            enerHub.borFieDat.conDat.cooBor=[0,0; 0,6],
+											enerHub.GsHp.borefield.depth=BorSize, 	
+											enerHub.GsHp.borefield.groTemRes.Kappa_agg_Constants=Kappa_agg_Constants,
+											enerHub.GsHp.borefield.groTemResFin.Gamma_Constants=Gamma_Constants,
+											enerHub.GsHp.borefield.groTemResFin.Xi_Ext_Constants=Xi_Ext_Constants,
+											enerHub.GsHp.borefield.groTemResFin.Xi_Inj_Constants=Xi_Inj_Constants,
+											enerHub.GsHp.borefield.groTemResFin.Kappa_L3_Constants=Kappa_L3_Constants,
+											enerHub.GsHp.borefield.groTemResFin.QpeakExtExpr.y=QpExtOpt, 
+											enerHub.GsHp.borefield.groTemResFin.QpeakInjExpr.y=QpInjOpt);
+
+	// Optimisation variables
+	input Real u1(free=true, start=1, min=-1, max=1, nominal= 1/3663);
+	input Real u2(free=true, start=1, min=-1, max=1, nominal= 1/3663);
+	input Real u3(free=true, start=1, min=-1, max=1, nominal= 1/3663);
+	input Real uOff1(free=true, start=1, min=-1, max=1, nominal= 1/7659);
+	input Real uOff2(free=true, start=1, min=-1, max=1, nominal= 1/7659);
+	input Real uOff3(free=true, start=1, min=-1, max=1, nominal= 1/7659);
+	
+	////////////////////////////////
+	// Demand Output variables    //
+	////////////////////////////////
+	
+	//Overall //
+	output Real P_Net_Houses = buildings.P; // Positive value means net offtake
+	output Real P_pumDh = buildings.pumNetwork.P;
+
+	//Collector
+	output Modelica.Units.NonSI.Temperature_degC TSup_collector = Modelica.Units.Conversions.to_degC(buildings.Houses.collector.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_collector = Modelica.Units.Conversions.to_degC(buildings.Houses.collector.TRet) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_collector = buildings.Houses.collector.port_a2.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_collector = buildings.Houses.collector.Q_flow "collector__Heating_collector thermal power";
+
+	// Comfort
+	output Real TSetDayHeaPro = buildings.Houses.TSetDayHeaExpr.y;	
+	output Real TSetNigHeaPro = buildings.Houses.TSetNigHeaExpr.y;
+	output Real TSetDayCooPro = buildings.Houses.TSetDayCooExpr.y;
+	output Real TSetNigCooPro = buildings.Houses.TSetNigCooExpr.y;
+	output Real TSetOffHeaPro = buildings.Houses.TSetOffHeaExpr.y;
+	output Real TSetOffCooPro = buildings.Houses.TSetOffCooExpr.y;
+
+
+	//////////// HOUSE 1 (label A)//////////////
+
+	
+	// emission system
+	output Real house1_TFloHea1 = buildings.Houses.house1.hvac.floHea1.heatPortEmb[1].T - 273.15;
+	output Real house1_TFloHea2 = buildings.Houses.house1.hvac.floHea2.heatPortEmb[1].T - 273.15;
+
+	// Comfort
+	output Real house1_TDay = buildings.Houses.house1.bui.TSensor[1];
+	output Real house1_TNig = buildings.Houses.house1.bui.TSensor[2];
+	output Real house1_DiscmfHeaDay = max(0, TSetDayHeaPro - house1_TDay);
+	output Real house1_DiscmfHeaNig = max(0, TSetNigHeaPro - house1_TNig);
+	output Real house1_DiscmfCooDay = max(0, house1_TDay - TSetDayCooPro);
+	output Real house1_DiscmfCooNig = max(0, house1_TNig - TSetNigCooPro);
+
+
+	//////////// HOUSE 2 (label A)//////////////
+
+	output Real house2_TFloHea1 = buildings.Houses.house2.hvac.floHea1.heatPortEmb[1].T - 273.15;
+	output Real house2_TFloHea2 = buildings.Houses.house2.hvac.floHea2.heatPortEmb[1].T - 273.15;
+
+
+	// Comfort
+	output Real house2_TDay = buildings.Houses.house2.bui.TSensor[1];
+	output Real house2_TNig = buildings.Houses.house2.bui.TSensor[2];
+	output Real house2_DiscmfHeaDay = max(0, TSetDayHeaPro - house2_TDay);
+	output Real house2_DiscmfHeaNig = max(0, TSetNigHeaPro - house2_TNig);
+	output Real house2_DiscmfCooDay = max(0, house2_TDay - TSetDayCooPro);
+	output Real house2_DiscmfCooNig = max(0, house2_TNig - TSetNigCooPro);
+
+	//////////// HOUSE 3 (label A)//////////////
+	
+	// emission system
+	output Real house3_TFloHea1 = buildings.Houses.house3.hvac.floHea1.heatPortEmb[1].T - 273.15;
+	output Real house3_TFloHea2 = buildings.Houses.house3.hvac.floHea2.heatPortEmb[1].T - 273.15;
+
+	// Comfort
+	output Real house3_TDay = buildings.Houses.house3.bui.TSensor[1];
+	output Real house3_TNig = buildings.Houses.house3.bui.TSensor[2];
+	output Real house3_DiscmfHeaDay = max(0, TSetDayHeaPro - house3_TDay);
+	output Real house3_DiscmfHeaNig = max(0, TSetNigHeaPro - house3_TNig);
+	output Real house3_DiscmfCooDay = max(0, house3_TDay - TSetDayCooPro);
+	output Real house3_DiscmfCooNig = max(0, house3_TNig - TSetNigCooPro);
+
+
+	//////////// OFFICE 1 (label A)//////////////
+
+	// emission system
+	output Real office1_TFloHea1 = buildings.Houses.office1.hvac.floHea1.heatPortEmb[1].T - 273.15;
+	output Real office1_TFloHea2 = buildings.Houses.office1.hvac.floHea2.heatPortEmb[1].T - 273.15;
+
+	// Comfort
+	output Real office1_TNor = buildings.Houses.office1.office.TSensor[1];
+	output Real office1_TSou = buildings.Houses.office1.office.TSensor[2];
+	output Real office1_DiscmfHeaNor = max(0, TSetOffHeaPro - office1_TNor);
+	output Real office1_DiscmfHeaSou = max(0, TSetOffHeaPro - office1_TSou);
+	output Real office1_DiscmfCooNor = max(0, office1_TNor - TSetOffCooPro);
+	output Real office1_DiscmfCooSou = max(0, office1_TSou - TSetOffCooPro);
+
+	//////////// OFFICE 2 (label A)//////////////
+
+	// emission system
+	output Real office2_TFloHea1 = buildings.Houses.office2.hvac.floHea1.heatPortEmb[1].T - 273.15;
+	output Real office2_TFloHea2 = buildings.Houses.office2.hvac.floHea2.heatPortEmb[1].T - 273.15;
+
+	// Comfort
+	output Real office2_TNor = buildings.Houses.office2.office.TSensor[1];
+	output Real office2_TSou = buildings.Houses.office2.office.TSensor[2];
+	output Real office2_DiscmfHeaNor = max(0, TSetOffHeaPro - office2_TNor);
+	output Real office2_DiscmfHeaSou = max(0, TSetOffHeaPro - office2_TSou);
+	output Real office2_DiscmfCooNor = max(0, office2_TNor - TSetOffCooPro);
+	output Real office2_DiscmfCooSou = max(0, office2_TSou - TSetOffCooPro);
+
+	//////////// OFFICE 3 (label A)//////////////
+
+	// emission system
+	output Real office3_TFloHea1 = buildings.Houses.office3.hvac.floHea1.heatPortEmb[1].T - 273.15;
+	output Real office3_TFloHea2 = buildings.Houses.office3.hvac.floHea2.heatPortEmb[1].T - 273.15;
+
+	// Comfort
+	output Real office3_TNor = buildings.Houses.office3.office.TSensor[1];
+	output Real office3_TSou = buildings.Houses.office3.office.TSensor[2];
+	output Real office3_DiscmfHeaNor = max(0, TSetOffHeaPro - office3_TNor);
+	output Real office3_DiscmfHeaSou = max(0, TSetOffHeaPro - office3_TSou);
+	output Real office3_DiscmfCooNor = max(0, office3_TNor - TSetOffCooPro);
+	output Real office3_DiscmfCooSou = max(0, office3_TSou - TSetOffCooPro);
+
+	//////////////////////////////////
+	// Energy Hub Output variables	//
+	//////////////////////////////////
+
+	// General
+	output Real P_Net_enerHub = enerHub.P;
+	output Real Q_enerHub = enerHub.QEnergyHub;
+	
+	// GSHP
+    output Real QNom_GSHP_kW = enerHub.GsHp.Size;
+	output Real P_GSHP = enerHub.GsHp.GsHp.PEl;
+	output Real E_GSHP_kWh = enerHub.GsHp.EGsHp_kWh.y;
+	output Real QCon_GSHP = enerHub.GsHp.GsHp.QCon;
+	output Real QEva_GSHP = -enerHub.GsHp.GsHp.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_GSHP = enerHub.GsHp.GsHp.COP;
+
+
+	output Real TGsHpConIn = enerHub.GsHp.senTGsHpConIn.T - 273.15; //°C
+	output Real TGsHpConOut = enerHub.GsHp.senTGsHpConOut.T - 273.15; //°C
+	output Real TGsHpEvaIn = enerHub.GsHp.senTGsHpEvaIn.T - 273.15; //°C
+	output Real TGsHpEvaOut = enerHub.GsHp.senTGsHpEvaOut.T - 273.15; //°C
+
+	output Real TBorIn = enerHub.GsHp.senTBorIn.T - 273.15; //°C
+	output Real TBorOut = enerHub.GsHp.senTBorOut.T - 273.15; //°C
+
+	output Real delTBorOut[enerHub.GsHp.borefield.groTemResFin.nStepsYear] = enerHub.GsHp.borefield.groTemResFin.delTBor;
+	output Real delTfExtOut[enerHub.GsHp.borefield.groTemResFin.nStepsYear] = enerHub.GsHp.borefield.groTemResFin.delTfExt;
+	output Real delTfInjOut[enerHub.GsHp.borefield.groTemResFin.nStepsYear] = enerHub.GsHp.borefield.groTemResFin.delTfInj;
+	output Real QBorIn_L3 = enerHub.GsHp.borefield.groTemResFin.QBor_flow;
+	output Real Last = enerHub.GsHp.borefield.groTemResFin.lastInterval;
+	output Real QpExtOut = enerHub.GsHp.borefield.groTemResFin.QpeakExtExpr.y;
+	output Real QpInjOut = enerHub.GsHp.borefield.groTemResFin.QpeakInjExpr.y;
+
+	// ASHP
+    output Real QNom_ASHP_kW = enerHub.AsHp.Size;
+	output Real P_ASHP = enerHub.AsHp.AsHp.PEl;
+	output Real E_ASHP_kWh = enerHub.AsHp.EAsHp_kWh.y;
+	output Real QCon_ASHP = enerHub.AsHp.AsHp.QCon;
+	output Real QEva_ASHP = -enerHub.AsHp.AsHp.HP.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_ASHP = enerHub.AsHp.AsHp.COP;
+
+	output Real TAsHpConIn = enerHub.AsHp.senTAsHpConIn.T - 273.15; //°C
+	output Real TAsHpConOut = enerHub.AsHp.senTAsHpConOut.T - 273.15; //°C
+	output Real TAsHpEvaIn = enerHub.AsHp.AsHp.HP.TEvaIn.T - 273.15; //°C
+	output Real TAsHpEvaOut = enerHub.AsHp.AsHp.HP.TEvaOut.T - 273.15; //°C
+
+
+
+	// ASCHI
+	output Real QNom_ASCHI = enerHub.AsChi.Size;
+	output Real P_ASCHI = enerHub.AsChi.AsChi.PEl;
+	output Real E_ASCHI_kWh = enerHub.AsChi.EAsChi_kWh.y;
+	output Real QCon_ASCHI = enerHub.AsChi.AsChi.Chi.con.Q_flow;
+	output Real QEva_ASCHI = enerHub.AsChi.AsChi.QEva; // !!! Positive value
+	output Real EER_ASHP = enerHub.AsChi.AsChi.EER;
+
+
+	// Tank
+	output Real Ttank = enerHub.tan.vol.T - 273.15; //°C
+
+	// Battery 
+
+	output Real Bat_soc = enerHub.bat.SoC ;
+	output Real Bat_SOCmax = enerHub.SoC_max;
+	output Real Bat_SOCmin = enerHub.SoC_min;
+
+
+	///////////////////////////////////
+	// IOCS definitions //
+	///////////////////////////////////
+	// input data:
+	output Real QDem = Q_flow_collector; 	// Demand profile for heat and cold: heat should be positive, cold should be negative
+	output Real PDem = P_Net_Houses;							// Demand profile for electricity in the buildings only, offtake should be positive
+	output Real QBor = enerHub.GsHp.QBorefield;
+	
+	// temperature data for COP calculation	
+	output Real T_COP_Sup = Ttank; 			// Temperatures should be in °C
+	output Real T_COP_Bor = TBorOut; 		// Temperatures should be in °C
+	output Real T_COP_Air = TAsHpEvaIn; 	// Temperatures should be in °C
+
+	// overall result data:
+	output Real DiscmfHea = house1_DiscmfHeaDay + house1_DiscmfHeaNig +
+							house2_DiscmfHeaDay + house2_DiscmfHeaNig +
+							house3_DiscmfHeaDay + house3_DiscmfHeaNig +
+							office1_DiscmfHeaNor + office1_DiscmfHeaSou + 
+							office2_DiscmfHeaNor + office2_DiscmfHeaSou + 
+							office3_DiscmfHeaNor + office3_DiscmfHeaSou; // Heating discomort in Kh
+	output Real DiscmfCoo = house1_DiscmfCooDay + house1_DiscmfCooNig +
+							house2_DiscmfCooDay + house2_DiscmfCooNig +
+							house3_DiscmfCooDay + house3_DiscmfCooNig +
+							office1_DiscmfCooNor + office1_DiscmfCooSou + 
+							office2_DiscmfCooNor + office2_DiscmfCooSou + 
+							office3_DiscmfCooNor + office3_DiscmfCooSou; // Cooling discomfort in Kh
+
+	output Real ElecUse = TotalPower; // Overall energy use of the entire district (buildings + energy hub), offtake should be positive
+	
+	///////////////////////////////////
+	////////  INVESTMENT COSTS ////////
+	///////////////////////////////////
+	
+	parameter input Real GsHpSize(free=true, min=0.1, max=20, start=0.1, nominal=1/(21.1*inv_scaler/(8760*3600))); // nominal: 1/(GsHp_inv*cost_to_per_second_scaler*inv_scaler)
+	output Real GsHp_rel_inv_cost= enerHub.GsHp.inv_hp.annInvCost "Relative annual investement cost of GsHp";
+	output Real GsHp_inv_cost_ann = GsHp_rel_inv_cost * GsHpSize "Annualized investment cost of GsHp";
+
+	parameter input Real BorSize(free=true, min=50, max=300, start=200, nominal=1/(2.39*enerHub.borFieDat.conDat.nBor*inv_scaler*8760/(8760*3600))); 
+    parameter input Real QpExtOpt(free=true, min=-15000, max=0, start=0, nominal=1);
+    parameter input Real QpInjOpt(free=true, min=0, max=15000, start=0, nominal=1);
+	output Real Bor_rel_inv_cost = enerHub.GsHp.inv_bor.annInvCost "Relative annual investement cost of Borefield";
+	output Real Bor_inv_cost_ann = Bor_rel_inv_cost * BorSize "Annualized investment cost of Borefield";
+
+	parameter input Real AsHpSize(free=true, min=0.1, max=20, start=0.1, nominal=1/(76.1*inv_scaler/(8760*3600))); // nominal: 1/(AsHp_inv*cost_to_per_second_scaler*inv_scaler)
+	output Real AsHp_rel_inv_cost= enerHub.AsHp.inv.annInvCost "Relative annual investement cost of AsHp";
+	output Real AsHp_inv_cost_ann = AsHp_rel_inv_cost * AsHpSize "Annualized investment cost of AsHp";
+
+	parameter input Real AsChiSize(free=true, min=0.1, max=20, start=0.1, nominal=1/(33.8*inv_scaler/(8760*3600))); // nominal: 1/(AsHp_inv*cost_to_per_second_scaler*inv_scaler)
+	output Real AsChi_rel_inv_cost= enerHub.AsChi.inv.annInvCost "Relative annual investement cost of AsChi";
+	output Real AsChi_inv_cost_ann = AsChi_rel_inv_cost * AsChiSize "Annualized investment cost of AsChi";
+
+	//parameter input Real TankSize(free=true, min=0.1, max=10, start=0.5, nominal=1/(84.5*inv_scaler/(8760*3600)));
+	parameter Real TankSize = 0.1;
+	output Real Tank_rel_inv_cost= enerHub.tan.inv.annInvCost "Relative annual investement cost of Tank";
+	output Real Tank_inv_cost_ann = Tank_rel_inv_cost * TankSize "Annualized investment cost of Tank";
+
+	//parameter input Real STCSize(free=true, min=0.1, max=100, start=0.01, nominal=1/(33.8*inv_scaler/(8760*3600)));
+	parameter Real STCSize=0.1;
+	output Real Stc_rel_inv_cost = enerHub.stc.inv.annInvCost "Relative annual investement cost of STC";
+	output Real Stc_inv_cost_ann = Stc_rel_inv_cost * STCSize "Annualized investment cost of STC";
+
+	//parameter input Real PVTSize(free=true, min=0.1, max=100, start=0.01, nominal=1/(42.3*inv_scaler/(8760*3600)));
+	parameter Real PVTSize=0.1;
+	output Real Pvt_rel_inv_cost = enerHub.pvt.inv.annInvCost "Relative annual investement cost of PVT";
+	output Real Pvt_inv_cost_ann = Pvt_rel_inv_cost * PVTSize "Annualized investment cost of PVT";
+
+	//parameter input Real PVSize(free=true, min=0.1, max=100, start=0.01, nominal=1/(16.9*inv_scaler/(8760*3600))); // nominal: 1/(AsHp_inv*cost_to_per_second_scaler*inv_scaler)
+	parameter Real PVSize=50;
+	output Real PV_rel_inv_cost= enerHub.pv.inv.annInvCost "Relative annual investement cost of PV";
+	output Real PV_inv_cost_ann = PV_rel_inv_cost * PVSize "Annualized investment cost of PV";
+
+	//parameter input Real BatSize(free=true, min=10, max=50, start=10, nominal=1/(53.3*inv_scaler/(8760*3600)));
+	parameter Real BatSize=1;
+	output Real Bat_rel_inv_cost = enerHub.bat.inv.annInvCost "Relative annual investement cost of Bat";
+	output Real Bat_inv_cost_ann = Bat_rel_inv_cost * BatSize "Annualized investment cost of Bat";
+
+	output Real Total_annualized_investment = GsHp_inv_cost_ann + Bor_inv_cost_ann + AsHp_inv_cost_ann + AsChi_inv_cost_ann + PV_inv_cost_ann + Bat_inv_cost_ann + Stc_inv_cost_ann + Pvt_inv_cost_ann + Tank_inv_cost_ann;
+	output Real inv_cost_per_second = Total_annualized_investment/(8760*3600); // euro per second
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+
+	/// Investment ///
+	parameter Real inv_scaler = 36000000;
+	output Real ObjInv = inv_scaler*inv_cost_per_second;
+
+	/// Electricity ///
+	output Real TotalPower = P_Net_enerHub + P_Net_Houses;
+
+	output Real tariff_scaler = 36000000;
+	output Real p_offtake = 5.555555555e-8 * tariff_scaler;
+	output Real p_inj = 1.38888888e-8 * tariff_scaler;
+	output Real b = 50; // transition parameter
+	output Real smoothPrice = p_inj + (p_offtake - p_inj) * 0.5 *(1 + TotalPower / (sqrt(TotalPower^2 + b^2)) );
+
+	output Real ObjIntElecCost = TotalPower*smoothPrice;
+
+	// Battery //
+	output Real weight_bat = 100000;
+	output Real ObjBatMax = weight_bat*max(0, Bat_soc - Bat_SOCmax)^2;
+	output Real ObjBatMin = weight_bat*max(0, Bat_SOCmin - Bat_soc)^2;
+	output Real ObjIntBat = ObjBatMax + ObjBatMin;
+
+	// Supply temperature	
+	output Real TSupMax = 60;
+	output Real ObjIntTSupMax = 10000*max(0, Ttank - TSupMax)^2;
+	output Real TSupMin = 5;
+	output Real ObjIntTSupMin = 10000*max(0, TSupMin - Ttank)^2;
+
+	// Borefield temperature
+	output Real TBorMin_degC = enerHub.TBorMin - 273.15;
+	output Real TBorAvg = (TBorIn + TBorOut)/2;
+	output Real ObjIntTBorMin = 10000*max(0, TBorMin_degC - TBorAvg)^2;
+
+	// Borefield peak
+	output Real ObjIntBorPeak = 0.1*(max(0, QpExtOpt - QBorIn_L3)^2 + max(0, -QpInjOpt + QBorIn_L3)^2);
+	
+	// Borefield temperature
+	output Real termObj = 1000000*(sum(max(0, delTfInjOut[i]-7)^2 for i in 1:enerHub.GsHp.borefield.groTemResFin.nStepsYear) + sum(max(0, -10 - delTfExtOut[i])^2 for i in 1:enerHub.GsHp.borefield.groTemResFin.nStepsYear));
+
+	// Minimum floor heating temperature
+	output Real RH = sim.relHum*100;
+	parameter Real weight_fh = 100;
+	//real Tmin=17 (increased it a bit and lowered the weighting factor)
+	output Real TFloHea_min = 17.5; 
+    output Real ObjIntFloHeaMin1 = weight_fh*(max(0, TFloHea_min - house1_TFloHea1)^2 + max(0, TFloHea_min - house1_TFloHea2)^2);
+    output Real ObjIntFloHeaMin2 = weight_fh*(max(0, TFloHea_min - house2_TFloHea1)^2 + max(0, TFloHea_min - house2_TFloHea2)^2);
+    output Real ObjIntFloHeaMin3 = weight_fh*(max(0, TFloHea_min - house3_TFloHea1)^2 + max(0, TFloHea_min - house3_TFloHea2)^2);
+    output Real ObjIntFloHeaMinOff1 = weight_fh*(max(0, TFloHea_min - office1_TFloHea1)^2 + max(0, TFloHea_min - office1_TFloHea2)^2);
+    output Real ObjIntFloHeaMinOff2 = weight_fh*(max(0, TFloHea_min - office2_TFloHea1)^2 + max(0, TFloHea_min - office2_TFloHea2)^2);
+    output Real ObjIntFloHeaMinOff3 = weight_fh*(max(0, TFloHea_min - office3_TFloHea1)^2 + max(0, TFloHea_min - office3_TFloHea2)^2);
+    output Real ObjIntFloHeaMin = ObjIntFloHeaMin1 + ObjIntFloHeaMin2 + ObjIntFloHeaMin3 + ObjIntFloHeaMinOff1 + ObjIntFloHeaMinOff2 + ObjIntFloHeaMinOff3;
+
+
+	// Comfort
+	output Real weight_hea = 10000;
+	output Real weight_coo = 10000;
+	output Real ObjIntComfSHea=weight_hea*(house1_DiscmfHeaDay^2 + house1_DiscmfHeaNig^2 +
+											house2_DiscmfHeaDay^2 + house2_DiscmfHeaNig^2 +
+											house3_DiscmfHeaDay^2 + house3_DiscmfHeaNig^2 +
+											office1_DiscmfHeaNor^2 + office1_DiscmfHeaSou^2 +
+											office2_DiscmfHeaNor^2 + office2_DiscmfHeaSou^2 +
+											office3_DiscmfHeaNor^2 + office3_DiscmfHeaSou^2);
+	output Real ObjIntComfSCoo=weight_coo*(house1_DiscmfCooDay^2 + house1_DiscmfCooNig^2 +
+											house2_DiscmfCooDay^2 + house2_DiscmfCooNig^2 +
+											house3_DiscmfCooDay^2 + house3_DiscmfCooNig^2 +
+											office1_DiscmfCooNor^2 + office1_DiscmfCooSou^2 +
+											office2_DiscmfCooNor^2 + office2_DiscmfCooSou^2 +
+											office3_DiscmfCooNor^2 + office3_DiscmfCooSou^2);
+
+	/// Overall objective ///
+	output Real ObjInt = ObjInv + ObjIntElecCost + ObjIntComfSCoo + ObjIntComfSHea + ObjIntBat + ObjIntTSupMax + ObjIntTSupMin + ObjIntTBorMin + ObjIntFloHeaMin + ObjIntBorPeak;
+
+	
+
+	///////////////////////////////////
+	// Borefield Constants //
+	///////////////////////////////////
+	parameter Real Kappa_agg_Constants[19, 7] = [
+		0.0, -1.946833400412922e-11, 1.5292067138194898e-08, -3.98809085434825e-06, 0.05382404318870595, 2.937669821982958, 0.8486453170247993;
+		0.0, 3.5610775761143996e-09, -2.621100089096167e-06, 0.0006184866970511412, 2.2403849819201693, 287.61566417011437, -122.95370996003751;
+		0.0, -1.6510156190450038e-11, 1.0021532701543645e-08, -1.8283455752695646e-06, 0.015825053785177366, 2.184367420013265, 0.8666856925423692;
+		0.0, 1.6190288770094295e-12, 4.690269999508067e-10, -3.364494754880874e-07, 0.023887706348760224, 3.3865512676390415, 1.1936002342020893;
+		0.0, 4.4158938874770607e-13, -1.6993776619375985e-10, -1.2091900203242566e-09, 0.006160429929926468, 0.8719891581948536, 0.394070919277543;
+		0.0, -5.274762893501829e-12, 3.9611395440722365e-09, -1.44453325139941e-06, 0.17185700633931641, 24.12862496688641, 15.743831387417174;
+		0.0, -1.8853245542192296e-11, 1.3358817662305554e-08, -3.6515177618045518e-06, 0.173707395235023, 24.20085729421079, 23.60957095587868;
+		0.0, -2.7102028656722735e-11, 1.9706376214197194e-08, -5.287485012759448e-06, 0.11667360944999348, 16.10717588282475, 24.55515730739265;
+		0.0, -9.199948235403055e-11, 6.782343293860975e-08, -1.833461884619282e-05, 0.19216075369729582, 25.584603596597116, 63.52117067210616;
+		0.0, -1.155662774021649e-10, 8.702302503333467e-08, -2.4189225087398473e-05, 0.13633155477584266, 14.9971631587466, 61.505795413932724;
+		0.0, -6.996154306389929e-10, 5.444888130564124e-07, -0.00015876544106513713, 0.5535754766719791, 42.022400276709206, 282.7807219496172;
+		0.0, -4.202679251008248e-10, 3.3529868249773337e-07, -0.00010206189259039591, 0.22137184988941883, 11.647910305845462, 131.54921273316717;
+		0.0, -4.730350907020049e-09, 3.700922760573878e-06, -0.0011091424558292487, 1.2258754221525423, 47.86072491415218, 986.5531493784981;
+		0.0, -3.2204334069488124e-08, 2.491698990973976e-05, -0.007282955460542929, 3.3236221437758995, 90.77248659258755, 4167.090987028946;
+		0.0, -1.9118981969514184e-08, 1.5393061949032743e-05, -0.0046696870687312035, 0.9187740696718338, 9.091338152112627, 1925.2671845984496;
+		0.0, -1.3104996116332285e-08, 1.2283847116165994e-05, -0.004398641951848197, 0.5872532226601975, -5.756757384543382, 1961.1913532165859;
+		0.0, 1.2638646804905718e-08, -9.389375835908791e-06, 0.0026082728701388113, -0.08021137640437198, 9.020252151654674, -258.41318150502485;
+		0.0, 1.9782595651541597e-08, -1.5000839426455516e-05, 0.004196298329088465, -0.10782197366535062, 14.502886850946972, 132.50509460648607;
+		0.0, 9.944766775665601e-10, -7.490759328739977e-07, 0.00019846300427825306, -0.0049216708296242655, 1.2401234712680729, 112.84596671884361
+	];
+	parameter Real Gamma_Constants[7] = {0.0, -8.54450540725992e-09, 6.399318571476563e-06, 0.000550577935341908, 0.13354245727831415, 13.61612168224662, -72.28164041238112};
+	parameter Real Xi_Ext_Constants[7] = {0.0, -1.2781447415207392e-08, 9.533942471943987e-06, 0.000939726376369907, 1.139872290487261, 20.86412788812501, -22.488761202089545};
+	parameter Real Xi_Inj_Constants[7] = {0.0, -1.2781447415207392e-08, 9.533942471943987e-06, 0.000939726376369907, 1.139872290487261, 20.86412788812501, -22.488761202089545};
+	parameter Real Kappa_L3_Constants[480, 7] = [
+		0.0, -4.150069498815723e-11, 3.074398153490553e-08, -8.355598638004917e-06, 0.4277243876185576, 5.29397009582137, 4.17200836070167;
+		0.0, -2.7875572428074506e-10, 2.1329777770801106e-07, -6.066125590659481e-05, 0.26449486267744715, 24.34850360026917, 128.74165384297217;
+		0.0, -1.2694014261208127e-11, 9.965826574559548e-09, -2.943925200173111e-06, 0.008976278819990764, 1.03605005720556, 8.013643935742637;
+		0.0, -4.041771886433173e-11, 3.217395808556484e-08, -9.726278923921758e-06, 0.02347651414396193, 3.17765135721509, 31.779936659841812;
+		0.0, -4.097093912428904e-10, 3.273386120773312e-07, -9.993750622631804e-05, 0.19865305471970157, 30.70085309520892, 375.3649600061245;
+		0.0, -2.4335788942365145e-10, 1.9376747091013084e-07, -5.914979241275347e-05, 0.0985552010382392, 17.061852556977232, 246.7011630030297;
+		0.0, -4.3286197727848746e-10, 3.427123334661565e-07, -0.00010412384891188735, 0.14614702694531953, 27.863385233411876, 468.1932185711324;
+		0.0, -4.472360059463853e-11, 3.515734809415963e-08, -1.05993960794461e-05, 0.0127628794931318, 2.649829235093182, 50.75415362176565;
+		0.0, -4.139806963659804e-11, 3.236770127944346e-08, -9.689971025231081e-06, 0.010008539863977354, 2.2333546535004043, 48.540142226975206;
+		0.0, -4.9585553973321195e-11, 3.857375137469872e-08, -1.1465588066765495e-05, 0.01041496656787623, 2.4794691567202625, 60.02912176267562;
+		0.0, -6.372375588660913e-12, 4.941605128487427e-09, -1.461069361492755e-06, 0.0011538208368314304, 0.2896151077640821, 7.881553766243588;
+		0.0, -5.394962052018189e-11, 4.174915339206188e-08, -1.2292316334081002e-05, 0.0086835193934084, 2.2878021431287685, 68.63943919963852;
+		0.0, -4.2691034169339497e-11, 3.298875218746312e-08, -9.68006893640737e-06, 0.006156304176456651, 1.6901355993079032, 55.73864480845643;
+		0.0, -7.814698282955293e-10, 6.036076596969665e-07, -0.00017673154730472876, 0.10012018785167975, 28.362401831968747, 1040.8947999060579;
+		0.0, -9.120021672189002e-09, 7.046392920010161e-06, -0.0020607246495375833, 1.0617834493278833, 309.4448372376918, 12467.242973100814;
+		0.0, -2.5675242736021493e-10, 1.9849799285660834e-07, -5.8018925375457264e-05, 0.027815903739363355, 8.332442853047478, 362.10324390246586;
+		0.0, -3.3740357760370046e-11, 2.611143436047888e-08, -7.631069560211564e-06, 0.0033452732651657133, 1.0181458250210018, 48.69359722831281;
+		0.0, -3.461879280297163e-10, 2.683182672885363e-07, -7.84599138037981e-05, 0.03147977028769669, 9.667483975581511, 511.21764871214833;
+		0.0, -7.925449881827224e-11, 6.153663966429609e-08, -1.8013242049678988e-05, 0.0067051173709563, 2.073699017024866, 120.16559136099904;
+		0.0, -1.1410293129729948e-09, 8.875508446102919e-07, -0.0002601460177652734, 0.09131011633726185, 28.468357265706537, 1782.096965589038;
+		0.0, -1.0182199229162131e-09, 7.934554145185647e-07, -0.0002328952536439547, 0.07776110181977135, 24.418642279109424, 1639.0649661280193;
+		0.0, -3.5831918326574517e-10, 2.7989379364044627e-07, -8.231694624426797e-05, 0.025611218980119057, 7.9549745833445415, 590.9559014832707;
+		0.0, -6.437802205621116e-11, 5.041950850194825e-08, -1.4863014217211208e-05, 0.004328161450077868, 1.3225047779197658, 108.91304155720772;
+		0.0, -1.4080437132724774e-10, 1.1057076440680063e-07, -3.267698671175679e-05, 0.008978934704371973, 2.693030566904764, 244.75718627293247;
+		0.0, -6.154570067159442e-10, 4.84565771139316e-07, -0.00014356899289051455, 0.037571181438317586, 11.065458972245667, 1100.7172683494307;
+		0.0, -8.35647630336977e-10, 6.594955989857759e-07, -0.00019586790990699186, 0.0493256486586275, 14.320638458926439, 1539.0958738808054;
+		0.0, -6.381551295565744e-11, 5.047482931213412e-08, -1.5025007956860754e-05, 0.003665526070710223, 1.0513100112889295, 121.03461078501508;
+		0.0, -4.9798591366722356e-11, 3.951179099963729e-08, -1.179925890153507e-05, 0.0027407426874401157, 0.7545610163145563, 97.03081356595524;
+		0.0, 0.0, 6.850270510195834e-08, -4.2373243663833985e-05, 0.02421124021332438, 10.979175246254087, 850.4375788485881;
+		0.0, -1.531446968235816e-09, 1.2234670853259624e-06, -0.0003679942295655561, 0.0779266379297355, 19.23043683877345, 3156.870320881981;
+		0.0, -7.682577058614864e-08, 6.15864960930185e-05, -0.018592054514509498, 3.7868941362364437, 878.8622218616895, 163081.05972022357;
+		0.0, -1.6453453408165999e-10, 1.323329403438518e-07, -4.009233765567148e-05, 0.007897298988255306, 1.7215214229008027, 359.7711643184411;
+		0.0, -3.4382945728364233e-10, 2.773838480878187e-07, -8.431953695415997e-05, 0.016154668371553882, 3.3162388700155194, 774.3120521054939;
+		0.0, -3.921907474079159e-11, 3.172516920689368e-08, -9.67266764483647e-06, 0.0018133763023404073, 0.35323168425129325, 90.90440949364611;
+		0.0, -7.590993688658211e-11, 6.156121160683917e-08, -1.8822517068883434e-05, 0.00346274361522483, 0.6404781403719039, 180.96672821477603;
+		0.0, -1.7659965478618348e-10, 1.4378999083213815e-07, -4.415566995723015e-05, 0.00787124439639322, 1.2951803965356723, 433.91099257385883;
+		0.0, -1.4121133842300041e-09, 1.1547605958523216e-06, -0.0003562946671702191, 0.06156923280488217, 8.734624700563511, 3580.631274039965;
+		0.0, -1.6832543216763531e-10, 1.3825842111721299e-07, -4.2866299884129925e-05, 0.00720097347276351, 0.8560351125772918, 440.8218294171815;
+		0.0, -1.1601978667531998e-10, 9.572046476276266e-08, -2.9823284214315313e-05, 0.004884456114199083, 0.46887406837717494, 313.97976141866377;
+		0.0, -2.0072071632139744e-10, 1.6633226011135947e-07, -5.2076018750628357e-05, 0.008340081837836688, 0.6142925633014424, 561.4447792929607;
+		0.0, -3.805307291679116e-13, 3.119210919250463e-10, -9.640897847733554e-08, 1.4076766142618624e-05, 0.0, 1;
+		0.0, -2.462595148149389e-10, 2.057747894232333e-07, -6.502198719898769e-05, 0.010046159111327634, 0.32633514588479373, 735.1115303039916;
+		0.0, -8.876080250839303e-10, 7.444534726038392e-07, -0.00023621481782147474, 0.03600432915692681, 0.5257150691983107, 2733.212382615994;
+		0.0, -4.02909652542628e-09, 3.3903841368112427e-06, -0.0010797274517931929, 0.16281543961635594, -0.14135030442882238, 12776.738378155049;
+		0.0, -3.060341100556033e-10, 2.58239868228727e-07, -8.250047077062657e-05, 0.012340799722571728, -0.16807119355863542, 997.4758357736646;
+		0.0, -2.78801451950983e-13, 2.3910283442276033e-10, -7.77387643231641e-08, 1.1990002583956748e-05, 0.0, 1;
+		0.0, -2.1988152061224876e-10, 1.8740341106629521e-07, -6.0530321821922306e-05, 0.008794602966433626, -0.5479184048230135, 768.1720837109544;
+		0.0, -1.1550862750520125e-09, 9.901197578352177e-07, -0.0003218106810940457, 0.04610439582001177, -4.117689847663574, 4190.172005475384;
+		0.0, -2.1322108008284565e-13, 1.9276554789123003e-10, -6.609698974875913e-08, 1.073275234322066e-05, 0.0, 1;
+		0.0, -6.1046830720206205e-09, 5.294036570009997e-06, -0.001742666469807107, 0.24396226891503367, -34.574582032977105, 23909.00032731922;
+		0.0, -1.7688051012447745e-13, 1.6690612332897403e-10, -5.952761663509151e-08, 1.000975691515665e-05, 0.0, 1;
+		0.0, -2.1689140201542996e-09, 1.902655494040982e-06, -0.0006342033578583652, 0.08729403299767045, -16.635451860813383, 9170.135527730064;
+		0.0, -2.9027657990409613e-10, 2.5605151868836316e-07, -8.58627068926941e-05, 0.011742626971945915, -2.5036516252579144, 1273.9640186370439;
+		0.0, -3.643216076984211e-10, 3.230658627778014e-07, -0.0001089582198981945, 0.014823854453800528, -3.47459366973618, 1657.9747952216649;
+		0.0, -8.55113560685876e-11, 7.620362103097806e-08, -2.5839187709265572e-05, 0.0035010002728320397, -0.8891637655696633, 402.9168867069315;
+		0.0, -1.494742561979843e-10, 1.3380852887035617e-07, -4.55960954093678e-05, 0.006158534579240218, -1.673795916081132, 727.853075150062;
+		0.0, -3.835044151628865e-09, 3.4468927372273883e-06, -0.0011796989271457626, 0.1589634720863408, -45.743352763766296, 19253.14515617027;
+		0.0, -8.947481324797554e-12, 8.069486223651389e-09, -2.772175553063139e-06, 0.0003729508025036618, -0.11250285235943502, 46.18909205960309;
+		0.0, -2.2675807303100091e-10, 2.052695207039504e-07, -7.080479118545234e-05, 0.009510375778523806, -3.009522668198819, 1204.8136798639173;
+		0.0, -2.6922663530506014e-10, 2.4537019564676095e-07, -8.525242651575397e-05, 0.011417559757641608, -3.886202381083935, 1490.8331118563167;
+		0.0, -1.7820058603446909e-10, 1.6357393150527812e-07, -5.726715410391831e-05, 0.007652516087433319, -2.790081954314383, 1030.0155338352954;
+		0.0, -1.2120573448151284e-09, 1.1206192485559868e-06, -0.00039534769917225513, 0.052755644743695325, -20.477890849766524, 7314.81863159243;
+		0.0, 1.5466713746583776e-10, -1.0642044842959069e-07, 2.6900805620159396e-05, -0.001086402825317327, 3.1579531390417612, -155.6716164464087;
+		0.0, -2.4085352580137717e-10, 2.259262805645657e-07, -8.093669320467603e-05, 0.010793607489678942, -4.6749739148617975, 1584.7389042369452;
+		0.0, -2.6640231332284587e-10, 2.5168832423103216e-07, -9.085122173152065e-05, 0.012123348633974268, -5.509293192621417, 1829.529702695144;
+		0.0, -1.9506008564863372e-10, 1.855930143978079e-07, -6.749425971892235e-05, 0.009016963050745804, -4.282127961988401, 1397.4682907918627;
+		0.0, 8.526447000320433e-10, -5.93222627074366e-07, 0.00015204697997179208, -0.005993405803178546, 19.707318110620346, -937.2637491645419;
+		0.0, -7.34155481895225e-11, 7.08086633865551e-08, -2.6122176496207418e-05, 0.003501899366171877, -1.7975812609025583, 570.8954953171118;
+		0.0, 1.1339063087938413e-10, -7.925043273208089e-08, 2.0428410738493e-05, -0.0007965631845473298, 2.767589327493749, -129.5076369533797;
+		0.0, 3.123867519714065e-11, -2.1877604583774368e-08, 5.653800216178302e-06, -0.00021936048903055147, 0.7820133456096539, -36.31974526473445;
+		0.0, 2.6922877624491215e-11, -1.8890495129603768e-08, 4.8933735135705465e-06, -0.0001889739279425741, 0.6903609753335941, -31.837495516241535;
+		0.0, 5.493587616218853e-10, -3.8612230800688535e-07, 0.00010023774351757063, -0.0038543695392999, 14.41027019440698, -660.2156852900915;
+		0.0, 2.3527166589534173e-11, -1.656227037905169e-08, 4.308116039718846e-06, -0.00016500909048319782, 0.6304804809146258, -28.713164179837342;
+		0.0, 4.135454638410394e-10, -2.9153377585900406e-07, 7.59690889550376e-05, -0.0028995705992465237, 11.30643334867405, -512.1443921920295;
+		0.0, 3.1392085234031615e-10, -2.2158303925089327e-07, 5.783441114311048e-05, -0.0022006594709757456, 8.744424719837474, -394.22479739458424;
+		0.0, 1.3743490310594517e-10, -9.711808277258388e-08, 2.5384805387236123e-05, -0.0009634082891708416, 3.89513561075473, -174.89782932589387;
+		0.0, 3.7498738490841394e-10, -2.654048742283637e-07, 6.95095542590596e-05, -0.002626056120244015, 10.855809049510132, -484.02653770618383;
+		0.0, 3.5680240103010165e-10, -2.5302939525496376e-07, 6.642905851190799e-05, -0.0024939493100445214, 10.586170683204296, -467.41153054388474;
+		0.0, 4.855716195064128e-09, -3.449954258395957e-06, 0.0009078409916154673, -0.033872809766021604, 147.5638547613754, -6452.2271119454645;
+		0.0, 5.4341021400004296e-14, -3.342595862705786e-12, -1.4024451599259101e-08, 4.586539087663498e-06, 0.0, 1;
+		0.0, 1.4623210605224143e-10, -1.0426413438756512e-07, 2.7556547587762892e-05, -0.0010158628130277694, 4.6541365912098795, -199.60840123304925;
+		0.0, 5.2202417860872613e-11, -3.728206739253557e-08, 9.873615814744413e-06, -0.00036187335082134986, 1.6987888735915229, -72.16704438950823;
+		0.0, 1.008921941323964e-10, -7.216933187710223e-08, 1.9150343968863386e-05, -0.0006978980789931881, 3.35508023210667, -141.19242907690025;
+		0.0, 8.595990940072154e-10, -6.158095076961953e-07, 0.0001637119763777242, -0.00593336701790673, 29.19320585737167, -1217.1899691124645;
+		0.0, 6.909848552181139e-11, -4.957291609192236e-08, 1.3202372143573319e-05, -0.000475939573757038, 2.395177599929482, -98.95772428613964;
+		0.0, 1.3002862058457254e-10, -9.341396602377039e-08, 2.492054679060203e-05, -0.0008937484503004122, 4.597641956632382, -188.26132796025058;
+		0.0, 8.360853883169056e-14, -2.548090329328501e-11, -7.88439530190101e-09, 3.815963795948847e-06, 0.0, 1;
+		0.0, 2.5203100247332816e-10, -1.8152568142740257e-07, 4.8580135641828755e-05, -0.0017253609686381877, 9.256226622846677, -372.52989549424433;
+		0.0, 7.002950954753636e-12, -5.049883821576457e-09, 1.3534461795234856e-06, -4.7849048142576225e-05, 0.2618896656644035, -10.45329453956152;
+		0.0, 1.0816803142820968e-10, -7.808907732624132e-08, 2.0958392631236166e-05, -0.0007377175687789274, 4.116586588525894, -163.00389819001043;
+		0.0, 1.2448698419946617e-10, -8.996673402514142e-08, 2.4178409939037758e-05, -0.0008475193154511225, 4.818444784640528, -189.33095118050062;
+		0.0, 2.716230393335162e-08, -1.9650233847876125e-05, 0.005287650483717519, -0.18461439620933234, 1068.6561715328285, -41681.72224072078;
+		0.0, 8.896436154708355e-10, -6.442248897821171e-07, 0.0001735616758095176, -0.006037118578789071, 35.5565508154794, -1377.1136075686825;
+		0.0, 2.4261243683694283e-10, -1.7584593891361547e-07, 4.7428843672885155e-05, -0.0016439290183496995, 9.844443406381695, -378.74111674061635;
+		0.0, 8.989175611852043e-12, -6.521028547675152e-09, 1.7607376177348298e-06, -6.082680337740848e-05, 0.37009824469135144, -14.149573139915868;
+		0.0, 1.3120792119752334e-07, -9.526032912053567e-05, 0.025747390354659776, -0.8867202116682742, 5477.94398245923, -208209.31722774848;
+		0.0, 2.4771970182170912e-11, -1.799898361011074e-08, 4.869529489066861e-06, -0.00016722007744153744, 1.0481403761530674, -39.62344555900007;
+		0.0, 3.560921196738905e-09, -2.5891983143338e-06, 0.0007011294065299618, -0.024012869175792994, 152.6027333238088, -5740.520897480483;
+		0.0, 1.0226736154706715e-13, -4.172790813672061e-11, -2.5930855218669633e-09, 3.0209666850694793e-06, 0.0, 1;
+		0.0, 4.596560106751378e-10, -3.347449397092974e-07, 9.081975729781288e-05, -0.003090144700365804, 20.237136150670175, -751.6779544082225;
+		0.0, 1.5902518266669304e-09, -1.1592109519349675e-06, 0.00031486642261993234, -0.01066113728567611, 71.14278650855651, -2615.722649937422;
+		0.0, 2.7180406163104556e-10, -1.9831419368265892e-07, 5.392591756882224e-05, -0.001817202145386416, 12.352232065294592, -449.55830602560155;
+		0.0, 3.888242820085395e-10, -2.8394800625232504e-07, 7.729393449785428e-05, -0.0025925754737918636, 17.945007138340202, -646.5028079883868;
+		0.0, 3.0970418394764816e-10, -2.2636375747253702e-07, 6.168220675095073e-05, -0.0020595820677465153, 14.511585585921825, -517.5333133216526;
+		0.0, 1.9852881500414945e-10, -1.4522623982527582e-07, 3.961218405473999e-05, -0.0013168470795031214, 9.441619543156355, -333.3357158365826;
+		0.0, 2.6357013646029732e-09, -1.929599998184595e-06, 0.0005268252238846156, -0.017438746182235558, 127.18989978466006, -4445.489235329066;
+		0.0, 2.5135313303041852e-11, -1.8415913993690415e-08, 5.0326142367579194e-06, -0.00016589740346434204, 1.2304199267012277, -42.577103416925404;
+		0.0, 4.044526765804253e-12, -2.965537655792048e-09, 8.111311768190973e-07, -2.6631121871710155e-05, 0.20078420352079016, -6.879186643570822;
+		0.0, 2.6698246266440804e-10, -1.9590006655162526e-07, 5.3628585608021685e-05, -0.0017538883333506952, 13.437498244927411, -455.87356039563633;
+		0.0, 2.529641387850807e-09, -1.8574487039969647e-06, 0.0005089090720667937, -0.016580867434973758, 129.04782761356856, -4335.444971626434;
+		0.0, 5.4995486278481393e-11, -4.040930080871836e-08, 1.1080374201824604e-05, -0.000359696483273681, 2.8428770581346208, -94.5891832877723;
+		0.0, 1.1340526492988012e-10, -8.338248529667948e-08, 2.2881601946530947e-05, -0.000740175839228669, 5.9386526894903096, -195.71321394212472;
+		0.0, 6.574857767671555e-11, -4.837341672371367e-08, 1.3284533619500314e-05, -0.00042826454144147686, 3.4869877249986105, -113.83746020310161;
+		0.0, 1.2894561571801277e-09, -9.492872318761193e-07, 0.00026088863258331665, -0.008382758191954559, 69.24152336791221, -2239.5592145052665;
+		0.0, 5.436616482081198e-11, -4.004818908737564e-08, 1.1014102665513387e-05, -0.00035277174283014135, 2.9551044547959626, -94.7096740280738;
+		0.0, 1.9030924437748086e-10, -1.402717092217208e-07, 3.860435957056238e-05, -0.0012326462597969145, 10.46832701934431, -332.5017648262612;
+		0.0, 2.0366654265148894e-10, -1.502032437979347e-07, 4.1365430994453805e-05, -0.001316859185562702, 11.334458694358615, -356.85185138276904;
+		0.0, 1.073874440552274e-10, -7.92421749410472e-08, 2.183731033699414e-05, -0.0006931708362633222, 6.044910393967517, -188.68117516354246;
+		0.0, 1.3588114637626543e-11, -1.0032281388277385e-08, 2.7664331778580946e-06, -8.756646912949944e-05, 0.7734704964453579, -23.939837993297328;
+		0.0, 2.929832231378478e-11, -2.164291106574016e-08, 5.9718329689282e-06, -0.00018851079130721734, 1.6860463858834582, -51.758175254101765;
+		0.0, 3.4791479237017273e-12, -2.5714225983688327e-09, 7.099557325269185e-07, -2.235127636016819e-05, 0.20236572931368585, -6.162796621724903;
+		0.0, 1.327808107504724e-10, -9.818818446972271e-08, 2.712550689452644e-05, -0.0008517661478225219, 7.8042836309289765, -235.83681111817756;
+		0.0, 5.475574689910704e-10, -4.0511005721317437e-07, 0.00011198192790996127, -0.003507421515895089, 32.51308926404004, -975.1851724165073;
+		0.0, 1.5785017579779932e-10, -1.1684345250147882e-07, 3.231705149142509e-05, -0.0010097012901677759, 9.466792900881925, -281.90458069191004;
+		0.0, 1.0149493073995583e-10, -7.516515720628974e-08, 2.0801419338230507e-05, -0.0006483301996761768, 6.146538328560696, -181.77209825971565;
+		0.0, 1.748670342673277e-10, -1.295658111492738e-07, 3.587674893140789e-05, -0.0011155194944836684, 10.69110881260283, -314.0880527561264;
+		0.0, 5.401760591138773e-10, -4.004292319490115e-07, 0.00011094108692645615, -0.0034413892134743653, 33.33339205101869, -973.1561261812956;
+		0.0, 5.9544941322139e-12, -4.416125320831339e-09, 1.2241941100575962e-06, -3.788642720342927e-05, 0.37078312909432115, -10.76088073375741;
+		0.0, 9.482992090946297e-11, -7.036301825388934e-08, 1.9515951257984897e-05, -0.0006025501753564522, 5.958177836593207, -171.86803163825704;
+		0.0, 4.811078270010736e-11, -3.5712663424202165e-08, 9.90961014986464e-06, -0.0003050194298430374, 3.053318354316561, -87.12860738993223;
+		0.0, 4.276927086323692e-10, -3.1760098739600936e-07, 8.816309409467338e-05, -0.002705111500686298, 27.421561571137484, -773.1065577990082;
+		0.0, 2.8836883512047082e-11, -2.1422135585634214e-08, 5.948822151423099e-06, -0.00018196836683649644, 1.8675699055186294, -52.01757150840686;
+		0.0, 6.063064359174367e-12, -4.505734807991774e-09, 1.2516706955079304e-06, -3.8173380182960677e-05, 0.39657677901629257, -10.9117940842197;
+		0.0, 1.3273283772794175e-13, -6.999042228309509e-11, 7.167289466791178e-09, 1.475493105529565e-06, 0.0, 1;
+		0.0, 2.7292163398544946e-11, -2.0296180744481672e-08, 5.641983515515988e-06, -0.00017109190113974099, 1.8201392995518784, -48.86325264986169;
+		0.0, 1.704859651662657e-10, -1.2682635400522568e-07, 3.526668331198293e-05, -0.001066553686367987, 11.478420986533687, -304.35309849933213;
+		0.0, 6.971287500553077e-10, -5.187692115688248e-07, 0.00014429841677296182, -0.004352483984321809, 47.37785942784642, -1240.7029352262475;
+		0.0, 8.782327054666309e-10, -6.537433000314347e-07, 0.0001818954988791481, -0.005472569205764105, 60.23987721612768, -1557.9549842874462;
+		0.0, 2.902475914610474e-09, -2.1612207504717637e-06, 0.0006015013688043119, -0.018052388561954368, 200.9089222880809, -5131.362199325469;
+		0.0, 2.431410833886439e-10, -1.8110000185449777e-07, 5.0416726626873105e-05, -0.0015095077569010375, 16.982058119951517, -428.32513178822546;
+		0.0, 6.073189696127109e-12, -4.52484434415573e-09, 1.260012621018204e-06, -3.763837413156637e-05, 0.4279535747135452, -10.659085396880226;
+		0.0, 5.0862456175206485e-11, -3.7906023845778756e-08, 1.0558235723183561e-05, -0.0003146833273502081, 3.615535598946392, -88.92614946500858;
+		0.0, 9.344085158760742e-12, -6.965775784554287e-09, 1.9407146355615055e-06, -5.771649545853819e-05, 0.6699715159200409, -16.272090168581247;
+		0.0, 1.8568237569253233e-09, -1.3845965350328218e-06, 0.00038585325155598597, -0.011451018992329863, 134.27171505223413, -3220.341645920474;
+		0.0, 1.8446609567983722e-10, -1.375901489812767e-07, 3.835227594907992e-05, -0.0011358547790815492, 13.451667120252363, -318.58696111954254;
+		0.0, 1.3531793456931263e-10, -1.0095853682513248e-07, 2.81481750920269e-05, -0.0008319851179060502, 9.949772472854317, -232.70576818744382;
+		0.0, 8.586190715245875e-12, -6.407729062865675e-09, 1.786955500413427e-06, -5.271505307618459e-05, 0.6365177284646226, -14.701394024049902;
+		0.0, 2.865678688456131e-11, -2.1391754216260334e-08, 5.967025403151212e-06, -0.00017569291891407713, 2.1416329131621517, -48.849873030608045;
+		0.0, 3.368493948836324e-10, -2.5151831003694655e-07, 7.017506751984488e-05, -0.0020623965082771016, 25.375662730842155, -571.6453728763321;
+		0.0, 1.1245921952080653e-11, -8.39931355695439e-09, 2.3440080137477307e-06, -6.876327523396358e-05, 0.8538836362551566, -18.998711588248213;
+		0.0, 4.018849871861544e-11, -3.002380519435016e-08, 8.380769797395822e-06, -0.00024541573784035595, 3.0752954424795047, -67.58635470611686;
+		0.0, 2.6591845066555e-10, -1.9871390778443723e-07, 5.548180022080808e-05, -0.0016218115767450403, 20.505751344176527, -445.17421484477313;
+		0.0, 1.6926455524398139e-10, -1.2652099177907255e-07, 3.5333823630763725e-05, -0.0010310499267512292, 13.152172101664206, -282.0817097536856;
+		0.0, 1.0611566290805048e-10, -7.934034397289824e-08, 2.2163074954315992e-05, -0.0006456001068482097, 8.307659698929118, -176.0459508197441;
+		0.0, 8.62042467288241e-11, -6.447076694912671e-08, 1.8013960728480503e-05, -0.0005238295556744953, 6.799241813940271, -142.37389939869288;
+		0.0, 5.1989316372938925e-09, -3.889285296256943e-06, 0.0010870003326027995, -0.0315542508180004, 413.09030726713723, -8548.635779190196;
+		0.0, 7.151131756696157e-11, -5.351236471605688e-08, 1.4959977080900821e-05, -0.00043351489559035976, 5.723639950791762, -117.0770142533429;
+		0.0, 3.8960888901732066e-12, -2.9163148113146757e-09, 8.155150654337419e-07, -2.359091829089507e-05, 0.3140957633237357, -6.351575053774922;
+		0.0, 8.548535204945275e-09, -6.400682314356537e-06, 0.0017903956935043843, -0.05170041304718277, 694.1145550996517, -13878.758732464796;
+		0.0, 7.853792438530498e-10, -5.882285718048194e-07, 0.00016458823563401522, -0.00474422852416918, 64.22392331639793, -1270.00002322682;
+		0.0, 0.0, -9.326135391241251e-09, 5.143219514597598e-06, -0.00020633067799750304, 2.9297723633639023, -120.72807280872638;
+		0.0, 2.5212191877144532e-11, -1.889523117763542e-08, 5.2903070815827194e-06, -0.00015193246405483863, 2.0907635073290107, -40.4651741066795;
+		0.0, 5.340641403615367e-10, -4.0038555627283193e-07, 0.00011213831188449226, -0.003214399631970999, 44.595316448871884, -854.2102034540974;
+		0.0, 1.6521934310023626e-10, -1.239063684954165e-07, 3.4715446349100925e-05, -0.000993172774331662, 13.891061173821814, -263.40946340866384;
+		0.0, 7.114325465664798e-11, -5.3372663928405e-08, 1.4959204945095427e-05, -0.000427114747707502, 6.022341073797605, -113.0869537224994;
+		0.0, 1.7357451799506728e-10, -1.302652250422688e-07, 3.65246498309216e-05, -0.0010407148945278549, 14.792932331558742, -275.1648745472639;
+		0.0, 1.598605036308319e-10, -1.2001799567646234e-07, 3.366508966522659e-05, -0.0009572136429832699, 13.715986884515807, -252.81804375557184;
+		0.0, 5.984714171657432e-13, -4.494574998174382e-10, 1.2611332035654177e-07, -3.5782695943184905e-06, 0.05168873313727315, -0.9423824664502736;
+		0.0, 9.967333900260948e-11, -7.486278377788264e-08, 2.1004850244886504e-05, -0.0005948556450723895, 8.66268845713427, -155.0146328173502;
+		0.0, 1.937880058075272e-10, -1.4556079491772095e-07, 4.083776369204398e-05, -0.0011544344002854623, 16.946389490776422, -297.3325854595599;
+		0.0, 6.816979476574054e-11, -5.120797744977004e-08, 1.4365330257293617e-05, -0.00040538159924868666, 5.997704099074822, -103.14212231121371;
+		0.0, 4.792857786771887e-11, -3.600527036233547e-08, 1.0099536082566972e-05, -0.0002845225834316155, 4.242261742735015, -71.47803066053173;
+		0.0, 1.0165134025743371e-09, -7.636749141928861e-07, 0.0002141896218822382, -0.006024292185718421, 90.50942909835467, -1493.5788229947623;
+		0.0, 7.412613108478811e-10, -5.569148597906225e-07, 0.00015618190362349916, -0.004385866579498154, 66.38936693318166, -1072.5644864706774;
+		0.0, 9.224079666913657e-12, -6.93044302265669e-09, 1.9433576059153243e-06, -5.4490260179549294e-05, 0.8309338181066512, -13.137423798845518;
+		0.0, 1.471038677358192e-10, -1.1053023589028421e-07, 3.098993742392823e-05, -0.0008676647093777678, 13.327666044546186, -206.12991673463947;
+		0.0, 8.725283753200454e-12, -6.556234435911726e-09, 1.8379783403454368e-06, -5.138776665995316e-05, 0.7950011758126627, -12.023171198859513;
+		0.0, 8.345953309718878e-11, -6.271446593140346e-08, 1.757917801460641e-05, -0.0004908265763158172, 7.647059819302087, -113.0384630457799;
+		0.0, 1.629567016642909e-11, -1.2245602438639507e-08, 3.4320609590792663e-06, -9.570092299911848e-05, 1.5013939055213605, -21.683064280592983;
+		0.0, 1.4181113157215205e-11, -1.0656972310550793e-08, 2.9864275076917212e-06, -8.316970359096856e-05, 1.3137445276629198, -18.528495444619104;
+		0.0, 3.4389825774280286e-11, -2.5844533580338437e-08, 7.241520059844779e-06, -0.00020142546423027112, 3.2031995109033655, -44.09822969371248;
+		0.0, 4.2904931360105993e-10, -3.224490117253413e-07, 9.033685777872301e-05, -0.002509802697361392, 40.17826260451536, -539.6815205893337;
+		0.0, 1.158000826398603e-10, -8.703178938333816e-08, 2.4379512114988672e-05, -0.0006765609921463024, 10.901850167059768, -142.80804866483354;
+		0.0, 6.258839836758827e-12, -4.704119782361637e-09, 1.317556399291985e-06, -3.652369350720186e-05, 0.5923400028348385, -7.563485243498432;
+		0.0, 2.864207380801663e-11, -2.1528065405126214e-08, 6.028933855877698e-06, -0.0001669492898324674, 2.7248790934700193, -33.898850863944176;
+		0.0, 5.3093515047442376e-11, -3.9907892257739124e-08, 1.1174812308218193e-05, -0.0003091267866964463, 5.077274267745843, -61.509064516434975;
+		0.0, 1.2044211788770506e-10, -9.053435404770554e-08, 2.534792183991883e-05, -0.0007004926690273808, 11.576993934753235, -136.50694675474642;
+		0.0, 3.9597988541540554e-11, -2.9766448602510785e-08, 8.333076540570577e-06, -0.0002300607516308146, 3.8256203439130663, -43.88199245833848;
+		0.0, 6.1198320895788464e-12, -4.60059169555507e-09, 1.2877860073681029e-06, -3.551947720951505e-05, 0.594242786943345, -6.627430342430449;
+		0.0, 4.43124946320838e-11, -3.331365197353488e-08, 9.324089785233441e-06, -0.00025693498833616714, 4.324457381477614, -46.867943152778345;
+		0.0, 2.987027220967819e-10, -2.2457370539753887e-07, 6.284926305220382e-05, -0.0017302852939975117, 29.296264415839687, -308.3768276548973;
+		0.0, 3.3891816144527926e-10, -2.548239785832054e-07, 7.130859884931907e-05, -0.001961396848446905, 33.405922127900574, -341.3316905118462;
+		0.0, 1.6531567085070415e-10, -1.2430466913183093e-07, 3.4781869663206186e-05, -0.000955842278491455, 16.375224114987123, -162.3222109032378;
+		0.0, 2.341784866395659e-11, -1.760965538947538e-08, 4.927017578783085e-06, -0.00013527866951856777, 2.331069345003635, -22.40442695834452;
+		0.0, 1.1051372120689741e-10, -8.310998256382807e-08, 2.3251899782736547e-05, -0.0006378463431108216, 11.054801480357257, -102.95895547970255;
+		0.0, 0.0, -2.773274843402323e-07, 0.00015687771673215635, -0.005948752713238363, 114.71060657780706, -4055.285619224816;
+		0.0, 3.0745612585417844e-10, -2.3125722004239188e-07, 6.469318797361738e-05, -0.001771478895933348, 31.0563757778654, -271.1189276437194;
+		0.0, 4.720995354294336e-09, -3.5513070939846233e-06, 0.0009934321366639775, -0.027178141254375416, 479.1927304393058, -4046.467154822279;
+		0.0, 1.60708397784975e-10, -1.2090360850614034e-07, 3.382061566939002e-05, -0.0009244021997352301, 16.39158164125249, -133.8070310197816;
+		0.0, 6.248389757520649e-12, -4.701307273396238e-09, 1.315100980678341e-06, -3.591109632564941e-05, 0.6404041620884063, -5.050564399121024;
+		0.0, 1.863823799216741e-10, -1.4025202819149644e-07, 3.923322614366459e-05, -0.0010702962025834855, 19.195248471432855, -146.1639394908161;
+		0.0, 1.9668715351073145e-10, -1.480261049298399e-07, 4.140895179077817e-05, -0.0011285307339175233, 20.354877959026357, -149.5587725781526;
+		0.0, 6.481931335609824e-12, -4.878981722227362e-09, 1.3649071540622753e-06, -3.7160230269296405e-05, 0.6740661013828386, -4.776164251726742;
+		0.0, 2.172250671626074e-11, -1.6353164620699173e-08, 4.575104457951433e-06, -0.00012442787592333257, 2.269952835116049, -15.501260593512983;
+		0.0, 2.4291406384144374e-11, -1.8290117209587948e-08, 5.117390900024746e-06, -0.0001390241100293225, 2.550779408140394, -16.778009517356363;
+		0.0, 2.5636945745463345e-11, -1.930666203036524e-08, 5.4023187856176986e-06, -0.00014659813597023898, 2.7052404774955288, -17.12941732342637;
+		0.0, 5.473804176190273e-12, -4.122992168763049e-09, 1.1538110263918174e-06, -3.1273004419997554e-05, 0.5804371417517418, -3.536054962907624;
+		0.0, 2.1402329897005324e-10, -1.6123980023300028e-07, 4.512865092727971e-05, -0.001221666014407767, 22.806683473825505, -133.60607359284705;
+		0.0, 2.00014498353987e-11, -1.507184155836686e-08, 4.219036482863018e-06, -0.00011406574087341668, 2.141939921766978, -12.060195675790574;
+		0.0, 5.119130947567163e-11, -3.8583431152134136e-08, 1.0802498398681786e-05, -0.0002916643163635701, 5.509325514596153, -29.801335452274746;
+		0.0, 7.054821606877552e-12, -5.318590375456414e-09, 1.4893814195996768e-06, -4.015646258303829e-05, 0.7630565885346288, -3.963742263499645;
+		0.0, 1.2740578122322375e-10, -9.607537713441896e-08, 2.691025097661481e-05, -0.0007244856835288625, 13.849770450664808, -69.06489530478638;
+		0.0, 9.915728028261999e-10, -7.479399091333172e-07, 0.00020954585086904623, -0.0056327955027958305, 108.33675766312038, -518.4872498946909;
+		0.0, 2.5224489294234866e-11, -1.9032270464950802e-08, 5.33360135559465e-06, -0.00014314206464883483, 2.770052364908249, -12.720923487819967;
+		0.0, 1.8609789679451362e-11, -1.4045687074654466e-08, 3.937329236733588e-06, -0.00010549154667720155, 2.054183042097333, -9.051087907483636;
+		0.0, 7.197025985686815e-11, -5.433695456183713e-08, 1.5236823375893577e-05, -0.0004075169141870245, 7.985495534166826, -33.76056209791254;
+		0.0, 7.496930270496347e-10, -5.662056325792473e-07, 0.00015882753820487013, -0.004240110334187317, 83.61882811077871, -339.2621803951477;
+		0.0, 3.228595490736384e-09, -2.4392501922997466e-06, 0.0006844873665063743, -0.018238519920235195, 362.0001978319254, -1408.049052381402;
+		0.0, 6.094569253692804e-12, -4.604767665858708e-09, 1.2919822758251325e-06, -3.4380786646815944e-05, 0.686032788540358, -2.446002631486102;
+		0.0, 8.877333540556089e-11, -6.706631375248013e-08, 1.8809829033177457e-05, -0.0005000661254497904, 10.02532410503774, -31.722184065071797;
+		0.0, 7.275328668134347e-10, -5.49579555530886e-07, 0.00015407802952077974, -0.004092450791736045, 82.42555413578202, -227.67676665767382;
+		0.0, 1.7665729882500664e-09, -1.3343338650537277e-06, 0.0003739406330372695, -0.00992343484012449, 200.77697828980465, -473.7347038709671;
+		0.0, 3.6353172891567438e-12, -2.7455496803258832e-09, 7.691197960190325e-07, -2.0393241296676297e-05, 0.41445581053258596, -0.8107632626234806;
+		0.0, 6.85852404225231e-11, -5.1792976675969586e-08, 1.4503096974425504e-05, -0.0003842393201692254, 7.843341146379722, -12.17595672908119;
+		0.0, 1.4694199754817584e-12, -1.1095290438616617e-09, 3.105650771576236e-07, -8.22163160349561e-06, 0.1685514669927417, -0.1935228643121416;
+		0.0, 4.673234264403429e-11, -3.528274813345974e-08, 9.871876894535533e-06, -0.0002611469884653428, 5.3765456005476935, -3.9984077982300548;
+		0.0, 1.2450507432176697e-09, -9.399046308245249e-07, 0.00026287183829762215, -0.006949034582694896, 143.6666229704241, -48.7147247785616;
+		0.0, 7.54673180596143e-11, -5.69648446995706e-08, 1.5925356740943156e-05, -0.00042070572048812365, 8.733596891909803, 0.5746057651702958;
+		0.0, 9.049648857273782e-12, -6.830158987820343e-09, 1.9086874940176257e-06, -5.0390302103900324e-05, 1.0503063262900036, 0.49432393415660575;
+		0.0, 2.0426090288539825e-10, -1.541471820355458e-07, 4.3058762630371384e-05, -0.001136083935178365, 23.77418050937821, 20.80956119223897;
+		0.0, 7.198959464437861e-10, -5.432146874727919e-07, 0.0001516769851105689, -0.003999617680896985, 84.02577124300862, 107.52618995195984;
+		0.0, 5.463141706302587e-09, -4.121885234243545e-06, 0.001150447171602952, -0.0303199061120404, 639.4322320617225, 1076.6238221201913;
+		0.0, 4.477316732445886e-12, -3.377717270429669e-09, 9.423610498002878e-07, -2.4822919855635588e-05, 0.525492991654263, 1.096847269772727;
+		0.0, 2.793916420998631e-11, -2.1075193968591288e-08, 5.877462647724992e-06, -0.0001547431313699903, 3.288127370698275, 8.18799123480507;
+		0.0, 3.510901140093673e-10, -2.6480740779867194e-07, 7.381995609472536e-05, -0.0019426386751107123, 41.43137640179447, 119.83343404319685;
+		0.0, 1.3173755523989263e-10, -9.93517129320422e-08, 2.768508074901414e-05, -0.0007282342364963275, 15.587860734236271, 51.34019399247533;
+		0.0, 3.4226781272552575e-10, -2.580993119892785e-07, 7.18928036977972e-05, -0.0018902837312551562, 40.606887539828065, 149.99969441448596;
+		0.0, 2.0736063693478463e-11, -1.5635199604041176e-08, 4.353436566061643e-06, -0.00011441930696092203, 2.4666621775018296, 10.09617320453212;
+		0.0, 3.3284671788382244e-11, -2.509451745249849e-08, 6.984571506324783e-06, -0.00018350180688292617, 3.9698125112729823, 17.82813643575427;
+		0.0, 7.951481502293429e-12, -5.994342446851922e-09, 1.6677732151954159e-06, -4.380045938302637e-05, 0.9508466903619186, 4.647104436343578;
+		0.0, 3.3103121715400717e-11, -2.495300450346735e-08, 6.939932789168666e-06, -0.00018219842328296728, 3.9688332311569967, 20.964172602779563;
+		0.0, 1.6252135056511022e-09, -1.2249726286726805e-06, 0.00034056386166842915, -0.008938024915321491, 195.3582490794372, 1108.724228233951;
+		0.0, 1.9578650676936587e-13, -1.4755794683409018e-10, 4.100884587641898e-08, -1.0759184631657835e-06, 0.02359545944600628, 0.1431442553897693;
+		0.0, 1.0041007950728219e-09, -7.566987335049559e-07, 0.00021022481383519383, -0.005513774189223716, 121.32359831967986, 783.2445622327432;
+		0.0, 9.229400425050817e-11, -6.954838258967595e-08, 1.9315120836695573e-05, -0.0005064412041227651, 11.180528523815788, 76.5072914223706;
+		0.0, 7.964231871791779e-11, -6.001054117126262e-08, 1.66606181012327e-05, -0.00043670889268075024, 9.672830401884836, 69.9115692361903;
+		0.0, 4.171346689741057e-11, -3.142913226812567e-08, 8.722742981670639e-06, -0.00022857310244370059, 5.079344104123242, 38.65298389096376;
+		0.0, 2.865403174542305e-09, -2.158821725533661e-06, 0.0005989612957363052, -0.015690719237755328, 349.8167343972753, 2794.820324005078;
+		0.0, 1.1673410749427585e-10, -8.794402280370906e-08, 2.4392368177337043e-05, -0.000638807583734903, 14.288241812113583, 119.53707292828327;
+		0.0, 2.1514611745871022e-10, -1.620773857041775e-07, 4.494076588269051e-05, -0.0011765971644357043, 26.402491010961935, 230.75258389976287;
+		0.0, 3.176284160715606e-10, -2.3927179006286565e-07, 6.632615943857195e-05, -0.001735967636344081, 39.081033953508694, 356.04018118564215;
+		0.0, 1.2925771618379392e-10, -9.736768870813864e-08, 2.698289784857513e-05, -0.0007060118409616317, 15.945724818609158, 151.12522985817347;
+		0.0, 1.387299037663693e-10, -1.045003897169764e-07, 2.895192530740956e-05, -0.0007572928964902425, 17.15956210715508, 168.86860170921662;
+		0.0, 5.041754528289611e-11, -3.7977142733022176e-08, 1.0518971299784966e-05, -0.0002750541021377248, 6.252796723527149, 63.784481997955425;
+		0.0, 2.6692980763183896e-11, -2.010637785933849e-08, 5.567780849697583e-06, -0.000145539152099219, 3.319367765054814, 35.04226810602067;
+		0.0, 1.2603892235296655e-10, -9.493825396391196e-08, 2.6284086869035654e-05, -0.0006868103645353589, 15.715885344004558, 171.44126282730628;
+		0.0, 1.7035336336857956e-11, -1.2831894749197942e-08, 3.5518302305675877e-06, -9.277584344908863e-05, 2.129963964757883, 23.97563055661376;
+		0.0, 1.2763430812885597e-09, -9.6142386353657e-07, 0.00026606801937404095, -0.006947134624847808, 160.02539830727724, 1856.2005950045943;
+		0.0, 1.782348887084738e-10, -1.3426151627232525e-07, 3.7149458442099786e-05, -0.0009695859266424602, 22.409263977824015, 267.5173702952232;
+		0.0, 1.592058063149537e-10, -1.199315097416034e-07, 3.3179097330226285e-05, -0.0008655831421345733, 20.073455507064928, 246.32678719741762;
+		0.0, 3.3830871141875236e-09, -2.5486334381095578e-06, 0.0007049791164653639, -0.018383127030346225, 427.7799739649433, 5389.880619884275;
+		0.0, 6.607644071835071e-11, -4.978117438260873e-08, 1.3768267475638246e-05, -0.00035884675182862167, 8.37944404866324, 108.28505045277306;
+		0.0, 8.732670059089768e-12, -6.579522704082443e-09, 1.8195400841429762e-06, -4.739848687085348e-05, 1.110695214264775, 14.705876684696426;
+		0.0, 1.1895408511889309e-11, -8.96314195838147e-09, 2.4784987741584486e-06, -6.452831406638788e-05, 1.5174899735966074, 20.565095722088245;
+		0.0, 1.283688850672554e-12, -9.673399940483227e-10, 2.674712784874764e-07, -6.959566666845235e-06, 0.16425756329075006, 2.2762623598860596;
+		0.0, 0.0, -5.089309184230171e-07, 0.00029648888692995567, -0.010461582951109091, 309.8359434594935, -7426.890099766572;
+		0.0, 7.105211702247356e-13, -5.355357765316191e-10, 1.480647627252785e-07, -3.8476328714278725e-06, 0.09148433211005794, 1.3220247291915581;
+		0.0, 5.021197876826165e-12, -3.785059794893094e-09, 1.0464829209208272e-06, -2.7174751224848337e-05, 0.6485812015242324, 9.55845777553127;
+		0.0, 4.5801466377797044e-11, -3.4530608340618194e-08, 9.54705090638645e-06, -0.00024772796234456915, 5.9353854170115445, 89.13333323941553;
+		0.0, 3.850969452502151e-11, -2.9037546176986352e-08, 8.028605351416413e-06, -0.00020816035052925033, 5.007005935540297, 76.55723960330452;
+		0.0, 1.2463387384206549e-11, -9.399327773287046e-09, 2.59897577319101e-06, -6.732731615417099e-05, 1.6259621176998167, 25.292499811612917;
+		0.0, 3.674468457728207e-11, -2.771609385689508e-08, 7.664306998530547e-06, -0.000198367773812003, 4.810206406752708, 76.06497043690631;
+		0.0, 7.2039255086455484e-09, -5.4348756519896565e-06, 0.0015030603203374266, -0.03886520196063141, 946.3746140831792, 15201.885868303705;
+		0.0, 3.737202923105991e-11, -2.820046296177568e-08, 7.800091796114358e-06, -0.00020148686196057834, 4.927154253845185, 80.33873935738953;
+		0.0, 6.782407483700634e-13, -5.119046231805384e-10, 1.416120727423825e-07, -3.654140087532105e-06, 0.08974726267541357, 1.4843329720898355;
+		0.0, 1.614059757305387e-11, -1.2185040496194654e-08, 3.3714541303600285e-06, -8.689895267137337e-05, 2.143769194314472, 35.93870145824804;
+		0.0, 7.741886457915644e-12, -5.84605926315064e-09, 1.6178723985079816e-06, -4.1651221634770925e-05, 1.0321935806196005, 17.527341325957373;
+		0.0, 8.88440625763251e-10, -6.710591866189552e-07, 0.00018575673288628985, -0.0047762508192132555, 118.91438631821968, 2043.9089965574142;
+		0.0, 9.372055220199932e-11, -7.080931761143879e-08, 1.9606003220464773e-05, -0.0005034575534197829, 12.594166414816515, 218.96461542854695;
+		0.0, 1.5065888072641868e-11, -1.1386252767372703e-08, 3.1536026989025217e-06, -8.086925872090965e-05, 2.0328071942033206, 35.726110946341805;
+		0.0, 1.7381598231640232e-12, -1.3140558623487767e-09, 3.6406616801369057e-07, -9.32245242738323e-06, 0.23550347995428905, 4.181024697609524;
+		0.0, 5.130215677644335e-10, -3.879766121821639e-07, 0.00010752899845939118, -0.0027492796840720597, 69.80557867961032, 1251.0750087988295;
+		0.0, 4.7761127502883996e-12, -3.6132518311248587e-09, 1.0018099704841505e-06, -2.557358084559581e-05, 0.6527062048080751, 11.801376546342134;
+		0.0, 4.0454527289396125e-11, -3.0613573549406744e-08, 8.490068774076484e-06, -0.00021641468641316075, 5.550046011439162, 101.50677272799012;
+		0.0, 6.455356956265302e-11, -4.8844816542537857e-08, 1.353973329661569e-05, -0.0003449378008490629, 8.868185196572286, 166.45857395352385;
+		0.0, 1.1607049465466964e-09, -8.781105637387885e-07, 0.00024327338719018956, -0.006194968387707178, 159.6134347290319, 3078.5462189105733;
+		0.0, 0.0, -5.66521648933917e-06, 0.0033231548350237707, -0.11529256778286034, 3765.207273525054, -80858.4296871077;
+		0.0, 0.0, -4.2972961702619236e-09, 2.521291654411689e-06, -8.739851194844508e-05, 2.8680800120215024, -60.95889280486593;
+		0.0, 6.446229536860996e-12, -4.874351751787243e-09, 1.348083500129343e-06, -3.4289679503307107e-05, 0.8889216607952302, 18.536854489780637;
+		0.0, 5.840016854185252e-11, -4.4152183001060445e-08, 1.2203990490592345e-05, -0.00031031471771677605, 8.060225715280508, 172.32362556375384;
+		0.0, 3.929308113592502e-11, -2.970166449486573e-08, 8.205018417796051e-06, -0.0002085660488906553, 5.427643891801832, 118.9082399238317;
+		0.0, 7.365419153758943e-10, -5.566580609697082e-07, 0.00015368652501318038, -0.00390546518525875, 101.82208566331107, 2284.7158175122236;
+		0.0, 0.0, -4.347068310553429e-08, 2.553090378372447e-05, -0.0008814527473430825, 29.617063513777804, -596.7221057703891;
+		0.0, 9.624039737903256e-11, -7.27110875556151e-08, 2.005136978287818e-05, -0.0005092776938342602, 13.324920960834287, 313.1989755646104;
+		0.0, 3.715014476256224e-11, -2.806272178659555e-08, 7.73430079556465e-06, -0.00019639567301720724, 5.147332408873719, 123.74498548679804;
+		0.0, 5.600235201413271e-10, -4.2296228915645537e-07, 0.00011650400833395249, -0.002957744649513016, 77.64830658642465, 1908.4453215811823;
+		0.0, 2.625764035455183e-10, -1.9827927388859607e-07, 5.45839157425947e-05, -0.001385485109530376, 36.43136479314283, 915.0488500019551;
+		0.0, 1.652118595567198e-09, -1.2473529082307722e-06, 0.00034318261289443766, -0.008709396659227046, 229.37485456210987, 5885.173320448591;
+		0.0, 1.0152484446076514e-11, -7.663853843723521e-09, 2.1073281426948062e-06, -5.347225113009528e-05, 1.4104341605326787, 36.952193992739126;
+		0.0, 1.9535763431668345e-09, -1.4744581145996929e-06, 0.0004051978356090441, -0.010280272363994087, 271.5680930057227, 7262.290057137076;
+		0.0, 1.9802121057111648e-10, -1.494312413254479e-07, 4.1041821151790535e-05, -0.0010411486368787398, 27.543582284412892, 751.5550267780236;
+		0.0, 4.1564927106242135e-09, -3.136064028038719e-06, 0.0008608384645839395, -0.021835518238780282, 578.481202079981, 16099.681768847762;
+		0.0, 5.1707955383328366e-11, -3.900713862402417e-08, 1.0701224513226635e-05, -0.00027141749063201644, 7.200569341249114, 204.3284563447549;
+		0.0, 2.3623567077295153e-10, -1.781811599601335e-07, 4.885456221843914e-05, -0.0012390206308303838, 32.915219860258446, 952.0117390860474;
+		0.0, 2.703982766372858e-10, -2.039156715477964e-07, 5.5879092329852285e-05, -0.001417091787179229, 37.69572557340396, 1110.8988840723248;
+		0.0, 7.1043506030539e-10, -5.356761699888333e-07, 0.0001467094347224352, -0.0037203836582971844, 99.0935119127082, 2974.549723537982;
+		0.0, 3.6174130763088244e-11, -2.727145299388348e-08, 7.464878453634102e-06, -0.00018929493478734354, 5.048334527964836, 154.30400999721263;
+		0.0, 2.826350911737335e-10, -2.1304411794348373e-07, 5.828337257916055e-05, -0.00147792585205946, 39.46412711759959, 1227.8552047886064;
+		0.0, 9.699545704829094e-12, -7.310200411658529e-09, 1.9987898609596946e-06, -5.0684084826099e-05, 1.355039968477496, 42.90200363315265;
+		0.0, 1.865907745389268e-10, -1.4060594764645115e-07, 3.842434637109013e-05, -0.0009743429439330567, 26.080370617341018, 840.0167888116687;
+		0.0, 2.7676667385327563e-10, -2.0852793100389375e-07, 5.6955325314581574e-05, -0.001444257367037171, 38.70433000182003, 1267.8059831652188;
+		0.0, 1.2576487826757264e-11, -9.474321427434412e-09, 2.586354620118362e-06, -6.558535363634658e-05, 1.7596546085424465, 58.60195628269494;
+		0.0, 3.3276756376754217e-09, -2.506510326669822e-06, 0.0006838833311971817, -0.017342535053850788, 465.83511996613765, 15768.228121461334;
+		0.0, 3.852256571273932e-10, -2.9012491586513255e-07, 7.911757468717629e-05, -0.0020064027566451506, 53.954942159902856, 1855.771574841286;
+		0.0, 3.071874785403953e-11, -2.31321644310189e-08, 6.304964556854187e-06, -0.00015989864605051452, 4.30473805953832, 150.40458087203118;
+		0.0, 1.0328738222492445e-11, -7.776867243627765e-09, 2.1186181544330256e-06, -5.3732098357848694e-05, 1.4481744841538342, 51.38500513694075;
+		0.0, 4.307555524053747e-10, -3.2429085727672644e-07, 8.830140846333781e-05, -0.00223959357745147, 60.428070758063065, 2176.895282897511;
+		0.0, 5.2183882098035945e-12, -3.928153974290207e-09, 1.0690791843746985e-06, -2.71164635650305e-05, 0.7324589916039411, 26.782347967460204;
+		0.0, 1.801427163599639e-10, -1.3558731103260905e-07, 3.688353120605043e-05, -0.0009355734487344903, 25.2992824967587, 938.6961702327415;
+		0.0, 3.5411421620905785e-11, -2.6650046629997783e-08, 7.246150115642152e-06, -0.00018381254271756023, 4.9760632245797085, 187.30109250945247;
+		0.0, 1.9952441419839814e-11, -1.501429704775023e-08, 4.080507725092789e-06, -0.00010351520091287375, 2.805412280007152, 107.09676037606131;
+		0.0, 7.785219413814942e-12, -5.857824802802973e-09, 1.5912909577059927e-06, -4.037020240058611e-05, 1.0953118899120236, 42.39659910328205;
+		0.0, 4.520665507128307e-12, -3.401157130769373e-09, 9.235239895731399e-07, -2.3430397756864074e-05, 0.6364208004177428, 24.971295568933424;
+		0.0, 3.0058358932485004e-10, -2.261261129304947e-07, 6.137406693916231e-05, -0.0015571656577964231, 42.34400837428546, 1683.7706685303187;
+		0.0, 3.312467830455633e-12, -2.4917284704575285e-09, 6.760086785144447e-07, -1.71521468148393e-05, 0.46695377240848235, 18.81266581545579;
+		0.0, 3.2524051751435006e-11, -2.4463566388576107e-08, 6.6342746133880295e-06, -0.0001683345517616186, 4.588109135063078, 187.23553112128977;
+		0.0, 5.162721357251444e-10, -3.8829558847388273e-07, 0.00010525994849629586, -0.002670873861118547, 72.8831113140147, 3011.9853571838444;
+		0.0, 6.506959689723833e-11, -4.8936532808749235e-08, 1.3260686640360562e-05, -0.00033648288309328034, 9.193030042814225, 384.63599978479783;
+		0.0, 1.0049717960866331e-10, -7.55758445806525e-08, 2.047166730794637e-05, -0.0005194607903893296, 14.20957019169486, 601.7718466045702;
+		0.0, 2.3174901646469647e-10, -1.7427051599793653e-07, 4.718858156874642e-05, -0.0011973865742314935, 32.794910907086226, 1405.4396381040276;
+		0.0, 2.4299432954069758e-12, -1.8271824982981541e-09, 4.945876883315375e-07, -1.2549703906455242e-05, 0.3441613134625774, 14.921696874016451;
+		0.0, 3.61968719553078e-11, -2.7216959171833655e-08, 7.364700946487122e-06, -0.00018686688619520944, 5.131345214649757, 225.0264882839597;
+		0.0, 0.0, -9.194564988708826e-07, 0.000543331072155856, -0.01836480805381978, 724.0946966953167, -8554.648299933597;
+		0.0, 5.2758118263790036e-11, -3.966729906228609e-08, 1.0726900484949399e-05, -0.0002721488268482393, 7.493625261741135, 335.9515530806696;
+		0.0, 1.1477203021484015e-10, -8.62922058818917e-08, 2.3328429788951093e-05, -0.0005918130655222008, 16.318826222879714, 739.4520074148527;
+		0.0, 3.8269226798709986e-11, -2.877270399604803e-08, 7.776305896186e-06, -0.00019725658829971375, 5.447199184475681, 249.4180314613943;
+		0.0, 3.293053974657025e-12, -2.4758750846505293e-09, 6.689700892165828e-07, -1.6967418737172143e-05, 0.4692612554473072, 21.70700895558087;
+		0.0, 2.34076377499377e-10, -1.7599072300057337e-07, 4.754005999642388e-05, -0.0012056211853617616, 33.39549732853212, 1560.2766202170499;
+		0.0, 3.542361806749318e-10, -2.663366960746122e-07, 7.192831655947365e-05, -0.0018238279719909958, 50.60125795986722, 2387.264320156253;
+		0.0, 6.171885268324037e-10, -4.640507030935566e-07, 0.0001252968862575966, -0.0031764881589753744, 88.27718486582276, 4204.466059379451;
+		0.0, 3.4454720589004604e-12, -2.5906547885080987e-09, 6.993548493919701e-07, -1.772626493117741e-05, 0.4934770191874836, 23.721917254550856;
+		0.0, 4.432924964046706e-11, -3.3332528465366406e-08, 8.99656991768972e-06, -0.0002279809090954461, 6.358030383682898, 308.4061157347984;
+		0.0, 1.2499090659960388e-11, -9.398904351491649e-09, 2.5363789983534616e-06, -6.42578527079172e-05, 1.795361219481717, 87.8550852684393;
+		0.0, 6.165356401062783e-12, -4.636410893213354e-09, 1.2509928267778994e-06, -3.168440760301442e-05, 0.8869539946441177, 43.7751509899297;
+		0.0, 1.7125118034277175e-11, -1.2879122651327788e-08, 3.47458613167399e-06, -8.7975189014741e-05, 2.467602178725298, 122.80326436484594;
+		0.0, 0.0, -5.061222361430858e-05, 0.0299738892166976, -1.0074678480077588, 41557.562394209024, -401573.73484696617;
+		0.0, 1.3084495964055386e-10, -9.84192863068235e-08, 2.6546626261049475e-05, -0.0006716765527584449, 18.918540465718454, 956.5931396823648;
+		0.0, 2.730569109152785e-11, -2.05408352701553e-08, 5.540079504853837e-06, -0.00014011777837475746, 3.9552702233792343, 201.51704082389932;
+		0.0, 2.6816531691010136e-10, -2.0175006361539835e-07, 5.441128762549161e-05, -0.0013755561943809354, 38.918060486693975, 1997.4590932505607;
+		0.0, 2.68666157565941e-10, -2.0215046172078033e-07, 5.451755461371756e-05, -0.0013775997427571546, 39.06803235215283, 2019.4528633418358;
+		0.0, 2.092037609887315e-10, -1.574296649333845e-07, 4.245643393487587e-05, -0.0010722900776136987, 30.484090341826715, 1586.5913858842773;
+		0.0, 2.7523516205428214e-11, -2.0714814862622364e-08, 5.586535519952565e-06, -0.00014101903998136797, 4.019196661124759, 210.57367561930764;
+		0.0, 3.6256572278039194e-10, -2.7291582374776114e-07, 7.360446043581435e-05, -0.0018569042775092722, 53.062868369923706, 2797.8327276687596;
+		0.0, 3.559448590363373e-09, -2.679751274336649e-06, 0.0007227589205130204, -0.018222689083618786, 522.1482542179932, 27700.206222658384;
+		0.0, 1.4155678127952671e-11, -1.0659020152071825e-08, 2.875077996158127e-06, -7.244113081794067e-05, 2.081556921925557, 111.07773878927392;
+		0.0, 7.290162158941389e-11, -5.490396936820503e-08, 1.4810832564012597e-05, -0.00037291872577442046, 10.746863149448357, 576.7142346968751;
+		0.0, 3.5059237148383476e-11, -2.640913959502248e-08, 7.124979221309713e-06, -0.00017926668157207317, 5.181737643470455, 279.56598730234293;
+		0.0, 4.577961386423538e-11, -3.449168966378041e-08, 9.306959123477426e-06, -0.00023398429341229082, 6.784467414340664, 367.91196613858034;
+		0.0, 1.2716046319957889e-11, -9.582758576763648e-09, 2.5861791087426217e-06, -6.496535570250129e-05, 1.8897757104273618, 102.97818669295971;
+		0.0, 1.632752078722555e-10, -1.2307229257036714e-07, 3.3221082203006195e-05, -0.0008338004582336192, 24.335314997805224, 1332.1913564894444;
+		0.0, 3.925177229665446e-12, -2.9594205010514974e-09, 7.990183111558274e-07, -2.003599168321421e-05, 0.586786871043698, 32.261937055423076;
+		0.0, 0.0, -9.925074825623603e-07, 0.000589972072419484, -0.019648491221424813, 856.7688137715094, -6622.572720046938;
+		0.0, 4.784315029692602e-10, -3.6091053855292443e-07, 9.749377455692226e-05, -0.002439960756576435, 71.97648292942509, 3988.5538025137525;
+		0.0, 1.388751597321166e-10, -1.0479235248380483e-07, 2.8316398453613292e-05, -0.0007079284859044259, 20.962477681850107, 1165.7349280920848;
+		0.0, 9.281377907130705e-10, -7.005658944081127e-07, 0.0001893653630182347, -0.004729079383128611, 140.58132433403685, 7843.294020879733;
+		0.0, 5.770485186666204e-11, -4.356991648611565e-08, 1.1781311051005167e-05, -0.00029388222068133505, 8.77152894080174, 490.84043192944284;
+		0.0, 8.909260282143598e-12, -6.729153017749935e-09, 1.820267070354738e-06, -4.535207290857821e-05, 1.3592652375963261, 76.26800246861008;
+		0.0, 3.873280127389675e-11, -2.9265014160854464e-08, 7.919613321432161e-06, -0.00019707285014723078, 5.9319013209589055, 333.64368222511035;
+		0.0, 4.671539076686233e-12, -3.530900775905122e-09, 9.55936529197177e-07, -2.375722614248335e-05, 0.7182344391651108, 40.49105898702888;
+		0.0, 3.216512043568384e-10, -2.431452268732399e-07, 6.581717528786831e-05, -0.0016344930047245674, 49.56150190506851, 2825.4909791161367;
+		0.0, 5.060431796988293e-10, -3.8252649408164906e-07, 0.00010349278352413138, -0.0025690758604586445, 78.0588603168475, 4522.892634044163;
+		0.0, 8.446448204907369e-12, -6.384664626711147e-09, 1.7264557352848889e-06, -4.284050840980536e-05, 1.3041537678220139, 76.79591680254377;
+		0.0, 3.2222516282090966e-11, -2.435623489894384e-08, 6.582490390538334e-06, -0.00016327929195669665, 4.979424325111739, 297.97041912035587;
+		0.0, 1.00531473425606e-11, -7.598646275699376e-09, 2.052452342900494e-06, -5.089384063495814e-05, 1.554647524935703, 94.53196753314555;
+		0.0, 4.206332792205652e-12, -3.1792016495530773e-09, 8.582343498040456e-07, -2.127448008695967e-05, 0.6508623760755872, 40.21199001892866;
+		0.0, 2.0247012176948426e-10, -1.5302152843857025e-07, 4.128437626104757e-05, -0.001023079825282033, 31.343546731775945, 1967.4306579771442;
+		0.0, 6.89117891178148e-10, -5.207858597397819e-07, 0.00014042108187116363, -0.0034788579917846485, 106.71579955954567, 6805.012760513548;
+		0.0, 5.5164127363784666e-12, -4.168630987569914e-09, 1.123314214285573e-06, -2.7822501338265995e-05, 0.8544501403620948, 55.347565518514806;
+		0.0, 4.712421548116073e-10, -3.560811079445074e-07, 9.589287722126683e-05, -0.00237455262342332, 72.99889207853117, 4802.869231047564;
+		0.0, 1.5179274307122132e-11, -1.1468881629977873e-08, 3.086621054070798e-06, -7.641689698796774e-05, 2.351329799925939, 157.11947355328476;
+		0.0, 1.5451060099142818e-11, -1.1673224050171052e-08, 3.1395923354174913e-06, -7.771414075607758e-05, 2.393094857931685, 162.39267342922224;
+		0.0, 1.056272643864171e-11, -7.979373036465509e-09, 2.1447053375911563e-06, -5.307938420823994e-05, 1.6355683078781602, 112.69854176136269;
+		0.0, 2.530194369198729e-10, -1.9111879234939656e-07, 5.1334971631625363e-05, -0.0012703161964915124, 39.16365338769135, 2739.914845167649;
+		0.0, 5.822944870979232e-11, -4.3979148979867785e-08, 1.1804959489874582e-05, -0.0002920881720387027, 9.008700647882648, 639.8381492825457;
+		0.0, 1.5735824657878295e-11, -1.188354249079964e-08, 3.187629036657823e-06, -7.886390632665704e-05, 2.433053337581267, 175.41416319716365;
+		0.0, 7.500626793552353e-12, -5.6637486149457065e-09, 1.5181919178129798e-06, -3.755850091340409e-05, 1.1589262973401675, 84.8053108675032;
+		0.0, 4.060687018926961e-10, -3.065869502649729e-07, 8.212474930543614e-05, -0.0020315921630052122, 62.69140651282118, 4655.618772633468;
+		0.0, 1.203784595594447e-10, -9.087586832015833e-08, 2.4325616134897536e-05, -0.0006017512718454612, 18.567914385832857, 1399.2017921197976;
+		0.0, 4.4876450647029526e-12, -3.3873647067917923e-09, 9.060863986903674e-07, -2.241419617429751e-05, 0.6915053655309868, 52.8693963109788;
+		0.0, 2.4751038150323506e-10, -1.8680077050660717e-07, 4.993171241640673e-05, -0.0012352075849760109, 38.097043392008665, 2954.836866562303;
+		0.0, 1.5098369011660678e-13, -1.1393452081986108e-10, 3.04327627283869e-08, -7.52877310624029e-07, 0.023211771610458308, 1.8260964204805632;
+		0.0, 1.528849540529636e-11, -1.1535288404915512e-08, 3.078939466562406e-06, -7.617501118535693e-05, 2.3473850716207503, 187.28834999671852;
+		0.0, 1.0152584598270504e-10, -7.659090711470161e-08, 2.042844144305129e-05, -0.0005054569338318541, 15.56681944518237, 1259.427583656439;
+		0.0, 3.614334702737168e-10, -2.7262423389062e-07, 7.266191367710721e-05, -0.0017980513883545056, 55.33747181834266, 4539.13592148604;
+		0.0, 1.726702423220389e-11, -1.3022303786632836e-08, 3.4682780303606933e-06, -8.583493581959791e-05, 2.639622128742844, 219.48644939066685;
+		0.0, 2.2060866190908054e-10, -1.6635119395097148e-07, 4.4272629350227944e-05, -0.0010958437987089683, 33.670310963160446, 2837.624341640938;
+		0.0, 2.3999778615765942e-11, -1.809433620688399e-08, 4.812108536119242e-06, -0.00011912968242074093, 3.656800925919084, 312.30425396912693;
+		0.0, 2.0354871628128287e-11, -1.534387195615418e-08, 4.077664008462273e-06, -0.00010096596002543628, 3.0960131647795768, 267.90028521044536;
+		0.0, 3.695586420912251e-10, -2.785353615920459e-07, 7.396753413069903e-05, -0.0018318547109291716, 56.10874310029441, 4918.331212158461;
+		0.0, 2.450199260271941e-11, -1.846410026268931e-08, 4.899754565884934e-06, -0.00012137177304052385, 3.7130943453468723, 329.65556473660865;
+		0.0, 5.204980835215524e-10, -3.921706901397684e-07, 0.00010399393462488982, -0.002576627215006889, 78.72587086057776, 7077.786643800107;
+		0.0, 1.356739274748605e-10, -1.0220714411619746e-07, 2.7083357000909518e-05, -0.0006712010958189783, 20.480323777002372, 1864.1825124775626;
+		0.0, 5.250183618064148e-11, -3.954467207654593e-08, 1.0471276653158202e-05, -0.00025957473398184844, 7.909290751511754, 728.7428129567188;
+		0.0, 7.723262558858552e-11, -5.816245898245459e-08, 1.539030204733644e-05, -0.00038161736990734136, 11.610977095346211, 1082.6851156370512;
+		0.0, 6.786676616065198e-12, -5.110078822054323e-09, 1.3512242078653326e-06, -3.351443004177609e-05, 1.0181567614678768, 96.06244563311927;
+		0.0, 3.504686756397143e-11, -2.638448376781192e-08, 6.971839842311331e-06, -0.00017297389324900066, 5.246686649922267, 500.7646447167726;
+		0.0, 4.664676754047524e-12, -3.5111504490276103e-09, 9.271489142834188e-07, -2.300989798691653e-05, 0.6968191236537069, 67.26483244491605;
+		0.0, 1.6740046897406103e-10, -1.2598353335870413e-07, 3.32444647040407e-05, -0.0008253175135432657, 24.952332473379695, 2435.5534098063604;
+		0.0, 7.885010480651822e-12, -5.933201944243088e-09, 1.5646032904958684e-06, -3.885491636241796e-05, 1.172751563742841, 115.72054556417388;
+		0.0, 2.428002314023191e-10, -1.826695910564874e-07, 4.813879142793544e-05, -0.0011958588178425482, 36.03273197238143, 3593.495795706575;
+		0.0, 2.4635754743150897e-12, -1.8531657518361968e-09, 4.880473562838669e-07, -1.2128092817094496e-05, 0.3648019892016763, 36.760891841426805;
+		0.0, 5.901363541295971e-11, -4.438461305696609e-08, 1.1681625640607911e-05, -0.00029038969195664476, 8.7193511681353, 887.6002294171249;
+		0.0, 3.532324133435314e-10, -2.6562775544284565e-07, 6.986715037871373e-05, -0.0017374015523644794, 52.07582769565926, 5353.804457836903;
+		0.0, 1.888281548490355e-12, -1.4197553497801294e-09, 3.7320491155356134e-07, -9.283780958058307e-06, 0.277773140602311, 28.833529892455427;
+		0.0, 7.463125746062394e-11, -5.6105129367600874e-08, 1.4739289684580013e-05, -0.00036677955321954685, 10.954653810190123, 1147.8180175230402;
+		0.0, 0.0, -1.3108654761490673e-07, 7.825703579579319e-05, -0.002544447301993838, 134.85952843137835, 967.0841603056103;
+		0.0, 5.2351374014759685e-12, -3.9344490260241475e-09, 1.0324214665394029e-06, -2.5709151085039425e-05, 0.7651439345238618, 81.62042600929891;
+		0.0, 3.545453560998342e-11, -2.664199628796554e-08, 6.9871377081577095e-06, -0.00017405243452054274, 5.170988675777519, 556.3393936227969;
+		0.0, 9.68173427477012e-11, -7.274260371372078e-08, 1.906724068126577e-05, -0.0004751355426722811, 14.091492925330865, 1528.6580310186812;
+		0.0, 7.947068612169433e-12, -5.970146906956989e-09, 1.5640755833172524e-06, -3.898832307386437e-05, 1.1543303368675946, 126.22496287757741;
+		0.0, 0.0, -3.641428161717021e-05, 0.021731768748768143, -0.7065334474873396, 37724.88766317098, 310944.85954162944;
+		0.0, 5.103467563731699e-11, -3.832952678293584e-08, 1.0031741237326468e-05, -0.0002502306073951347, 7.38392050791471, 819.6749269774987;
+		0.0, 0.0, -1.1838428158309199e-05, 0.007064185461660341, -0.22967039850113882, 12293.47862028836, 105980.77266186898;
+		0.0, 2.3748354076313855e-12, -1.783196811051044e-09, 4.662771810467e-07, -1.1638130314362545e-05, 0.34233150461197853, 38.53147331159223;
+		0.0, 6.812894113921621e-10, -5.115042763985476e-07, 0.0001336926880298685, -0.0033379396197732005, 98.03485728221247, 11105.921062641895;
+		0.0, 2.8974505221965013e-11, -2.17514221285133e-08, 5.682875767473053e-06, -0.0001419274396242986, 4.16226146903104, 474.4297043701643;
+		0.0, 3.1606260573790887e-11, -2.3724711956732362e-08, 6.196014195232687e-06, -0.00015478656425677403, 4.532957742735939, 519.701389251549;
+		0.0, 3.820603372707477e-09, -2.8675981299061505e-06, 0.000748634355836111, -0.01870717412919719, 547.1020781515856, 63070.99391940838;
+		0.0, 2.3882528063302725e-11, -1.792368700904026e-08, 4.677651530513342e-06, -0.00011691716660578865, 3.414899630219339, 395.7191692239172;
+		0.0, 1.4701584711347265e-10, -1.1032511557554188e-07, 2.8782824556287578e-05, -0.0007195981059733132, 20.992252465820908, 2444.399610882617;
+		0.0, 9.853145021401644e-11, -7.393510308133442e-08, 1.928313537030224e-05, -0.00048220780901521535, 14.050886599881853, 1643.52509067771;
+		0.0, 4.75782193136023e-11, -3.569867188510415e-08, 9.308005919313459e-06, -0.0002328127511806664, 6.776563034973046, 795.9673704273924;
+		0.0, 5.4669436846156176e-11, -4.101654052111113e-08, 1.0691803539606869e-05, -0.00026747783040388667, 7.777816800344729, 917.0849389788027;
+		0.0, 6.578370246546e-12, -4.935212600764457e-09, 1.2861602381981494e-06, -3.218189309362221e-05, 0.9349407837545617, 110.62503260822152;
+		0.0, 1.1022440673357157e-11, -8.268772659191307e-09, 2.154455598740817e-06, -5.391708987182417e-05, 1.5650856050319135, 185.76990070775292;
+		0.0, 9.299924997557062e-11, -6.976234537067805e-08, 1.8173348059011826e-05, -0.00045487146975395175, 13.19401727054611, 1570.477986553391;
+		0.0, 7.805357081056715e-11, -5.8548451989915465e-08, 1.5249546024363518e-05, -0.00038174011857630604, 11.06551390211029, 1320.3600842110272;
+		0.0, 2.078563838260143e-12, -1.5590847310098826e-09, 4.060215284414374e-07, -1.0165043277959197e-05, 0.29448799992830804, 35.21296288640464;
+		0.0, 6.510636877777335e-12, -4.883331508429786e-09, 1.2715801122530702e-06, -3.1837948202476674e-05, 0.9219305302836872, 110.4319446416229;
+		0.0, 3.585891500364713e-12, -2.6895461896632914e-09, 7.002693713593412e-07, -1.7534746854417102e-05, 0.5075609242215221, 60.88255460551331;
+		0.0, 4.807415757727583e-12, -3.6056654588929884e-09, 9.387298537845859e-07, -2.3507138268260967e-05, 0.6802448743302331, 81.68162007800719;
+		0.0, 1.3136241048662637e-11, -9.852341985114416e-09, 2.5649222903091018e-06, -6.423174740614346e-05, 1.858376229201468, 223.30229553073835;
+		0.0, 3.3333516908343585e-10, -2.500039578479755e-07, 6.508361251825313e-05, -0.0016298782569228831, 47.15191098302201, 5667.677050429367;
+		0.0, 3.6028052447086847e-11, -2.7021327160537327e-08, 7.034479819646186e-06, -0.00017616314603873217, 5.0963749174899835, 612.5748203687964;
+		0.0, 3.911027697017916e-10, -2.933321565425276e-07, 7.636529451773017e-05, -0.0019123624850088472, 55.32999682865137, 6648.07802278391;
+		0.0, 2.634528167943138e-11, -1.9759562140308227e-08, 5.144406350235262e-06, -0.00012882264245344643, 3.7279378681422557, 447.5972433120194;
+		0.0, 5.04951031040373e-10, -3.787321316056408e-07, 9.861026929673642e-05, -0.0024691841029446417, 71.47554577589646, 8572.46320026346;
+		0.0, 1.3162828521918123e-10, -9.872866041203569e-08, 2.570843750907253e-05, -0.0006436845575425714, 18.639993259348074, 2232.3890643427976;
+		0.0, 2.1282534496060842e-10, -1.5963616138281785e-07, 4.157350447339354e-05, -0.0010408113784305866, 30.154642790270042, 3604.962208445643;
+		0.0, 2.8858616019930484e-11, -2.1647113801387875e-08, 5.638304811337054e-06, -0.00014114121250708364, 4.091526968803734, 488.0923800980438;
+		0.0, 6.397669713586913e-12, -4.7991639323323045e-09, 1.2502233969776074e-06, -3.12921174698836e-05, 0.9077271447817276, 108.01644903895973;
+		0.0, 2.9515618437062644e-11, -2.2142037539155674e-08, 5.769302333664146e-06, -0.0001443793129905071, 4.191337213757536, 497.3405673574701;
+		0.0, 1.982332790423106e-11, -1.4871911448200232e-08, 3.875843678031804e-06, -9.697834045841011e-05, 2.8176501703727674, 333.2766096988154;
+		0.0, 6.874128480751948e-11, -5.157450090495074e-08, 1.344430309090664e-05, -0.00033633059725788033, 9.780924751577865, 1152.8279617767946;
+		0.0, 3.0701714465810665e-10, -2.3036138644171085e-07, 6.006570171795694e-05, -0.0015023362831207564, 43.73377705333132, 5134.762460533729;
+		0.0, 6.619100913762837e-11, -4.966818364103019e-08, 1.2954438006625314e-05, -0.00032394030728008874, 9.440286029562943, 1103.7223673215499;
+		0.0, 1.5944785774620408e-11, -1.1965549671158346e-08, 3.121806691110465e-06, -7.804620215609706e-05, 2.277061766181403, 265.0176819418651;
+		0.0, 1.3751916855514548e-10, -1.0320822552381026e-07, 2.6935819708170667e-05, -0.0006732388575798446, 19.666457142164187, 2277.754369004179;
+		0.0, 0.0, -1.7590243087103518e-06, 0.0010493402070131063, -0.03411914650551946, 1835.3836622504173, 17280.14157369082;
+		0.0, 7.181992106559094e-11, -5.391098347013558e-08, 1.4080108522245034e-05, -0.0003517339617298562, 10.302101687505983, 1180.429175530425;
+		0.0, 7.333402762600774e-09, -5.505310973056527e-06, 0.0014384027957086427, -0.03592242020415723, 1053.644784964507, 120022.97521542967;
+		0.0, 6.3929248200813354e-12, -4.799780911382501e-09, 1.254578413785038e-06, -3.132233327912389e-05, 0.9200729707351437, 104.16329084989312;
+		0.0, 5.019457229344907e-12, -3.769013167343311e-09, 9.855814017872088e-07, -2.4599004358706578e-05, 0.723688253458256, 81.399033941496;
+		0.0, 5.515756804058766e-11, -4.142155660146361e-08, 1.0836450516400721e-05, -0.00027038089562713753, 7.966989952410267, 890.0356950948953;
+		0.0, 1.2564024589436853e-08, -9.436315078285635e-06, 0.0024698295319209845, -0.061605052648003235, 1818.181088600243, 201680.02714483923;
+		0.0, 8.622002024337811e-10, -6.4764354702152e-07, 0.00016959477943385753, -0.004228820248835547, 125.01408290545852, 13764.674772228158;
+		0.0, 3.2147486649001136e-11, -2.415077376635094e-08, 6.327426638926161e-06, -0.00015772069637514912, 4.670480342534702, 510.2940504397378;
+		0.0, 1.8973166487109566e-11, -1.4255473209657988e-08, 3.736842103528625e-06, -9.311485037544311e-05, 2.7620839470612926, 299.37870000099076;
+		0.0, 6.314313454191843e-10, -4.7449038268846067e-07, 0.0001244471090403052, -0.0030999165031183355, 92.11341140931039, 9901.631301499332;
+		0.0, 7.13642323956394e-11, -5.3634330623350057e-08, 1.407477555757145e-05, -0.0003504744941807369, 10.432581463813582, 1111.8666360809223;
+		0.0, 4.842242852496488e-11, -3.639748020379953e-08, 9.55691878785256e-06, -0.00023789313313778092, 7.093902824092901, 749.3800037713813;
+		0.0, 6.309350621455926e-12, -4.743219422893546e-09, 1.2461608496604263e-06, -3.100893617694646e-05, 0.9263202053065556, 96.96514868168201;
+		0.0, 2.7902505129575444e-12, -2.0979582897136645e-09, 5.515161557711195e-07, -1.3718924176834722e-05, 0.41055008718642744, 42.573728625695054;
+		0.0, 2.971217412641913e-10, -2.2343659498275672e-07, 5.877355759643681e-05, -0.00146148204572898, 43.81369086328125, 4499.793339428558;
+		0.0, 3.5654666490243435e-12, -2.6816586957541733e-09, 7.058346698094289e-07, -1.7545484055508423e-05, 0.5269242180726084, 53.58291521816906;
+		0.0, 1.0026046614108102e-12, -7.541975237858339e-10, 1.9863772440292906e-07, -4.936017667549293e-06, 0.14849781466666065, 14.948021982468264;
+		0.0, 8.85823164352913e-11, -6.66455948467311e-08, 1.7564269155296768e-05, -0.0004363145870084748, 13.149074790904942, 1309.8980237119406;
+		0.0, 9.907368945714204e-11, -7.45508289879406e-08, 1.9660642863741517e-05, -0.0004882302086701793, 14.738781225006065, 1452.705861232927;
+		0.0, 2.417951520751752e-11, -1.8197514285718572e-08, 4.802288203449024e-06, -0.00011921625753898632, 3.6049650540058256, 351.4702158276599;
+		0.0, 1.2810781520340122e-11, -9.642973172802919e-09, 2.5464904808515433e-06, -6.319652818819964e-05, 1.9141346860058464, 184.55715595077555
+	];
+		
+end MixedUseOptIterTest;

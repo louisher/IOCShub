@@ -1,0 +1,47 @@
+optimization MixedUse_HouseIdeal(objectiveIntegrand= ObjInt, startTime=0, finalTime=startTime+1, timeStep = 3600, intervalLengths="8760*1", tolerance=1e0, truncationDelta=1e-2)  //1year OCP simulation with 1h time step
+	extends IOCSmod.Demand.PeakLoadSimulations.Gesl_M_A_opt(idealC1.Q_flow=-QC1,
+															idealC2.Q_flow=-QC2,
+															idealH1.Q_flow=QH1,	
+															idealH2.Q_flow=QH2,
+															sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//Brussels-City_XMY2021-2040_ssp245_MAR-BCC_SWDbased.mos"));
+
+	input Real uC1(free=true, min=0, max=1, nominal=1/Qcoo_nom);
+	input Real uC2(free=true, min=0, max=1, nominal=1/Qcoo_nom);
+	input Real uH1(free=true, min=0, max=1, nominal=1/Qhea_nom);
+	input Real uH2(free=true, min=0, max=1, nominal=1/Qhea_nom);
+
+	parameter Real Qcoo_nom = 5000;
+	parameter Real Qhea_nom = 5000;
+
+	output Real QH1 = Qhea_nom*uH1;
+	output Real QH2 = Qhea_nom*uH2;
+	output Real QC1 = Qcoo_nom*uC1;
+	output Real QC2 = Qcoo_nom*uC2;
+
+	// Comfort
+	output Real TSetDayHeaPro = TSetDayHeaExpr.y;	
+	output Real TSetNigHeaPro = TSetNigHeaExpr.y;
+	output Real TSetDayCooPro = TSetDayCooExpr.y;
+	output Real TSetNigCooPro = TSetNigCooExpr.y;
+	output Real TSetOffHeaPro = TSetOffHeaExpr.y;
+	output Real TSetOffCooPro = TSetOffCooExpr.y;
+
+	output Real TDay = bui.TSensor[1];
+	output Real TNig = bui.TSensor[2];
+	output Real DiscmfHeaDay = max(0, TSetDayHeaPro - TDay);
+	output Real DiscmfHeaNig = max(0, TSetNigHeaPro - TNig);
+	output Real DiscmfCooDay = max(0, TDay - TSetDayCooPro);
+	output Real DiscmfCooNig = max(0, TNig - TSetNigCooPro);
+
+
+	// Objective
+	output Real weight_hea = 10000;
+	output Real weight_coo = 10000;
+	output Real ObjIntComfSHea=weight_hea*(DiscmfHeaDay^2 + DiscmfHeaNig^2);
+	output Real ObjIntComfSCoo=weight_coo*(DiscmfCooDay^2 + DiscmfCooNig^2);
+	
+	output Real ObjIntHeaCoo = QH1 + QH2 + QC1 + QC2;
+
+	output Real ObjInt = ObjIntComfSHea + ObjIntComfSCoo + ObjIntHeaCoo;
+
+end MixedUse_HouseIdeal;

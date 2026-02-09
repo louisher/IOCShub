@@ -1,0 +1,911 @@
+optimization DeSchipjesOneZoneSwitch(tolerance=1e-1, objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="8760*1", truncationDelta=1e-2)
+	extends IOCSmod.Optimization.DeSchipjesOneZoneSwitch(
+											buildings.Houses.nr136.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr138.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr140.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr142.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr144.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr146.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr148.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr150.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr152.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr154.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr156.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr158.heatingSystem.valveBhp.y=1,
+
+											enerHub.conValAshp1(min=0.001, max=1),
+											enerHub.conValAshp2(min=0.001, max=1),
+											enerHub.conValGshp1(min=0.001, max=1),
+											enerHub.conValGshp2(min=0.001, max=1),
+
+											addDummyEquation=false,
+											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//BEL_VLG_Uccle.064470_TMYx.2007-2021.mos"),
+											priceSim.path_economic_params_json="/homenvme/louis/software/iocs/input_data/economic_params.json",
+											enerHub.AsHp.Qnom_AsHp=28000,
+											enerHub.GsHp.Qnom_GsHp=44000,
+											enerHub.stc.totalArea=17.6,
+											enerHub.GsHp.TBorMin=273.15,
+											enerHub.GsHp.borFieDat.conDat.hBor=125,
+											enerHub.GsHp.borFieDat.conDat.nBor=10,
+											enerHub.GsHp.groTemResDat.rCel.rCel={1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0, 2048.0, 4096.0, 8192.0, 16384.0, 32768.0, 65536.0, 131072.0, 88257.0},
+                                            enerHub.GsHp.groTemResDat.kappa.kappa={5.8172630391817344e-05, 2.5494645394638947e-05, 2.2957414619713648e-05, 2.2478775080945156e-05, 2.2518826009357176e-05, 2.2656737119406577e-05, 2.2753551927001475e-05, 2.2824256598981304e-05, 2.358419112820156e-05, 2.9422627182251287e-05, 4.528538358549057e-05, 6.965392755597932e-05, 9.739002539931637e-05, 0.00012200931467394284, 0.00013693912506484367, 0.00013766864861179825, 0.00012408673529210306, 9.959811723621553e-05, 3.3008506172307796e-05},
+                                            enerHub.GsHp.borFieDat.conDat.cooBor=[0,0; 0,6]
+											);
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+
+	output Real pumpingPower = enerHub.pumAsHpHex.P + enerHub.pumGsHpHex.P + enerHub.pumHex.P;
+
+	/// Electricity ///
+	output Real TotalPower = P_Net_enerHub + P_Net_Houses + pumpingPower;
+
+	output Real tariff_scaler = 36000000;
+	output Real p_offtake = priceSim.p_elec_fix_offtake/(3600*1e6); // €/J
+	output Real p_offtakeSca = p_offtake * tariff_scaler;
+	output Real p_inj = priceSim.p_elec_fix_inj/(3600*1e6); // €/J
+	output Real p_injSca = p_inj * tariff_scaler;
+	output Real b = 50; // transition parameter
+	output Real smoothPrice = p_injSca + (p_offtakeSca - p_injSca) * 0.5 *(1 + TotalPower / (sqrt(TotalPower^2 + b^2)) );
+
+	output Real ObjIntElecCost = TotalPower*smoothPrice;
+
+	// Supply temperature	
+	output Real TSupMax = 60;
+	output Real ObjIntTSupMax = 10000*max(0, Ttank2 - TSupMax)^2;
+	output Real TSupMin = 5;
+	output Real ObjIntTSupMin = 10000*max(0, TSupMin - Ttank2)^2;
+
+	// Borefield temperature
+	output Real TBorMin_degC = enerHub.GsHp.TBorMin - 273.15;
+	output Real TBorMax = 25;
+	output Real TBorAvg = (TBorIn + TBorOut)/2;
+	output Real ObjIntTBorMin = 10000*max(0, TBorMin_degC - TBorAvg)^2;
+	output Real ObjIntTBorMax = 10000*max(0, TBorAvg - TBorMax)^2;
+
+
+	// DHW tank temperature
+	output Real TTankDhwSet = 323.15;
+	output Real ObjIntComfDHW = 100*max(0,TTankDhwSet-TTankDhw136)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw138)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw140)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw142)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw144)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw146)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw148)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw150)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw152)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw154)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw156)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw158)^2;
+
+	// Comfort
+	output Real weight_hea = 10000;
+	output Real weight_coo = 10000;
+	output Real ObjIntComfSHea = weight_hea * (
+												DiscmfHea136^2 + DiscmfHea138^2 +
+												DiscmfHea140^2 + DiscmfHea142^2 +
+												DiscmfHea144^2 + DiscmfHea146^2 +
+												DiscmfHea148^2 + DiscmfHea150^2 +
+												DiscmfHea152^2 + DiscmfHea154^2 +
+												DiscmfHea156^2 + DiscmfHea158^2
+											);
+
+	output Real ObjIntComfSCoo = weight_coo * (
+												DiscmfCoo136^2 + DiscmfCoo138^2 +
+												DiscmfCoo140^2 + DiscmfCoo142^2 +
+												DiscmfCoo144^2 + DiscmfCoo146^2 +
+												DiscmfCoo148^2 + DiscmfCoo150^2 +
+												DiscmfCoo152^2 + DiscmfCoo154^2 +
+												DiscmfCoo156^2 + DiscmfCoo158^2
+											);
+
+	/// Overall objective ///
+	output Real ObjInt = ObjIntElecCost + ObjIntComfSCoo + ObjIntComfSHea + ObjIntComfDHW + ObjIntTSupMax + ObjIntTSupMin + ObjIntTBorMin + ObjIntTBorMax;
+
+	///////////////////////////////////
+	// IOCS definitions //
+	///////////////////////////////////
+	// input data:
+	output Real QDem = Q_flow_collector; 	// Demand profile for heat and cold: heat should be positive, cold should be negative
+	output Real PDem = P_Net_Houses;							// Demand profile for electricity in the buildings only, offtake should be positive
+	output Real QBor = enerHub.GsHp.QBorefield;
+	
+	// temperature data for COP calculation	
+	output Real T_COP_Sup = Ttank2; 			// Temperatures should be in °C
+	output Real T_COP_Bor = TBorOut; 		// Temperatures should be in °C
+	output Real T_COP_Air = TAsHpEvaIn; 	// Temperatures should be in °C
+
+	// overall result data:
+	output Real DiscmfHea =
+							DiscmfHea136 + DiscmfHea138 +
+							DiscmfHea140 + DiscmfHea142 +
+							DiscmfHea144 + DiscmfHea146 +
+							DiscmfHea148 + DiscmfHea150 +
+							DiscmfHea152 + DiscmfHea154 +
+							DiscmfHea156 + DiscmfHea158; // Heating discomfort in Kh
+
+	output Real DiscmfCoo =
+							DiscmfCoo136 + DiscmfCoo138 +
+							DiscmfCoo140 + DiscmfCoo142 +
+							DiscmfCoo144 + DiscmfCoo146 +
+							DiscmfCoo148 + DiscmfCoo150 +
+							DiscmfCoo152 + DiscmfCoo154 +
+							DiscmfCoo156 + DiscmfCoo158; // Cooling discomfort in Kh
+
+	output Real ElecUse = TotalPower; // Overall energy use of the entire district (buildings + energy hub), offtake should be positive	
+
+	//////////////////////////////////
+	// Energy Hub Output variables	//
+	//////////////////////////////////
+
+	// General
+	output Real P_Net_enerHub = enerHub.P;
+	output Real Q_enerHub = enerHub.QEnergyHub;
+	
+	// GSHP
+	output Real QNom_GSHP = enerHub.GsHp.Qnom_GsHp;
+	output Real P_GSHP = enerHub.GsHp.GsHp.PEl;
+	output Real E_GSHP_kWh = enerHub.GsHp.EGsHp_kWh.y;
+	output Real QCon_GSHP = enerHub.GsHp.GsHp.QCon;
+	output Real QEva_GSHP = -enerHub.GsHp.GsHp.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_GSHP = enerHub.GsHp.GsHp.COP;
+
+	output Real P_pumCoo = enerHub.GsHp.pumHexCooEva.P;
+	output Real E_pumCoo_kWh = enerHub.GsHp.EpumCoo_kWh.y;
+	output Real QhexCoo = enerHub.GsHp.hexCoo.Q2_flow; // will be positive if heat is added to the borefield i.e. cooling of buffertank is happening
+
+	output Real TGsHpConIn = enerHub.GsHp.senTGsHpConIn.T - 273.15; //°C
+	output Real TGsHpConOut = enerHub.GsHp.senTGsHpConOut.T - 273.15; //°C
+	output Real TGsHpEvaIn = enerHub.GsHp.senTGsHpEvaIn.T - 273.15; //°C
+	output Real TGsHpEvaOut = enerHub.GsHp.senTGsHpEvaOut.T - 273.15; //°C
+
+	output Real TBorIn = enerHub.GsHp.senTBorIn.T - 273.15; //°C
+	output Real TBorOut = enerHub.GsHp.senTBorOut.T - 273.15; //°C
+
+	output Real THexCooConIn = enerHub.GsHp.senTHexCooConIn.T - 273.15; //°C
+	output Real THexCooConOut = enerHub.GsHp.senTHexCooConOut.T - 273.15; //°C
+	output Real THexCooEvaIn = enerHub.GsHp.senTHexCooEvaIn.T - 273.15; //°C
+	output Real THexCooEvaOut = enerHub.GsHp.senTHexCooEvaOut.T - 273.15; //°C
+
+	output Real mFlowGsHpCon = enerHub.GsHp.GsHp.m2_flow;
+	output Real mFlowGsHpEva = enerHub.GsHp.GsHp.m1_flow;
+	output Real mFlowBor = enerHub.GsHp.pumBor.m_flow;
+
+	output Real mFlowHexCooCon = enerHub.GsHp.hexCoo.m2_flow;
+	output Real mFlowHexCooEva = enerHub.GsHp.hexCoo.m1_flow;
+
+	output Real chBor_delTBor = enerHub.GsHp.borefield.groTemRes.delTBor;
+	output Real chBor_QAggFlow1 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[1];
+	output Real chBor_QAggFlow2 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[2];
+	output Real chBor_QAggFlow3 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[3];
+
+	// ASHP
+	output Real QNom_ASHP = enerHub.AsHp.Qnom_AsHp;
+	output Real P_ASHP = enerHub.AsHp.AsHp.PEl;
+	output Real E_ASHP_kWh = enerHub.AsHp.EAsHp_kWh.y;
+	output Real QCon_ASHP = enerHub.AsHp.AsHp.QCon;
+	output Real QEva_ASHP = -enerHub.AsHp.AsHp.HP.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_ASHP = enerHub.AsHp.AsHp.COP;
+
+	output Real TAsHpConIn = enerHub.AsHp.senTAsHpConIn.T - 273.15; //°C
+	output Real TAsHpConOut = enerHub.AsHp.senTAsHpConOut.T - 273.15; //°C
+	output Real TAsHpEvaIn = enerHub.AsHp.AsHp.HP.TEvaIn.T - 273.15; //°C
+	output Real TAsHpEvaOut = enerHub.AsHp.AsHp.HP.TEvaOut.T - 273.15; //°C
+
+	output Real mFlowAsHpCon = enerHub.AsHp.AsHp.HP.m2_flow;
+
+	// Tanks
+	output Real Ttank1 = enerHub.tan1.vol.T - 273.15; //°C
+	output Real Vtank1 = enerHub.tan1.VTan;
+	output Real Ttank2 = enerHub.tan2.vol.T - 273.15; //°C
+	output Real Vtank2 = enerHub.tan2.VTan;
+
+	// STC panels
+	output Real A_STC = enerHub.stc.panels.totalArea;
+	output Real QStc = enerHub.stc.panels.QTot;
+
+	output Real QStcHex = enerHub.stc.hex.Q2_flow;
+
+	output Real TStcIn = enerHub.stc.senTPanelsIn.T - 273.15; //°C
+	output Real TStcOut = enerHub.stc.senTPanelsOut.T - 273.15; //°C
+	output Real TStcRegIn = enerHub.stc.senTRegIn.T - 273.15; //°C
+	output Real TStcRegOut = enerHub.stc.senTRegOut.T - 273.15; //°C
+	output Real TStcHeaIn = enerHub.stc.senTHeaIn.T - 273.15; //°C
+	output Real TStcHeaOut = enerHub.stc.senTHeaOut.T - 273.15; //°C
+	output Real TStcHexIn = enerHub.stc.senTHexIn.T -273.15; //°C
+	output Real TStcHexOut = enerHub.stc.senTHexOut.T -273.15; //°C
+
+	output Real mFlowStc = enerHub.stc.pumPanels.m_flow;
+	output Real mFlowStcHex = enerHub.stc.hex.m2_flow;
+	output Real mFlowStcHeaIn = enerHub.stc.valSupHea.m_flow;
+	output Real mFlowStcHeaOut = enerHub.stc.valRetHea.m_flow;
+	output Real mFlowStcRegIn = enerHub.stc.valSupReg.m_flow;
+	output Real mFlowStcRegOut = enerHub.stc.valRetReg.m_flow;
+
+	// Switching framework
+	output Real mFlowHexAshpPrim = enerHub.hexAsHp.m2_flow;
+	output Real mFlowHexAshpSec = enerHub.hexAsHp.m1_flow;
+	output Real THexAsHpPrimIn = enerHub.senTHexAsHpPrimIn.T - 273.15;
+	output Real THexAsHpPrimOut = enerHub.senTHexAsHpPrimOut.T - 273.15;
+	output Real THexAsHpSecIn = enerHub.senTHexAsHpSecIn.T - 273.15;
+	output Real THexAsHpSecOut = enerHub.senTHexAsHpSecOut.T - 273.15;
+	output Real QFlowHexAsHp = enerHub.hexAsHp.Q1_flow;
+
+	output Real mFlowJunAsHpIn1 = enerHub.junAsHpIn.res1.m_flow;
+	output Real mFlowJunAsHpIn2 = enerHub.junAsHpIn.res2.m_flow;
+	output Real mFlowJunAsHpIn3 = enerHub.junAsHpIn.res3.m_flow;
+	output Real mFlowJunAsHpOut1 = enerHub.junAsHpOut.res1.m_flow;
+	output Real mFlowJunAsHpOut2 = enerHub.junAsHpOut.res2.m_flow;
+	output Real mFlowJunAsHpOut3 = enerHub.junAsHpOut.res3.m_flow;
+
+	output Real mFlowHexGsHpPrim = enerHub.hexGsHp.m2_flow;
+	output Real mFlowHexGsHpSec = enerHub.hexGsHp.m1_flow;
+	output Real THexGsHpPrimIn = enerHub.senTHexGsHpPrimIn.T - 273.15;
+	output Real THexGsHpPrimOut = enerHub.senTHexGsHpPrimOut.T - 273.15;
+	output Real THexGsHpSecIn = enerHub.senTHexGsHpSecIn.T - 273.15;
+	output Real THexGsHpSecOut = enerHub.senTHexGsHpSecOut.T - 273.15;
+	output Real QFlowHexGsHp = enerHub.hexGsHp.Q1_flow;
+
+	output Real mFlowJunGsHpIn1 = enerHub.junGsHpIn.res1.m_flow;
+	output Real mFlowJunGsHpIn2 = enerHub.junGsHpIn.res2.m_flow;
+	output Real mFlowJunGsHpIn3 = enerHub.junGsHpIn.res3.m_flow;
+	output Real mFlowJunGsHpOut1 = enerHub.junGsHpOut.res1.m_flow;
+	output Real mFlowJunGsHpOut2 = enerHub.junGsHpOut.res2.m_flow;
+	output Real mFlowJunGsHpOut3 = enerHub.junGsHpOut.res3.m_flow;
+
+	output Real mFlowHexRegPrim = enerHub.hexReg.m2_flow;
+	output Real mFlowHexRegSec = enerHub.hexReg.m1_flow;
+	output Real THexRegPrimIn = enerHub.senTHexRegPrimIn.T - 273.15;
+	output Real THexRegPrimOut = enerHub.senTHexRegPrimOut.T - 273.15;
+	output Real THexRegSecIn = enerHub.senTHexRegSecIn.T - 273.15;
+	output Real THexRegSecOut = enerHub.senTHexRegSecOut.T - 273.15;
+	output Real QFlowHexReg = enerHub.hexReg.Q1_flow;
+
+	output Real mFlowJunRegIn1 = enerHub.junRegIn.res1.m_flow;
+	output Real mFlowJunRegIn2 = enerHub.junRegIn.res2.m_flow;
+	output Real mFlowJunRegIn3 = enerHub.junRegIn.res3.m_flow;
+	output Real mFlowJunRegOut1 = enerHub.junRegOut.res1.m_flow;
+	output Real mFlowJunRegOut2 = enerHub.junRegOut.res2.m_flow;
+	output Real mFlowJunRegOut3 = enerHub.junRegOut.res3.m_flow;
+
+	output Real Ttan2FlowH = enerHub.senTtan2HFlow.T - 273.15;
+	output Real Ttan2FlowC = enerHub.senTtan2CFlow.T - 273.15;
+	output Real mFlowTan2FlowH = enerHub.senTtan2HFlow.port_a.m_flow;
+	output Real mFlowTan2FlowC = enerHub.senTtan2CFlow.port_a.m_flow;
+
+	output Real Ttan1FlowH = enerHub.senTtan1HFlow.T - 273.15;
+	output Real Ttan1FlowC = enerHub.senTtan1CFlow.T - 273.15;
+	output Real mFlowTan1FlowH = enerHub.senTtan1HFlow.port_a.m_flow;
+	output Real mFlowTan1FlowC = enerHub.senTtan1CFlow.port_a.m_flow;
+
+	output Real TtanInt = enerHub.senTtanIntFlow.T - 273.15;
+	output Real mFlowtanInt = enerHub.senTtanIntFlow.port_a.m_flow;
+
+
+	////////////////////////////////
+	// Demand Output variables    //
+	////////////////////////////////
+	//Overall //
+	output Real P_Net_Houses = buildings.P; // Positive value means net offtake
+	output Real P_pumDh = buildings.pumNetwork.P;
+
+	//Collector
+	output Modelica.Units.NonSI.Temperature_degC TSup_collector = Modelica.Units.Conversions.to_degC(buildings.Houses.collector.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_collector = Modelica.Units.Conversions.to_degC(buildings.Houses.collector.TRet) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_collector = buildings.Houses.collector.port_a2.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_collector = buildings.Houses.collector.Q_flow "collector__Heating_collector thermal power";
+
+	// Heat distribution
+	output Modelica.Units.SI.HeatFlowRate QlossDistrMpc = buildings.Houses.QlossDistr.y;
+
+	// Heat demand
+	output Modelica.Units.SI.HeatFlowRate Qhex136 = -buildings.Houses.nr136.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva136 = -buildings.Houses.nr136.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon136 = buildings.Houses.nr136.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl136 = buildings.Houses.nr136.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor136 = buildings.Houses.nr136.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed136 = buildings.Houses.nr136.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec136 = PpumpSec136 + PpumpBhp136;
+	output Modelica.Units.SI.HeatFlowRate QlossSec136 = QlossTankDhw136;
+	output Modelica.Units.SI.HeatFlowRate Qrad136 = -buildings.Houses.nr136.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh136 = buildings.Houses.nr136.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw136 = buildings.Houses.nr136.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec136 = buildings.Houses.nr136.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp136 = buildings.Houses.nr136.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex136 = buildings.Houses.nr136.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex136 = buildings.Houses.nr136.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup136 = buildings.Houses.nr136.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet136 = buildings.Houses.nr136.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut136 = buildings.Houses.nr136.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn136 = buildings.Houses.nr136.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut136 = buildings.Houses.nr136.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor136 = buildings.Houses.nr136.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw136 = buildings.Houses.nr136.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn136 = buildings.Houses.nr136.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut136 = buildings.Houses.nr136.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn136 = buildings.Houses.nr136.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut136 = buildings.Houses.nr136.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut136 = buildings.Houses.nr136.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec136 = buildings.Houses.nr136.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim136 = buildings.Houses.nr136.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon136 = buildings.Houses.nr136.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad136 = buildings.Houses.nr136.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh136 = buildings.Houses.nr136.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva136 = buildings.Houses.nr136.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup136 = buildings.Houses.nr136.heatingSystem.valvePrimSup.y;
+	output Real yValveRad136 = buildings.Houses.nr136.heatingSystem.valveRad.y;
+	output Real yValveFh136 = buildings.Houses.nr136.heatingSystem.valveFh.y;
+	output Real yValveBhp136 = buildings.Houses.nr136.heatingSystem.valveBhp.y;
+	output Real modBhp136 = buildings.Houses.nr136.heatingSystem.bhp.mod;
+	output Real COPBhp136 = buildings.Houses.nr136.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem136 = buildings.Houses.nr136.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant136 = buildings.Houses.nr136.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw136 = buildings.Houses.nr136.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc136 = buildings.Houses.nr136.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc136 = buildings.Houses.nr136.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope136 = buildings.Houses.nr136.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope136 = buildings.Houses.nr136.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex138 = -buildings.Houses.nr138.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva138 = -buildings.Houses.nr138.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon138 = buildings.Houses.nr138.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl138 = buildings.Houses.nr138.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor138 = buildings.Houses.nr138.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed138 = buildings.Houses.nr138.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec138 = PpumpSec138 + PpumpBhp138;
+	output Modelica.Units.SI.HeatFlowRate QlossSec138 = QlossTankDhw138;
+	output Modelica.Units.SI.HeatFlowRate Qrad138 = -buildings.Houses.nr138.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh138 = buildings.Houses.nr138.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw138 = buildings.Houses.nr138.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec138 = buildings.Houses.nr138.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp138 = buildings.Houses.nr138.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex138 = buildings.Houses.nr138.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex138 = buildings.Houses.nr138.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup138 = buildings.Houses.nr138.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet138 = buildings.Houses.nr138.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut138 = buildings.Houses.nr138.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn138 = buildings.Houses.nr138.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut138 = buildings.Houses.nr138.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor138 = buildings.Houses.nr138.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw138 = buildings.Houses.nr138.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn138 = buildings.Houses.nr138.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut138 = buildings.Houses.nr138.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn138 = buildings.Houses.nr138.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut138 = buildings.Houses.nr138.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut138 = buildings.Houses.nr138.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec138 = buildings.Houses.nr138.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim138 = buildings.Houses.nr138.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon138 = buildings.Houses.nr138.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad138 = buildings.Houses.nr138.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh138 = buildings.Houses.nr138.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva138 = buildings.Houses.nr138.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup138 = buildings.Houses.nr138.heatingSystem.valvePrimSup.y;
+	output Real yValveRad138 = buildings.Houses.nr138.heatingSystem.valveRad.y;
+	output Real yValveFh138 = buildings.Houses.nr138.heatingSystem.valveFh.y;
+	output Real yValveBhp138 = buildings.Houses.nr138.heatingSystem.valveBhp.y;
+	output Real modBhp138 = buildings.Houses.nr138.heatingSystem.bhp.mod;
+	output Real COPBhp138 = buildings.Houses.nr138.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem138 = buildings.Houses.nr138.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant138 = buildings.Houses.nr138.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw138 = buildings.Houses.nr138.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc138 = buildings.Houses.nr138.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc138 = buildings.Houses.nr138.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope138 = buildings.Houses.nr138.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope138 = buildings.Houses.nr138.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex140 = -buildings.Houses.nr140.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva140 = -buildings.Houses.nr140.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon140 = buildings.Houses.nr140.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl140 = buildings.Houses.nr140.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor140 = buildings.Houses.nr140.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed140 = buildings.Houses.nr140.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec140 = PpumpSec140 + PpumpBhp140;
+	output Modelica.Units.SI.HeatFlowRate QlossSec140 = QlossTankDhw140;
+	output Modelica.Units.SI.HeatFlowRate Qrad140 = -buildings.Houses.nr140.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh140 = buildings.Houses.nr140.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw140 = buildings.Houses.nr140.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec140 = buildings.Houses.nr140.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp140 = buildings.Houses.nr140.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex140 = buildings.Houses.nr140.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex140 = buildings.Houses.nr140.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup140 = buildings.Houses.nr140.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet140 = buildings.Houses.nr140.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut140 = buildings.Houses.nr140.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn140 = buildings.Houses.nr140.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut140 = buildings.Houses.nr140.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor140 = buildings.Houses.nr140.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw140 = buildings.Houses.nr140.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn140 = buildings.Houses.nr140.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut140 = buildings.Houses.nr140.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn140 = buildings.Houses.nr140.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut140 = buildings.Houses.nr140.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut140 = buildings.Houses.nr140.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec140 = buildings.Houses.nr140.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim140 = buildings.Houses.nr140.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon140 = buildings.Houses.nr140.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad140 = buildings.Houses.nr140.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh140 = buildings.Houses.nr140.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva140 = buildings.Houses.nr140.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup140 = buildings.Houses.nr140.heatingSystem.valvePrimSup.y;
+	output Real yValveRad140 = buildings.Houses.nr140.heatingSystem.valveRad.y;
+	output Real yValveFh140 = buildings.Houses.nr140.heatingSystem.valveFh.y;
+	output Real yValveBhp140 = buildings.Houses.nr140.heatingSystem.valveBhp.y;
+	output Real modBhp140 = buildings.Houses.nr140.heatingSystem.bhp.mod;
+	output Real COPBhp140 = buildings.Houses.nr140.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem140 = buildings.Houses.nr140.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant140 = buildings.Houses.nr140.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw140 = buildings.Houses.nr140.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc140 = buildings.Houses.nr140.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc140 = buildings.Houses.nr140.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope140 = buildings.Houses.nr140.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope140 = buildings.Houses.nr140.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex142 = -buildings.Houses.nr142.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva142 = -buildings.Houses.nr142.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon142 = buildings.Houses.nr142.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl142 = buildings.Houses.nr142.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor142 = buildings.Houses.nr142.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed142 = buildings.Houses.nr142.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec142 = PpumpSec142 + PpumpBhp142;
+	output Modelica.Units.SI.HeatFlowRate QlossSec142 = QlossTankDhw142;
+	output Modelica.Units.SI.HeatFlowRate Qrad142 = -buildings.Houses.nr142.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh142 = buildings.Houses.nr142.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw142 = buildings.Houses.nr142.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec142 = buildings.Houses.nr142.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp142 = buildings.Houses.nr142.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex142 = buildings.Houses.nr142.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex142 = buildings.Houses.nr142.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup142 = buildings.Houses.nr142.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet142 = buildings.Houses.nr142.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut142 = buildings.Houses.nr142.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn142 = buildings.Houses.nr142.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut142 = buildings.Houses.nr142.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor142 = buildings.Houses.nr142.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw142 = buildings.Houses.nr142.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn142 = buildings.Houses.nr142.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut142 = buildings.Houses.nr142.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn142 = buildings.Houses.nr142.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut142 = buildings.Houses.nr142.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut142 = buildings.Houses.nr142.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec142 = buildings.Houses.nr142.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim142 = buildings.Houses.nr142.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon142 = buildings.Houses.nr142.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad142 = buildings.Houses.nr142.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh142 = buildings.Houses.nr142.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva142 = buildings.Houses.nr142.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup142 = buildings.Houses.nr142.heatingSystem.valvePrimSup.y;
+	output Real yValveRad142 = buildings.Houses.nr142.heatingSystem.valveRad.y;
+	output Real yValveFh142 = buildings.Houses.nr142.heatingSystem.valveFh.y;
+	output Real yValveBhp142 = buildings.Houses.nr142.heatingSystem.valveBhp.y;
+	output Real modBhp142 = buildings.Houses.nr142.heatingSystem.bhp.mod;
+	output Real COPBhp142 = buildings.Houses.nr142.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem142 = buildings.Houses.nr142.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant142 = buildings.Houses.nr142.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw142 = buildings.Houses.nr142.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc142 = buildings.Houses.nr142.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc142 = buildings.Houses.nr142.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope142 = buildings.Houses.nr142.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope142 = buildings.Houses.nr142.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex144 = -buildings.Houses.nr144.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva144 = -buildings.Houses.nr144.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon144 = buildings.Houses.nr144.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl144 = buildings.Houses.nr144.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor144 = buildings.Houses.nr144.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed144 = buildings.Houses.nr144.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec144 = PpumpSec144 + PpumpBhp144;
+	output Modelica.Units.SI.HeatFlowRate QlossSec144 = QlossTankDhw144;
+	output Modelica.Units.SI.HeatFlowRate Qrad144 = -buildings.Houses.nr144.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh144 = buildings.Houses.nr144.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw144 = buildings.Houses.nr144.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec144 = buildings.Houses.nr144.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp144 = buildings.Houses.nr144.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex144 = buildings.Houses.nr144.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex144 = buildings.Houses.nr144.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup144 = buildings.Houses.nr144.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet144 = buildings.Houses.nr144.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut144 = buildings.Houses.nr144.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn144 = buildings.Houses.nr144.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut144 = buildings.Houses.nr144.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor144 = buildings.Houses.nr144.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw144 = buildings.Houses.nr144.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn144 = buildings.Houses.nr144.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut144 = buildings.Houses.nr144.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn144 = buildings.Houses.nr144.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut144 = buildings.Houses.nr144.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut144 = buildings.Houses.nr144.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec144 = buildings.Houses.nr144.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim144 = buildings.Houses.nr144.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon144 = buildings.Houses.nr144.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad144 = buildings.Houses.nr144.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh144 = buildings.Houses.nr144.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva144 = buildings.Houses.nr144.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup144 = buildings.Houses.nr144.heatingSystem.valvePrimSup.y;
+	output Real yValveRad144 = buildings.Houses.nr144.heatingSystem.valveRad.y;
+	output Real yValveFh144 = buildings.Houses.nr144.heatingSystem.valveFh.y;
+	output Real yValveBhp144 = buildings.Houses.nr144.heatingSystem.valveBhp.y;
+	output Real modBhp144 = buildings.Houses.nr144.heatingSystem.bhp.mod;
+	output Real COPBhp144 = buildings.Houses.nr144.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem144 = buildings.Houses.nr144.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant144 = buildings.Houses.nr144.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw144 = buildings.Houses.nr144.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc144 = buildings.Houses.nr144.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc144 = buildings.Houses.nr144.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope144 = buildings.Houses.nr144.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope144 = buildings.Houses.nr144.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex146 = -buildings.Houses.nr146.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva146 = -buildings.Houses.nr146.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon146 = buildings.Houses.nr146.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl146 = buildings.Houses.nr146.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor146 = buildings.Houses.nr146.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed146 = buildings.Houses.nr146.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec146 = PpumpSec146 + PpumpBhp146;
+	output Modelica.Units.SI.HeatFlowRate QlossSec146 = QlossTankDhw146;
+	output Modelica.Units.SI.HeatFlowRate Qrad146 = -buildings.Houses.nr146.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh146 = buildings.Houses.nr146.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw146 = buildings.Houses.nr146.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec146 = buildings.Houses.nr146.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp146 = buildings.Houses.nr146.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex146 = buildings.Houses.nr146.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex146 = buildings.Houses.nr146.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup146 = buildings.Houses.nr146.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet146 = buildings.Houses.nr146.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut146 = buildings.Houses.nr146.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn146 = buildings.Houses.nr146.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut146 = buildings.Houses.nr146.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor146 = buildings.Houses.nr146.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw146 = buildings.Houses.nr146.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn146 = buildings.Houses.nr146.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut146 = buildings.Houses.nr146.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn146 = buildings.Houses.nr146.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut146 = buildings.Houses.nr146.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut146 = buildings.Houses.nr146.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec146 = buildings.Houses.nr146.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim146 = buildings.Houses.nr146.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon146 = buildings.Houses.nr146.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad146 = buildings.Houses.nr146.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh146 = buildings.Houses.nr146.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva146 = buildings.Houses.nr146.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup146 = buildings.Houses.nr146.heatingSystem.valvePrimSup.y;
+	output Real yValveRad146 = buildings.Houses.nr146.heatingSystem.valveRad.y;
+	output Real yValveFh146 = buildings.Houses.nr146.heatingSystem.valveFh.y;
+	output Real yValveBhp146 = buildings.Houses.nr146.heatingSystem.valveBhp.y;
+	output Real modBhp146 = buildings.Houses.nr146.heatingSystem.bhp.mod;
+	output Real COPBhp146 = buildings.Houses.nr146.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem146 = buildings.Houses.nr146.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant146 = buildings.Houses.nr146.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw146 = buildings.Houses.nr146.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc146 = buildings.Houses.nr146.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc146 = buildings.Houses.nr146.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope146 = buildings.Houses.nr146.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope146 = buildings.Houses.nr146.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex148 = -buildings.Houses.nr148.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva148 = -buildings.Houses.nr148.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon148 = buildings.Houses.nr148.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl148 = buildings.Houses.nr148.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor148 = buildings.Houses.nr148.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed148 = buildings.Houses.nr148.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec148 = PpumpSec148 + PpumpBhp148;
+	output Modelica.Units.SI.HeatFlowRate QlossSec148 = QlossTankDhw148;
+	output Modelica.Units.SI.HeatFlowRate Qrad148 = -buildings.Houses.nr148.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh148 = buildings.Houses.nr148.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw148 = buildings.Houses.nr148.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec148 = buildings.Houses.nr148.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp148 = buildings.Houses.nr148.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex148 = buildings.Houses.nr148.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex148 = buildings.Houses.nr148.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup148 = buildings.Houses.nr148.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet148 = buildings.Houses.nr148.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut148 = buildings.Houses.nr148.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn148 = buildings.Houses.nr148.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut148 = buildings.Houses.nr148.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor148 = buildings.Houses.nr148.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw148 = buildings.Houses.nr148.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn148 = buildings.Houses.nr148.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut148 = buildings.Houses.nr148.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn148 = buildings.Houses.nr148.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut148 = buildings.Houses.nr148.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut148 = buildings.Houses.nr148.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec148 = buildings.Houses.nr148.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim148 = buildings.Houses.nr148.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon148 = buildings.Houses.nr148.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad148 = buildings.Houses.nr148.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh148 = buildings.Houses.nr148.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva148 = buildings.Houses.nr148.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup148 = buildings.Houses.nr148.heatingSystem.valvePrimSup.y;
+	output Real yValveRad148 = buildings.Houses.nr148.heatingSystem.valveRad.y;
+	output Real yValveFh148 = buildings.Houses.nr148.heatingSystem.valveFh.y;
+	output Real yValveBhp148 = buildings.Houses.nr148.heatingSystem.valveBhp.y;
+	output Real modBhp148 = buildings.Houses.nr148.heatingSystem.bhp.mod;
+	output Real COPBhp148 = buildings.Houses.nr148.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem148 = buildings.Houses.nr148.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant148 = buildings.Houses.nr148.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw148 = buildings.Houses.nr148.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc148 = buildings.Houses.nr148.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc148 = buildings.Houses.nr148.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope148 = buildings.Houses.nr148.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope148 = buildings.Houses.nr148.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex150 = -buildings.Houses.nr150.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva150 = -buildings.Houses.nr150.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon150 = buildings.Houses.nr150.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl150 = buildings.Houses.nr150.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor150 = buildings.Houses.nr150.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed150 = buildings.Houses.nr150.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec150 = PpumpSec150 + PpumpBhp150;
+	output Modelica.Units.SI.HeatFlowRate QlossSec150 = QlossTankDhw150;
+	output Modelica.Units.SI.HeatFlowRate Qrad150 = -buildings.Houses.nr150.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh150 = buildings.Houses.nr150.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw150 = buildings.Houses.nr150.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec150 = buildings.Houses.nr150.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp150 = buildings.Houses.nr150.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex150 = buildings.Houses.nr150.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex150 = buildings.Houses.nr150.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup150 = buildings.Houses.nr150.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet150 = buildings.Houses.nr150.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut150 = buildings.Houses.nr150.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn150 = buildings.Houses.nr150.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut150 = buildings.Houses.nr150.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor150 = buildings.Houses.nr150.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw150 = buildings.Houses.nr150.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn150 = buildings.Houses.nr150.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut150 = buildings.Houses.nr150.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn150 = buildings.Houses.nr150.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut150 = buildings.Houses.nr150.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut150 = buildings.Houses.nr150.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec150 = buildings.Houses.nr150.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim150 = buildings.Houses.nr150.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon150 = buildings.Houses.nr150.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad150 = buildings.Houses.nr150.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh150 = buildings.Houses.nr150.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva150 = buildings.Houses.nr150.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup150 = buildings.Houses.nr150.heatingSystem.valvePrimSup.y;
+	output Real yValveRad150 = buildings.Houses.nr150.heatingSystem.valveRad.y;
+	output Real yValveFh150 = buildings.Houses.nr150.heatingSystem.valveFh.y;
+	output Real yValveBhp150 = buildings.Houses.nr150.heatingSystem.valveBhp.y;
+	output Real modBhp150 = buildings.Houses.nr150.heatingSystem.bhp.mod;
+	output Real COPBhp150 = buildings.Houses.nr150.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem150 = buildings.Houses.nr150.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant150 = buildings.Houses.nr150.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw150 = buildings.Houses.nr150.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc150 = buildings.Houses.nr150.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc150 = buildings.Houses.nr150.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope150 = buildings.Houses.nr150.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope150 = buildings.Houses.nr150.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex152 = -buildings.Houses.nr152.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva152 = -buildings.Houses.nr152.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon152 = buildings.Houses.nr152.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl152 = buildings.Houses.nr152.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor152 = buildings.Houses.nr152.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed152 = buildings.Houses.nr152.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec152 = PpumpSec152 + PpumpBhp152;
+	output Modelica.Units.SI.HeatFlowRate QlossSec152 = QlossTankDhw152;
+	output Modelica.Units.SI.HeatFlowRate Qrad152 = -buildings.Houses.nr152.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh152 = buildings.Houses.nr152.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw152 = buildings.Houses.nr152.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec152 = buildings.Houses.nr152.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp152 = buildings.Houses.nr152.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex152 = buildings.Houses.nr152.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex152 = buildings.Houses.nr152.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup152 = buildings.Houses.nr152.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet152 = buildings.Houses.nr152.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut152 = buildings.Houses.nr152.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn152 = buildings.Houses.nr152.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut152 = buildings.Houses.nr152.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor152 = buildings.Houses.nr152.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw152 = buildings.Houses.nr152.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn152 = buildings.Houses.nr152.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut152 = buildings.Houses.nr152.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn152 = buildings.Houses.nr152.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut152 = buildings.Houses.nr152.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut152 = buildings.Houses.nr152.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec152 = buildings.Houses.nr152.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim152 = buildings.Houses.nr152.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon152 = buildings.Houses.nr152.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad152 = buildings.Houses.nr152.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh152 = buildings.Houses.nr152.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva152 = buildings.Houses.nr152.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup152 = buildings.Houses.nr152.heatingSystem.valvePrimSup.y;
+	output Real yValveRad152 = buildings.Houses.nr152.heatingSystem.valveRad.y;
+	output Real yValveFh152 = buildings.Houses.nr152.heatingSystem.valveFh.y;
+	output Real yValveBhp152 = buildings.Houses.nr152.heatingSystem.valveBhp.y;
+	output Real modBhp152 = buildings.Houses.nr152.heatingSystem.bhp.mod;
+	output Real COPBhp152 = buildings.Houses.nr152.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem152 = buildings.Houses.nr152.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant152 = buildings.Houses.nr152.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw152 = buildings.Houses.nr152.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc152 = buildings.Houses.nr152.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc152 = buildings.Houses.nr152.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope152 = buildings.Houses.nr152.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope152 = buildings.Houses.nr152.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex154 = -buildings.Houses.nr154.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva154 = -buildings.Houses.nr154.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon154 = buildings.Houses.nr154.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl154 = buildings.Houses.nr154.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor154 = buildings.Houses.nr154.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed154 = buildings.Houses.nr154.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec154 = PpumpSec154 + PpumpBhp154;
+	output Modelica.Units.SI.HeatFlowRate QlossSec154 = QlossTankDhw154;
+	output Modelica.Units.SI.HeatFlowRate Qrad154 = -buildings.Houses.nr154.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh154 = buildings.Houses.nr154.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw154 = buildings.Houses.nr154.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec154 = buildings.Houses.nr154.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp154 = buildings.Houses.nr154.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex154 = buildings.Houses.nr154.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex154 = buildings.Houses.nr154.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup154 = buildings.Houses.nr154.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet154 = buildings.Houses.nr154.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut154 = buildings.Houses.nr154.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn154 = buildings.Houses.nr154.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut154 = buildings.Houses.nr154.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor154 = buildings.Houses.nr154.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw154 = buildings.Houses.nr154.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn154 = buildings.Houses.nr154.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut154 = buildings.Houses.nr154.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn154 = buildings.Houses.nr154.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut154 = buildings.Houses.nr154.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut154 = buildings.Houses.nr154.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec154 = buildings.Houses.nr154.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim154 = buildings.Houses.nr154.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon154 = buildings.Houses.nr154.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad154 = buildings.Houses.nr154.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh154 = buildings.Houses.nr154.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva154 = buildings.Houses.nr154.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup154 = buildings.Houses.nr154.heatingSystem.valvePrimSup.y;
+	output Real yValveRad154 = buildings.Houses.nr154.heatingSystem.valveRad.y;
+	output Real yValveFh154 = buildings.Houses.nr154.heatingSystem.valveFh.y;
+	output Real yValveBhp154 = buildings.Houses.nr154.heatingSystem.valveBhp.y;
+	output Real modBhp154 = buildings.Houses.nr154.heatingSystem.bhp.mod;
+	output Real COPBhp154 = buildings.Houses.nr154.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem154 = buildings.Houses.nr154.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant154 = buildings.Houses.nr154.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw154 = buildings.Houses.nr154.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc154 = buildings.Houses.nr154.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc154 = buildings.Houses.nr154.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope154 = buildings.Houses.nr154.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope154 = buildings.Houses.nr154.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex156 = -buildings.Houses.nr156.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva156 = -buildings.Houses.nr156.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon156 = buildings.Houses.nr156.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl156 = buildings.Houses.nr156.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor156 = buildings.Houses.nr156.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed156 = buildings.Houses.nr156.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec156 = PpumpSec156 + PpumpBhp156;
+	output Modelica.Units.SI.HeatFlowRate QlossSec156 = QlossTankDhw156;
+	output Modelica.Units.SI.HeatFlowRate Qrad156 = -buildings.Houses.nr156.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh156 = buildings.Houses.nr156.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw156 = buildings.Houses.nr156.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec156 = buildings.Houses.nr156.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp156 = buildings.Houses.nr156.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex156 = buildings.Houses.nr156.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex156 = buildings.Houses.nr156.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup156 = buildings.Houses.nr156.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet156 = buildings.Houses.nr156.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut156 = buildings.Houses.nr156.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn156 = buildings.Houses.nr156.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut156 = buildings.Houses.nr156.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor156 = buildings.Houses.nr156.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw156 = buildings.Houses.nr156.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn156 = buildings.Houses.nr156.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut156 = buildings.Houses.nr156.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn156 = buildings.Houses.nr156.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut156 = buildings.Houses.nr156.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut156 = buildings.Houses.nr156.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec156 = buildings.Houses.nr156.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim156 = buildings.Houses.nr156.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon156 = buildings.Houses.nr156.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad156 = buildings.Houses.nr156.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh156 = buildings.Houses.nr156.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva156 = buildings.Houses.nr156.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup156 = buildings.Houses.nr156.heatingSystem.valvePrimSup.y;
+	output Real yValveRad156 = buildings.Houses.nr156.heatingSystem.valveRad.y;
+	output Real yValveFh156 = buildings.Houses.nr156.heatingSystem.valveFh.y;
+	output Real yValveBhp156 = buildings.Houses.nr156.heatingSystem.valveBhp.y;
+	output Real modBhp156 = buildings.Houses.nr156.heatingSystem.bhp.mod;
+	output Real COPBhp156 = buildings.Houses.nr156.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem156 = buildings.Houses.nr156.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant156 = buildings.Houses.nr156.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw156 = buildings.Houses.nr156.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc156 = buildings.Houses.nr156.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc156 = buildings.Houses.nr156.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope156 = buildings.Houses.nr156.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope156 = buildings.Houses.nr156.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex158 = -buildings.Houses.nr158.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva158 = -buildings.Houses.nr158.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon158 = buildings.Houses.nr158.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl158 = buildings.Houses.nr158.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor158 = buildings.Houses.nr158.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed158 = buildings.Houses.nr158.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec158 = PpumpSec158 + PpumpBhp158;
+	output Modelica.Units.SI.HeatFlowRate QlossSec158 = QlossTankDhw158;
+	output Modelica.Units.SI.HeatFlowRate Qrad158 = -buildings.Houses.nr158.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh158 = buildings.Houses.nr158.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw158 = buildings.Houses.nr158.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec158 = buildings.Houses.nr158.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp158 = buildings.Houses.nr158.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex158 = buildings.Houses.nr158.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex158 = buildings.Houses.nr158.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup158 = buildings.Houses.nr158.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet158 = buildings.Houses.nr158.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut158 = buildings.Houses.nr158.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn158 = buildings.Houses.nr158.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut158 = buildings.Houses.nr158.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor158 = buildings.Houses.nr158.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw158 = buildings.Houses.nr158.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn158 = buildings.Houses.nr158.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut158 = buildings.Houses.nr158.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn158 = buildings.Houses.nr158.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut158 = buildings.Houses.nr158.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut158 = buildings.Houses.nr158.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec158 = buildings.Houses.nr158.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim158 = buildings.Houses.nr158.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon158 = buildings.Houses.nr158.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad158 = buildings.Houses.nr158.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh158 = buildings.Houses.nr158.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva158 = buildings.Houses.nr158.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup158 = buildings.Houses.nr158.heatingSystem.valvePrimSup.y;
+	output Real yValveRad158 = buildings.Houses.nr158.heatingSystem.valveRad.y;
+	output Real yValveFh158 = buildings.Houses.nr158.heatingSystem.valveFh.y;
+	output Real yValveBhp158 = buildings.Houses.nr158.heatingSystem.valveBhp.y;
+	output Real modBhp158 = buildings.Houses.nr158.heatingSystem.bhp.mod;
+	output Real COPBhp158 = buildings.Houses.nr158.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem158 = buildings.Houses.nr158.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant158 = buildings.Houses.nr158.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw158 = buildings.Houses.nr158.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc158 = buildings.Houses.nr158.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc158 = buildings.Houses.nr158.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope158 = buildings.Houses.nr158.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope158 = buildings.Houses.nr158.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.Power PbhpEl = PbhpEl136
+		+ PbhpEl138
+		+ PbhpEl140
+		+ PbhpEl142
+		+ PbhpEl144
+		+ PbhpEl146
+		+ PbhpEl148
+		+ PbhpEl150
+		+ PbhpEl152
+		+ PbhpEl154
+		+ PbhpEl156
+		+ PbhpEl158;
+	output Modelica.Units.SI.Power PpumpElSec = PpumpElSec136
+		+ PpumpElSec138
+		+ PpumpElSec140
+		+ PpumpElSec142
+		+ PpumpElSec144
+		+ PpumpElSec146
+		+ PpumpElSec148
+		+ PpumpElSec150
+		+ PpumpElSec152
+		+ PpumpElSec154
+		+ PpumpElSec156
+		+ PpumpElSec158;
+
+	// Comfort
+	output Real TSetHea = 21 + 273.15;
+	output Real TSetCoo = if ((time < 90*24*3600) or (time > 273*24*3600)) then (23 + 273.15) else (26 + 273.15);
+
+	output Real DiscmfHea136 = max(0, TSetHea - TSensor136);
+	output Real DiscmfCoo136 = max(0, TSensor136 - TSetCoo);
+	output Real DiscmfHea138 = max(0, TSetHea - TSensor138);
+	output Real DiscmfCoo138 = max(0, TSensor138 - TSetCoo);
+	output Real DiscmfHea140 = max(0, TSetHea - TSensor140);
+	output Real DiscmfCoo140 = max(0, TSensor140 - TSetCoo);
+	output Real DiscmfHea142 = max(0, TSetHea - TSensor142);
+	output Real DiscmfCoo142 = max(0, TSensor142 - TSetCoo);
+	output Real DiscmfHea144 = max(0, TSetHea - TSensor144);
+	output Real DiscmfCoo144 = max(0, TSensor144 - TSetCoo);
+	output Real DiscmfHea146 = max(0, TSetHea - TSensor146);
+	output Real DiscmfCoo146 = max(0, TSensor146 - TSetCoo);
+	output Real DiscmfHea148 = max(0, TSetHea - TSensor148);
+	output Real DiscmfCoo148 = max(0, TSensor148 - TSetCoo);
+	output Real DiscmfHea150 = max(0, TSetHea - TSensor150);
+	output Real DiscmfCoo150 = max(0, TSensor150 - TSetCoo);
+	output Real DiscmfHea152 = max(0, TSetHea - TSensor152);
+	output Real DiscmfCoo152 = max(0, TSensor152 - TSetCoo);
+	output Real DiscmfHea154 = max(0, TSetHea - TSensor154);
+	output Real DiscmfCoo154 = max(0, TSensor154 - TSetCoo);
+	output Real DiscmfHea156 = max(0, TSetHea - TSensor156);
+	output Real DiscmfCoo156 = max(0, TSensor156 - TSetCoo);
+	output Real DiscmfHea158 = max(0, TSetHea - TSensor158);
+	output Real DiscmfCoo158 = max(0, TSensor158 - TSetCoo);
+
+
+end DeSchipjesOneZoneSwitch;

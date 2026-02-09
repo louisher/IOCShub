@@ -1,0 +1,784 @@
+optimization StijnStreuvel(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+31536000, timeStep=3600, intervalLengths="72*1", tolerance=1e-1, truncationDelta=1e-2)
+	extends IOCSmod.Optimization.StijnStreuvel(addDummyEquation=false,
+									sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata/Brussels-City_XMY2021-2040_ssp245_MAR-BCC_SWDbased.mos"),
+									priceSim.path_economic_params_json="/homenvme/louis/software/iocs/input_data/economic_params.json",	
+									enerHub.Size_AsHp=21.0,
+									enerHub.Size_GsHp=4.4,
+									enerHub.Size_AsChi=0.1,
+									enerHub.Size_Tank=0.1,
+									enerHub.Size_PV=100.0,
+									enerHub.Size_STC=0.1,
+									enerHub.Size_PVT=0.1,
+									enerHub.hasBat=true,
+									enerHub.Size_Bat=0.21,
+									enerHub.P_max_bat_kW=5.0,
+									enerHub.TBorMin=273.15+0.15,
+									enerHub.borFieDat.conDat.hBor=50,
+									enerHub.borFieDat.conDat.nBor=2,
+									enerHub.groTemResDat.rCel.rCel={1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0, 2048.0, 4096.0, 8192.0, 16384.0, 32768.0, 65536.0, 131072.0, 88257.0},
+									enerHub.groTemResDat.kappa.kappa={0.0007264937812145109, 0.0003177021844644811, 0.0002862689987784522, 0.00027999354473205534, 0.00028004055157924046, 0.00028112714955995095, 0.0002813669570486633, 0.0002805619874353257, 0.0002812092605561146, 0.00030076493730312034, 0.00034684150826040563, 0.0003894536261319615, 0.00040203146633928464, 0.00037946033996184847, 0.00032542455292191, 0.0002479153142748783, 0.0001608400686989751, 8.652896671830241e-05, 2.090200102458726e-05},
+                                            enerHub.borFieDat.conDat.cooBor=[0,0; 0,6]
+											);
+
+	//////////////////////////////////
+	// Energy Hub Output variables	//
+	//////////////////////////////////
+
+	// General
+	output Real P_Net_enerHub = enerHub.P;
+	output Real Q_enerHub = enerHub.QEnergyHub;
+	
+	// GSHP
+	output Real QNom_GSHP = enerHub.Qnom_GsHp;
+	output Real P_GSHP = enerHub.GsHp.GsHp.PEl;
+	output Real E_GSHP_kWh = enerHub.GsHp.EGsHp_kWh.y;
+	output Real QCon_GSHP = enerHub.GsHp.GsHp.QCon;
+	output Real QEva_GSHP = -enerHub.GsHp.GsHp.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_GSHP = enerHub.GsHp.GsHp.COP;
+
+	output Real P_pumCoo = enerHub.GsHp.pumHexCooEva.P;
+	output Real E_pumCoo_kWh = enerHub.GsHp.EpumCoo_kWh.y;
+	output Real QhexCoo = enerHub.GsHp.hexCoo.Q2_flow; // will be positive if heat is added to the borefield i.e. cooling of buffertank is happening
+
+	output Real TGsHpConIn = enerHub.GsHp.senTGsHpConIn.T - 273.15; //°C
+	output Real TGsHpConOut = enerHub.GsHp.senTGsHpConOut.T - 273.15; //°C
+	output Real TGsHpEvaIn = enerHub.GsHp.senTGsHpEvaIn.T - 273.15; //°C
+	output Real TGsHpEvaOut = enerHub.GsHp.senTGsHpEvaOut.T - 273.15; //°C
+
+	output Real TBorIn = enerHub.GsHp.senTBorIn.T - 273.15; //°C
+	output Real TBorOut = enerHub.GsHp.senTBorOut.T - 273.15; //°C
+
+	output Real THexCooConIn = enerHub.GsHp.senTHexCooConIn.T - 273.15; //°C
+	output Real THexCooConOut = enerHub.GsHp.senTHexCooConOut.T - 273.15; //°C
+	output Real THexCooEvaIn = enerHub.GsHp.senTHexCooEvaIn.T - 273.15; //°C
+	output Real THexCooEvaOut = enerHub.GsHp.senTHexCooEvaOut.T - 273.15; //°C
+
+	output Real mFlowGsHpCon = enerHub.GsHp.GsHp.m2_flow;
+	output Real mFlowGsHpEva = enerHub.GsHp.GsHp.m1_flow;
+	output Real mFlowBor = enerHub.GsHp.pumBor.m_flow;
+
+	output Real mFlowHexCooCon = enerHub.GsHp.hexCoo.m2_flow;
+	output Real mFlowHexCooEva = enerHub.GsHp.hexCoo.m1_flow;
+
+	output Real chBor_delTBor = enerHub.GsHp.borefield.groTemRes.delTBor;
+	output Real chBor_QAggFlow1 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[1];
+	output Real chBor_QAggFlow2 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[2];
+	output Real chBor_QAggFlow3 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[3];
+
+	// ASHP
+	output Real QNom_ASHP = enerHub.Qnom_AsHp;
+	output Real P_ASHP = enerHub.AsHp.AsHp.PEl;
+	output Real E_ASHP_kWh = enerHub.AsHp.EAsHp_kWh.y;
+	output Real QCon_ASHP = enerHub.AsHp.AsHp.QCon;
+	output Real QEva_ASHP = -enerHub.AsHp.AsHp.HP.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_ASHP = enerHub.AsHp.AsHp.COP;
+
+	output Real TAsHpConIn = enerHub.AsHp.senTAsHpConIn.T - 273.15; //°C
+	output Real TAsHpConOut = enerHub.AsHp.senTAsHpConOut.T - 273.15; //°C
+	output Real TAsHpEvaIn = enerHub.AsHp.AsHp.HP.TEvaIn.T - 273.15; //°C
+	output Real TAsHpEvaOut = enerHub.AsHp.AsHp.HP.TEvaOut.T - 273.15; //°C
+
+	output Real mFlowAsHpCon = enerHub.AsHp.AsHp.HP.m2_flow;
+
+	// ASCHI
+	output Real QNom_ASCHI = enerHub.Qnom_AsChi;
+	output Real P_ASCHI = enerHub.AsChi.AsChi.PEl;
+	output Real E_ASCHI_kWh = enerHub.AsChi.EAsChi_kWh.y;
+	output Real QCon_ASCHI = enerHub.AsChi.AsChi.Chi.con.Q_flow;
+	output Real QEva_ASCHI = enerHub.AsChi.AsChi.QEva; // !!! Positive value
+	output Real EER_ASHP = enerHub.AsChi.AsChi.EER;
+
+	output Real TAsChiEvaIn = enerHub.AsChi.senTAsChiEvaIn.T - 273.15; //°C
+	output Real TAsChiEvaOut = enerHub.AsChi.senTAsChiEvaOut.T - 273.15; //°C
+	output Real TAsChiConIn = enerHub.AsChi.AsChi.Chi.TConIn.T - 273.15; //°C
+	output Real TAsChiConOut = enerHub.AsChi.AsChi.Chi.TConOut.T - 273.15; //°C
+
+	output Real mFlowAsChiEva = enerHub.AsChi.AsChi.Chi.m1_flow;
+
+	// Tank
+	output Real Ttank = enerHub.tan.vol.T - 273.15; //°C
+	output Real Vtank = enerHub.tan.VTan;
+
+	// PV panels
+	output Real A_PV = enerHub.Size_PV;
+	output Real P_PV_DC = enerHub.pv.solarPower.y;
+	output Real P_PV_AC = enerHub.pv.P;
+
+	// Battery 
+	output Real Bat_cap = enerHub.bat.EBat_max ;
+	output Real Bat_soc = enerHub.bat.SoC ;
+	output Real Bat_eff = enerHub.bat.eff ;
+	output Real Bat_Pcha = enerHub.bat.PCha ;
+	output Real Bat_PDem = enerHub.bat.PDem ;
+	output Real Bat_PGrid = enerHub.bat.PGrid ;
+	output Real Bat_SOCmax = enerHub.SoC_max;
+	output Real Bat_SOCmin = enerHub.SoC_min;
+
+	// STC panels
+	output Real A_STC = enerHub.stc.panels.totalArea;
+	output Real QStc = enerHub.stc.panels.QTot;
+
+	output Real QStcHex = enerHub.stc.hex.Q2_flow;
+
+	output Real TStcIn = enerHub.stc.senTPanelsIn.T - 273.15; //°C
+	output Real TStcOut = enerHub.stc.senTPanelsOut.T - 273.15; //°C
+	output Real TStcRegIn = enerHub.stc.senTRegIn.T - 273.15; //°C
+	output Real TStcRegOut = enerHub.stc.senTRegOut.T - 273.15; //°C
+	output Real TStcHeaIn = enerHub.stc.senTHeaIn.T - 273.15; //°C
+	output Real TStcHeaOut = enerHub.stc.senTHeaOut.T - 273.15; //°C
+	output Real TStcHexIn = enerHub.stc.senTHexIn.T -273.15; //°C
+	output Real TStcHexOut = enerHub.stc.senTHexOut.T -273.15; //°C
+
+	output Real mFlowStc = enerHub.stc.pumPanels.m_flow;
+	output Real mFlowStcHex = enerHub.stc.hex.m2_flow;
+	output Real mFlowStcHeaIn = enerHub.stc.valSupHea.m_flow;
+	output Real mFlowStcHeaOut = enerHub.stc.valRetHea.m_flow;
+	output Real mFlowStcRegIn = enerHub.stc.valSupReg.m_flow;
+	output Real mFlowStcRegOut = enerHub.stc.valRetReg.m_flow;
+
+	// PVT
+	output Real A_PVT = enerHub.pvt.panels.totalArea;
+	output Real QPvt = enerHub.pvt.panels.QTot;
+	output Real PPvt = enerHub.pvt.P;
+	
+	output Real QPvtHex = enerHub.pvt.hex.Q2_flow;
+
+	output Real TPvtIn = enerHub.pvt.senTPanelsIn.T - 273.15; //°C
+	output Real TPvtOut = enerHub.pvt.senTPanelsOut.T - 273.15; //°C
+	output Real TPvtHexIn = enerHub.pvt.senTHexIn.T - 273.15; //°C
+	output Real TPvtHexOut = enerHub.pvt.senTHexOut.T - 273.15; //°C
+	output Real TPvtRegIn = enerHub.pvt.senTRegIn.T - 273.15; //°C
+	output Real TPvtRegOut = enerHub.pvt.senTRegOut.T - 273.15; //°C
+	output Real TPvtHeaIn = enerHub.pvt.senTHeaIn.T - 273.15; //°C
+	output Real TPvtHeaOut = enerHub.pvt.senTHeaOut.T - 273.15; //°C
+
+	output Real mFlowPvt = enerHub.pvt.pumPanels.m_flow;
+	output Real mFlowPvtHex = enerHub.pvt.hex.m2_flow;
+	output Real mFlowPvtHeaIn = enerHub.pvt.valSupHea.m_flow;
+	output Real mFlowPvtHeaOut = enerHub.pvt.valRetHea.m_flow;
+	output Real mFlowPvtRegIn = enerHub.pvt.valSupReg.m_flow;
+	output Real mFlowPVtRegOut = enerHub.pvt.valRetReg.m_flow;
+
+
+	////////////////////////////////
+	// Demand Output variables    //
+	////////////////////////////////
+
+	/// Electrical ///
+		
+	//Overall //
+	output Real P_Net_Houses = buildings.P; // Positive value means net offtake
+	output Real P_AHUs = buildings.Houses.P_AHUs_Schema_Sts;
+
+	/// Thermal ///
+
+	//Temperatures
+	// output AHU HX valve positions
+	output Real yHX_airHandlingUnit__AHU_huis_nr_3 = buildings.Houses.airHandlingUnit__AHU_huis_nr_3.threeWayValveMotor.ctrl "";
+	output Real yHX_airHandlingUnit__AHU_huis_nr_5 = buildings.Houses.airHandlingUnit__AHU_huis_nr_5.threeWayValveMotor.ctrl "";
+	output Real yHX_airHandlingUnit__AHU_huis_nr_7 = buildings.Houses.airHandlingUnit__AHU_huis_nr_7.threeWayValveMotor.ctrl "";
+	output Real yHX_airHandlingUnit__AHU_huis_nr_9 = buildings.Houses.airHandlingUnit__AHU_huis_nr_9.threeWayValveMotor.ctrl "";
+	output Real yHX_airHandlingUnit__AHU_huis_nr_11 = buildings.Houses.airHandlingUnit__AHU_huis_nr_11.threeWayValveMotor.ctrl "";
+	output Real yHX_airHandlingUnit__AHU_huis_nr_13 = buildings.Houses.airHandlingUnit__AHU_huis_nr_13.threeWayValveMotor.ctrl "";
+	output Real yHX_airHandlingUnit__AHU_huis_nr_15 = buildings.Houses.airHandlingUnit__AHU_huis_nr_15.threeWayValveMotor.ctrl "";
+	output Real yHX_airHandlingUnit__AHU_huis_nr_17 = buildings.Houses.airHandlingUnit__AHU_huis_nr_17.threeWayValveMotor.ctrl "";
+	output Real yHX_airHandlingUnit__AHU_huis_nr_19 = buildings.Houses.airHandlingUnit__AHU_huis_nr_19.threeWayValveMotor.ctrl "";
+	output Real yHX_airHandlingUnit__AHU_huis_nr_21 = buildings.Houses.airHandlingUnit__AHU_huis_nr_21.threeWayValveMotor.ctrl "";
+	output Real yHX_airHandlingUnit__AHU_huis_nr_23 = buildings.Houses.airHandlingUnit__AHU_huis_nr_23.threeWayValveMotor.ctrl "";
+	output Real yHX_airHandlingUnit__AHU_huis_nr_25 = buildings.Houses.airHandlingUnit__AHU_huis_nr_25.threeWayValveMotor.ctrl "";
+	output Real yHX_airHandlingUnit__AHU_huis_nr_27 = buildings.Houses.airHandlingUnit__AHU_huis_nr_27.threeWayValveMotor.ctrl "";
+	output Real yHX_airHandlingUnit__AHU_huis_nr_29 = buildings.Houses.airHandlingUnit__AHU_huis_nr_29.threeWayValveMotor.ctrl "";
+	output Real yHX_airHandlingUnit__AHU_huis_nr_31 = buildings.Houses.airHandlingUnit__AHU_huis_nr_31.threeWayValveMotor.ctrl "";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_11_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_11_Badkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_11_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_11_Leefruimte.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_11_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_11_Slaapkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_13_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_13_Badkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_13_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_13_Leefruimte.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_13_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_13_Slaapkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_15_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_15_Badkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_15_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_15_Leefruimte.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_15_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_15_Slaapkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_17_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_17_Badkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_17_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_17_Inkom.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_17_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_17_Leefruimte.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_17_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_17_Slaapkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_19_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_19_Badkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_19_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_19_Inkom.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_19_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_19_Leefruimte.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_19_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_19_Slaapkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_21_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_21_Badkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_21_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_21_Inkom.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_21_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_21_Leefruimte.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_21_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_21_Slaapkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_23_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_23_Badkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_23_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_23_Leefruimte.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_23_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_23_Slaapkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_25_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_25_Badkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_25_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_25_Leefruimte.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_25_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_25_Slaapkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_27_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_27_Badkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_27_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_27_Leefruimte.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_27_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_27_Slaapkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_29_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_29_Badkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_29_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_29_Leefruimte.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_29_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_29_Slaapkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_31_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_31_Badkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_31_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_31_Inkom.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_31_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_31_Leefruimte.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_31_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_31_Slaapkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_3_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_3_Badkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_3_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_3_Inkom.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_3_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_3_Leefruimte.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_3_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_3_Slaapkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_5_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_5_Badkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_5_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_5_Inkom.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_5_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_5_Leefruimte.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_5_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_5_Slaapkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_7_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_7_Badkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_7_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_7_Inkom.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_7_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_7_Leefruimte.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_7_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_7_Slaapkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_9_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_9_Badkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_9_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_9_Leefruimte.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TCore_embeddedPipe_1_zone_Huis_nr_9_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.embeddedPipe_1_zone_Huis_nr_9_Slaapkamer.heatPortEmb[1].T) "EmbeddedPipe core temperature";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Fietsenstalling_2_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Fietsenstalling_2_UC.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Fietsenstalling_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Fietsenstalling_UC.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_11_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_11_Badkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_11_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_11_Leefruimte.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_11_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_11_Slaapkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_13_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_13_Badkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_13_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_13_Leefruimte.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_13_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_13_Slaapkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_15_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_15_Badkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_15_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_15_Leefruimte.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_15_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_15_Slaapkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_17_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_17_Badkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_17_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_17_Inkom.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_17_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_17_Leefruimte.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_17_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_17_Slaapkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_19_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_19_Badkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_19_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_19_Inkom.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_19_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_19_Leefruimte.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_19_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_19_Slaapkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_21_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_21_Badkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_21_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_21_Inkom.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_21_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_21_Leefruimte.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_21_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_21_Slaapkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_23_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_23_Badkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_23_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_23_Leefruimte.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_23_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_23_Slaapkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_25_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_25_Badkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_25_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_25_Leefruimte.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_25_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_25_Slaapkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_27_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_27_Badkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_27_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_27_Leefruimte.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_27_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_27_Slaapkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_29_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_29_Badkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_29_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_29_Leefruimte.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_29_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_29_Slaapkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_31_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_31_Badkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_31_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_31_Inkom.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_31_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_31_Leefruimte.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_31_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_31_Slaapkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_3_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_3_Badkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_3_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_3_Inkom.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_3_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_3_Leefruimte.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_3_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_3_Slaapkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_5_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_5_Badkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_5_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_5_Inkom.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_5_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_5_Leefruimte.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_5_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_5_Slaapkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_7_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_7_Badkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_7_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_7_Inkom.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_7_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_7_Leefruimte.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_7_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_7_Slaapkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_9_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_9_Badkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_9_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_9_Leefruimte.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Huis_nr_9_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_9_Slaapkamer.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Inkom_tech_lokaal_1_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Inkom_tech_lokaal_1_UC.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Inkom_tech_lokaal_2_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Inkom_tech_lokaal_2_UC.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Inkom_tech_lokaal_3_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Inkom_tech_lokaal_3_UC.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Inkom_tech_ruimte_4_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Inkom_tech_ruimte_4_UC.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Inkom_tech_ruimte_5_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Inkom_tech_ruimte_5_UC.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Inkom_tech_ruimte_6_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Inkom_tech_ruimte_6_UC.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRad_zone__Technische_ruimte_BEO_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Technische_ruimte_BEO_UC.TRad) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__AHU_huis_nr_11 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_11.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__AHU_huis_nr_13 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_13.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__AHU_huis_nr_15 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_15.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__AHU_huis_nr_17 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_17.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__AHU_huis_nr_19 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_19.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__AHU_huis_nr_21 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_21.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__AHU_huis_nr_23 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_23.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__AHU_huis_nr_25 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_25.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__AHU_huis_nr_27 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_27.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__AHU_huis_nr_29 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_29.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__AHU_huis_nr_3 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_3.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__AHU_huis_nr_31 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_31.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__AHU_huis_nr_5 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_5.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__AHU_huis_nr_7 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_7.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__AHU_huis_nr_9 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_9.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__AHU_huis_nr_11 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_11.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__AHU_huis_nr_13 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_13.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__AHU_huis_nr_15 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_15.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__AHU_huis_nr_17 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_17.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__AHU_huis_nr_19 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_19.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__AHU_huis_nr_21 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_21.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__AHU_huis_nr_23 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_23.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__AHU_huis_nr_25 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_25.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__AHU_huis_nr_27 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_27.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__AHU_huis_nr_29 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_29.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__AHU_huis_nr_3 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_3.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__AHU_huis_nr_31 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_31.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__AHU_huis_nr_5 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_5.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__AHU_huis_nr_7 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_7.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__AHU_huis_nr_9 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__AHU_huis_nr_9.TSup) "";
+
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Fietsenstalling_2_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Fietsenstalling_2_UC.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Fietsenstalling_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Fietsenstalling_UC.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_11_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_11_Badkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_11_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_11_Leefruimte.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_11_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_11_Slaapkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_13_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_13_Badkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_13_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_13_Leefruimte.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_13_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_13_Slaapkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_15_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_15_Badkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_15_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_15_Leefruimte.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_15_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_15_Slaapkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_17_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_17_Badkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_17_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_17_Inkom.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_17_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_17_Leefruimte.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_17_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_17_Slaapkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_19_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_19_Badkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_19_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_19_Inkom.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_19_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_19_Leefruimte.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_19_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_19_Slaapkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_21_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_21_Badkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_21_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_21_Inkom.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_21_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_21_Leefruimte.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_21_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_21_Slaapkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_23_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_23_Badkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_23_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_23_Leefruimte.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_23_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_23_Slaapkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_25_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_25_Badkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_25_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_25_Leefruimte.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_25_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_25_Slaapkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_27_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_27_Badkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_27_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_27_Leefruimte.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_27_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_27_Slaapkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_29_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_29_Badkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_29_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_29_Leefruimte.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_29_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_29_Slaapkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_31_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_31_Badkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_31_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_31_Inkom.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_31_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_31_Leefruimte.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_31_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_31_Slaapkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_3_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_3_Badkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_3_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_3_Inkom.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_3_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_3_Leefruimte.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_3_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_3_Slaapkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_5_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_5_Badkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_5_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_5_Inkom.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_5_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_5_Leefruimte.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_5_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_5_Slaapkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_7_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_7_Badkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_7_Inkom = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_7_Inkom.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_7_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_7_Leefruimte.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_7_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_7_Slaapkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_9_Badkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_9_Badkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_9_Leefruimte = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_9_Leefruimte.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Huis_nr_9_Slaapkamer = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Huis_nr_9_Slaapkamer.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Inkom_tech_lokaal_1_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Inkom_tech_lokaal_1_UC.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Inkom_tech_lokaal_2_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Inkom_tech_lokaal_2_UC.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Inkom_tech_lokaal_3_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Inkom_tech_lokaal_3_UC.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Inkom_tech_ruimte_4_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Inkom_tech_ruimte_4_UC.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Inkom_tech_ruimte_5_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Inkom_tech_ruimte_5_UC.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Inkom_tech_ruimte_6_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Inkom_tech_ruimte_6_UC.comfort.TComf) "";
+	output Modelica.Units.NonSI.Temperature_degC T_zone__Technische_ruimte_BEO_UC = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__Technische_ruimte_BEO_UC.comfort.TComf) "";
+	
+	//Mass flows
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating__TABS_huis_nr_11__valve = buildings.Houses.floorHeating__TABS_huis_nr_11__valve.m_flow "Total mass flow rate for all assignments of 'TABS - huis nr 11'";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating__TABS_huis_nr_13__valve = buildings.Houses.floorHeating__TABS_huis_nr_13__valve.m_flow "Total mass flow rate for all assignments of 'TABS - huis nr 13'";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating__TABS_huis_nr_15__valve = buildings.Houses.floorHeating__TABS_huis_nr_15__valve.m_flow "Total mass flow rate for all assignments of 'TABS - huis nr 15'";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating__TABS_huis_nr_17__valve = buildings.Houses.floorHeating__TABS_huis_nr_17__valve.m_flow "Total mass flow rate for all assignments of 'TABS - huis nr 17'";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating__TABS_huis_nr_19__valve = buildings.Houses.floorHeating__TABS_huis_nr_19__valve.m_flow "Total mass flow rate for all assignments of 'TABS - huis nr 19'";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating__TABS_huis_nr_21__valve = buildings.Houses.floorHeating__TABS_huis_nr_21__valve.m_flow "Total mass flow rate for all assignments of 'TABS - huis nr 21'";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating__TABS_huis_nr_23__valve = buildings.Houses.floorHeating__TABS_huis_nr_23__valve.m_flow "Total mass flow rate for all assignments of 'TABS - huis nr 23'";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating__TABS_huis_nr_25__valve = buildings.Houses.floorHeating__TABS_huis_nr_25__valve.m_flow "Total mass flow rate for all assignments of 'TABS - huis nr 25'";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating__TABS_huis_nr_27__valve = buildings.Houses.floorHeating__TABS_huis_nr_27__valve.m_flow "Total mass flow rate for all assignments of 'TABS - huis nr 27'";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating__TABS_huis_nr_29__valve = buildings.Houses.floorHeating__TABS_huis_nr_29__valve.m_flow "Total mass flow rate for all assignments of 'TABS - huis nr 29'";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating__TABS_huis_nr_31__valve = buildings.Houses.floorHeating__TABS_huis_nr_31__valve.m_flow "Total mass flow rate for all assignments of 'TABS - huis nr 31'";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating__TABS_huis_nr_3__valve = buildings.Houses.floorHeating__TABS_huis_nr_3__valve.m_flow "Total mass flow rate for all assignments of 'TABS - huis nr 3'";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating__TABS_huis_nr_5__valve = buildings.Houses.floorHeating__TABS_huis_nr_5__valve.m_flow "Total mass flow rate for all assignments of 'TABS - huis nr 5'";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating__TABS_huis_nr_7__valve = buildings.Houses.floorHeating__TABS_huis_nr_7__valve.m_flow "Total mass flow rate for all assignments of 'TABS - huis nr 7'";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating__TABS_huis_nr_9__valve = buildings.Houses.floorHeating__TABS_huis_nr_9__valve.m_flow "Total mass flow rate for all assignments of 'TABS - huis nr 9'";
+	output Modelica.Units.SI.MassFlowRate m_flow_ret_airHandlingUnit__AHU_huis_nr_11 = sum(buildings.Houses.airHandlingUnit__AHU_huis_nr_11.port_a.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_ret_airHandlingUnit__AHU_huis_nr_13 = sum(buildings.Houses.airHandlingUnit__AHU_huis_nr_13.port_a.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_ret_airHandlingUnit__AHU_huis_nr_15 = sum(buildings.Houses.airHandlingUnit__AHU_huis_nr_15.port_a.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_ret_airHandlingUnit__AHU_huis_nr_17 = sum(buildings.Houses.airHandlingUnit__AHU_huis_nr_17.port_a.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_ret_airHandlingUnit__AHU_huis_nr_19 = sum(buildings.Houses.airHandlingUnit__AHU_huis_nr_19.port_a.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_ret_airHandlingUnit__AHU_huis_nr_21 = sum(buildings.Houses.airHandlingUnit__AHU_huis_nr_21.port_a.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_ret_airHandlingUnit__AHU_huis_nr_23 = sum(buildings.Houses.airHandlingUnit__AHU_huis_nr_23.port_a.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_ret_airHandlingUnit__AHU_huis_nr_25 = sum(buildings.Houses.airHandlingUnit__AHU_huis_nr_25.port_a.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_ret_airHandlingUnit__AHU_huis_nr_27 = sum(buildings.Houses.airHandlingUnit__AHU_huis_nr_27.port_a.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_ret_airHandlingUnit__AHU_huis_nr_29 = sum(buildings.Houses.airHandlingUnit__AHU_huis_nr_29.port_a.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_ret_airHandlingUnit__AHU_huis_nr_3 = sum(buildings.Houses.airHandlingUnit__AHU_huis_nr_3.port_a.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_ret_airHandlingUnit__AHU_huis_nr_31 = sum(buildings.Houses.airHandlingUnit__AHU_huis_nr_31.port_a.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_ret_airHandlingUnit__AHU_huis_nr_5 = sum(buildings.Houses.airHandlingUnit__AHU_huis_nr_5.port_a.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_ret_airHandlingUnit__AHU_huis_nr_7 = sum(buildings.Houses.airHandlingUnit__AHU_huis_nr_7.port_a.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_ret_airHandlingUnit__AHU_huis_nr_9 = sum(buildings.Houses.airHandlingUnit__AHU_huis_nr_9.port_a.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_sup_airHandlingUnit__AHU_huis_nr_11 = sum(-buildings.Houses.airHandlingUnit__AHU_huis_nr_11.port_b.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_sup_airHandlingUnit__AHU_huis_nr_13 = sum(-buildings.Houses.airHandlingUnit__AHU_huis_nr_13.port_b.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_sup_airHandlingUnit__AHU_huis_nr_15 = sum(-buildings.Houses.airHandlingUnit__AHU_huis_nr_15.port_b.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_sup_airHandlingUnit__AHU_huis_nr_17 = sum(-buildings.Houses.airHandlingUnit__AHU_huis_nr_17.port_b.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_sup_airHandlingUnit__AHU_huis_nr_19 = sum(-buildings.Houses.airHandlingUnit__AHU_huis_nr_19.port_b.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_sup_airHandlingUnit__AHU_huis_nr_21 = sum(-buildings.Houses.airHandlingUnit__AHU_huis_nr_21.port_b.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_sup_airHandlingUnit__AHU_huis_nr_23 = sum(-buildings.Houses.airHandlingUnit__AHU_huis_nr_23.port_b.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_sup_airHandlingUnit__AHU_huis_nr_25 = sum(-buildings.Houses.airHandlingUnit__AHU_huis_nr_25.port_b.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_sup_airHandlingUnit__AHU_huis_nr_27 = sum(-buildings.Houses.airHandlingUnit__AHU_huis_nr_27.port_b.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_sup_airHandlingUnit__AHU_huis_nr_29 = sum(-buildings.Houses.airHandlingUnit__AHU_huis_nr_29.port_b.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_sup_airHandlingUnit__AHU_huis_nr_3 = sum(-buildings.Houses.airHandlingUnit__AHU_huis_nr_3.port_b.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_sup_airHandlingUnit__AHU_huis_nr_31 = sum(-buildings.Houses.airHandlingUnit__AHU_huis_nr_31.port_b.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_sup_airHandlingUnit__AHU_huis_nr_5 = sum(-buildings.Houses.airHandlingUnit__AHU_huis_nr_5.port_b.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_sup_airHandlingUnit__AHU_huis_nr_7 = sum(-buildings.Houses.airHandlingUnit__AHU_huis_nr_7.port_b.m_flow) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_sup_airHandlingUnit__AHU_huis_nr_9 = sum(-buildings.Houses.airHandlingUnit__AHU_huis_nr_9.port_b.m_flow) "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_11_Leefruimte__CAVsCAVr_type_23(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_11_Leefruimte__CAVsCAVr_type_23.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_13_Leefruimte__CAVsCAVr_type_2(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_13_Leefruimte__CAVsCAVr_type_2.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_15_Leefruimte__CAVsCAVr_type_3(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_15_Leefruimte__CAVsCAVr_type_3.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_17_Inkom__CAVsCAVr_type_5(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_17_Inkom__CAVsCAVr_type_5.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_17_Leefruimte__CAVsCAVr_type_4(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_17_Leefruimte__CAVsCAVr_type_4.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_19_Inkom__CAVsCAVr_type_7(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_19_Inkom__CAVsCAVr_type_7.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_19_Leefruimte__CAVsCAVr_type_6(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_19_Leefruimte__CAVsCAVr_type_6.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_21_Inkom__CAVsCAVr_type_8(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_21_Inkom__CAVsCAVr_type_8.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_21_Leefruimte__CAVsCAVr_type_9(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_21_Leefruimte__CAVsCAVr_type_9.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_23_Leefruimte__CAVsCAVr_type_10(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_23_Leefruimte__CAVsCAVr_type_10.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_25_Leefruimte__CAVsCAVr_type_14(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_25_Leefruimte__CAVsCAVr_type_14.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_27_Leefruimte__CAVsCAVr_type_13(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_27_Leefruimte__CAVsCAVr_type_13.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_29_Leefruimte__CAVsCAVr_type_11(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_29_Leefruimte__CAVsCAVr_type_11.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_31_Inkom__CAVsCAVr_type_12(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_31_Inkom__CAVsCAVr_type_12.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_31_Leefruimte__CAVsCAVr_type_12(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_31_Leefruimte__CAVsCAVr_type_12.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_3_Inkom__CAVsCAVr_type_16(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_3_Inkom__CAVsCAVr_type_16.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_3_Leefruimte__CAVsCAVr_type_15(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_3_Leefruimte__CAVsCAVr_type_15.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_5_Inkom__CAVsCAVr_type_18(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_5_Inkom__CAVsCAVr_type_18.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_5_Leefruimte__CAVsCAVr_type_19(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_5_Leefruimte__CAVsCAVr_type_19.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_7_Inkom__CAVsCAVr_type_21(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_7_Inkom__CAVsCAVr_type_21.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_7_Leefruimte__CAVsCAVr_type_20(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_7_Leefruimte__CAVsCAVr_type_20.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_cavs_zone__Huis_nr_9_Leefruimte__CAVsCAVr_type_22(displayUnit="m3/h") = buildings.Houses.cavs_zone__Huis_nr_9_Leefruimte__CAVsCAVr_type_22.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_returnCav_zone__Huis_nr_11_Badkamer__CAVr_type_15(displayUnit="m3/h") = buildings.Houses.returnCav_zone__Huis_nr_11_Badkamer__CAVr_type_15.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_returnCav_zone__Huis_nr_13_Badkamer__CAVr_type_1(displayUnit="m3/h") = buildings.Houses.returnCav_zone__Huis_nr_13_Badkamer__CAVr_type_1.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_returnCav_zone__Huis_nr_15_Badkamer__CAVr_type_2(displayUnit="m3/h") = buildings.Houses.returnCav_zone__Huis_nr_15_Badkamer__CAVr_type_2.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_returnCav_zone__Huis_nr_17_Badkamer__CAVr_type_3(displayUnit="m3/h") = buildings.Houses.returnCav_zone__Huis_nr_17_Badkamer__CAVr_type_3.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_returnCav_zone__Huis_nr_19_Badkamer__CAVr_type_4(displayUnit="m3/h") = buildings.Houses.returnCav_zone__Huis_nr_19_Badkamer__CAVr_type_4.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_returnCav_zone__Huis_nr_21_Badkamer__CAVr_type_5(displayUnit="m3/h") = buildings.Houses.returnCav_zone__Huis_nr_21_Badkamer__CAVr_type_5.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_returnCav_zone__Huis_nr_23_Badkamer__CAVr_type_6(displayUnit="m3/h") = buildings.Houses.returnCav_zone__Huis_nr_23_Badkamer__CAVr_type_6.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_returnCav_zone__Huis_nr_25_Badkamer__CAVr_type_10(displayUnit="m3/h") = buildings.Houses.returnCav_zone__Huis_nr_25_Badkamer__CAVr_type_10.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_returnCav_zone__Huis_nr_27_Badkamer__CAVr_type_9(displayUnit="m3/h") = buildings.Houses.returnCav_zone__Huis_nr_27_Badkamer__CAVr_type_9.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_returnCav_zone__Huis_nr_29_Badkamer__CAVr_type_7(displayUnit="m3/h") = buildings.Houses.returnCav_zone__Huis_nr_29_Badkamer__CAVr_type_7.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_returnCav_zone__Huis_nr_31_Badkamer__CAVr_type_8(displayUnit="m3/h") = buildings.Houses.returnCav_zone__Huis_nr_31_Badkamer__CAVr_type_8.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_returnCav_zone__Huis_nr_3_Badkamer__CAVr_type_11(displayUnit="m3/h") = buildings.Houses.returnCav_zone__Huis_nr_3_Badkamer__CAVr_type_11.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_returnCav_zone__Huis_nr_5_Badkamer__CAVr_type_12(displayUnit="m3/h") = buildings.Houses.returnCav_zone__Huis_nr_5_Badkamer__CAVr_type_12.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_returnCav_zone__Huis_nr_7_Badkamer__CAVr_type_13(displayUnit="m3/h") = buildings.Houses.returnCav_zone__Huis_nr_7_Badkamer__CAVr_type_13.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_returnCav_zone__Huis_nr_9_Badkamer__CAVr_type_14(displayUnit="m3/h") = buildings.Houses.returnCav_zone__Huis_nr_9_Badkamer__CAVr_type_14.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_supplyCav_zone__Huis_nr_11_Slaapkamer__CAVs_type_15(displayUnit="m3/h") = buildings.Houses.supplyCav_zone__Huis_nr_11_Slaapkamer__CAVs_type_15.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_supplyCav_zone__Huis_nr_13_Slaapkamer__CAVs_type_1(displayUnit="m3/h") = buildings.Houses.supplyCav_zone__Huis_nr_13_Slaapkamer__CAVs_type_1.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_supplyCav_zone__Huis_nr_15_Slaapkamer__CAVs_type_2(displayUnit="m3/h") = buildings.Houses.supplyCav_zone__Huis_nr_15_Slaapkamer__CAVs_type_2.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_supplyCav_zone__Huis_nr_17_Slaapkamer__CAVs_type_3(displayUnit="m3/h") = buildings.Houses.supplyCav_zone__Huis_nr_17_Slaapkamer__CAVs_type_3.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_supplyCav_zone__Huis_nr_19_Slaapkamer__CAVs_type_4(displayUnit="m3/h") = buildings.Houses.supplyCav_zone__Huis_nr_19_Slaapkamer__CAVs_type_4.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_supplyCav_zone__Huis_nr_21_Slaapkamer__CAVs_type_5(displayUnit="m3/h") = buildings.Houses.supplyCav_zone__Huis_nr_21_Slaapkamer__CAVs_type_5.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_supplyCav_zone__Huis_nr_23_Slaapkamer__CAVs_type_6(displayUnit="m3/h") = buildings.Houses.supplyCav_zone__Huis_nr_23_Slaapkamer__CAVs_type_6.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_supplyCav_zone__Huis_nr_25_Slaapkamer__CAVs_type_10(displayUnit="m3/h") = buildings.Houses.supplyCav_zone__Huis_nr_25_Slaapkamer__CAVs_type_10.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_supplyCav_zone__Huis_nr_27_Slaapkamer__CAVs_type_9(displayUnit="m3/h") = buildings.Houses.supplyCav_zone__Huis_nr_27_Slaapkamer__CAVs_type_9.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_supplyCav_zone__Huis_nr_29_Slaapkamer__CAVs_type_7(displayUnit="m3/h") = buildings.Houses.supplyCav_zone__Huis_nr_29_Slaapkamer__CAVs_type_7.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_supplyCav_zone__Huis_nr_31_Slaapkamer__CAVs_type_8(displayUnit="m3/h") = buildings.Houses.supplyCav_zone__Huis_nr_31_Slaapkamer__CAVs_type_8.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_supplyCav_zone__Huis_nr_3_Slaapkamer__CAVs_type_11(displayUnit="m3/h") = buildings.Houses.supplyCav_zone__Huis_nr_3_Slaapkamer__CAVs_type_11.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_supplyCav_zone__Huis_nr_5_Slaapkamer__CAVs_type_12(displayUnit="m3/h") = buildings.Houses.supplyCav_zone__Huis_nr_5_Slaapkamer__CAVs_type_12.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_supplyCav_zone__Huis_nr_7_Slaapkamer__CAVs_type_13(displayUnit="m3/h") = buildings.Houses.supplyCav_zone__Huis_nr_7_Slaapkamer__CAVs_type_13.port_a.m_flow/1.2*3600 "";
+	output Modelica.Units.SI.VolumeFlowRate V_flow_supplyCav_zone__Huis_nr_9_Slaapkamer__CAVs_type_14(displayUnit="m3/h") = buildings.Houses.supplyCav_zone__Huis_nr_9_Slaapkamer__CAVs_type_14.port_a.m_flow/1.2*3600 "";
+
+	//Heat flows
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_11_Leefruimte__CAVsCAVr_type_23 = (buildings.Houses.cavs_zone__Huis_nr_11_Leefruimte__CAVsCAVr_type_23.port_b.h_outflow-buildings.Houses.zone__Huis_nr_11_Leefruimte.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_11_Leefruimte__CAVsCAVr_type_23.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_13_Leefruimte__CAVsCAVr_type_2 = (buildings.Houses.cavs_zone__Huis_nr_13_Leefruimte__CAVsCAVr_type_2.port_b.h_outflow-buildings.Houses.zone__Huis_nr_13_Leefruimte.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_13_Leefruimte__CAVsCAVr_type_2.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_15_Leefruimte__CAVsCAVr_type_3 = (buildings.Houses.cavs_zone__Huis_nr_15_Leefruimte__CAVsCAVr_type_3.port_b.h_outflow-buildings.Houses.zone__Huis_nr_15_Leefruimte.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_15_Leefruimte__CAVsCAVr_type_3.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_17_Inkom__CAVsCAVr_type_5 = (buildings.Houses.cavs_zone__Huis_nr_17_Inkom__CAVsCAVr_type_5.port_b.h_outflow-buildings.Houses.zone__Huis_nr_17_Inkom.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_17_Inkom__CAVsCAVr_type_5.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_17_Leefruimte__CAVsCAVr_type_4 = (buildings.Houses.cavs_zone__Huis_nr_17_Leefruimte__CAVsCAVr_type_4.port_b.h_outflow-buildings.Houses.zone__Huis_nr_17_Leefruimte.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_17_Leefruimte__CAVsCAVr_type_4.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_19_Inkom__CAVsCAVr_type_7 = (buildings.Houses.cavs_zone__Huis_nr_19_Inkom__CAVsCAVr_type_7.port_b.h_outflow-buildings.Houses.zone__Huis_nr_19_Inkom.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_19_Inkom__CAVsCAVr_type_7.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_19_Leefruimte__CAVsCAVr_type_6 = (buildings.Houses.cavs_zone__Huis_nr_19_Leefruimte__CAVsCAVr_type_6.port_b.h_outflow-buildings.Houses.zone__Huis_nr_19_Leefruimte.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_19_Leefruimte__CAVsCAVr_type_6.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_21_Inkom__CAVsCAVr_type_8 = (buildings.Houses.cavs_zone__Huis_nr_21_Inkom__CAVsCAVr_type_8.port_b.h_outflow-buildings.Houses.zone__Huis_nr_21_Inkom.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_21_Inkom__CAVsCAVr_type_8.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_21_Leefruimte__CAVsCAVr_type_9 = (buildings.Houses.cavs_zone__Huis_nr_21_Leefruimte__CAVsCAVr_type_9.port_b.h_outflow-buildings.Houses.zone__Huis_nr_21_Leefruimte.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_21_Leefruimte__CAVsCAVr_type_9.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_23_Leefruimte__CAVsCAVr_type_10 = (buildings.Houses.cavs_zone__Huis_nr_23_Leefruimte__CAVsCAVr_type_10.port_b.h_outflow-buildings.Houses.zone__Huis_nr_23_Leefruimte.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_23_Leefruimte__CAVsCAVr_type_10.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_25_Leefruimte__CAVsCAVr_type_14 = (buildings.Houses.cavs_zone__Huis_nr_25_Leefruimte__CAVsCAVr_type_14.port_b.h_outflow-buildings.Houses.zone__Huis_nr_25_Leefruimte.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_25_Leefruimte__CAVsCAVr_type_14.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_27_Leefruimte__CAVsCAVr_type_13 = (buildings.Houses.cavs_zone__Huis_nr_27_Leefruimte__CAVsCAVr_type_13.port_b.h_outflow-buildings.Houses.zone__Huis_nr_27_Leefruimte.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_27_Leefruimte__CAVsCAVr_type_13.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_29_Leefruimte__CAVsCAVr_type_11 = (buildings.Houses.cavs_zone__Huis_nr_29_Leefruimte__CAVsCAVr_type_11.port_b.h_outflow-buildings.Houses.zone__Huis_nr_29_Leefruimte.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_29_Leefruimte__CAVsCAVr_type_11.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_31_Inkom__CAVsCAVr_type_12 = (buildings.Houses.cavs_zone__Huis_nr_31_Inkom__CAVsCAVr_type_12.port_b.h_outflow-buildings.Houses.zone__Huis_nr_31_Inkom.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_31_Inkom__CAVsCAVr_type_12.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_31_Leefruimte__CAVsCAVr_type_12 = (buildings.Houses.cavs_zone__Huis_nr_31_Leefruimte__CAVsCAVr_type_12.port_b.h_outflow-buildings.Houses.zone__Huis_nr_31_Leefruimte.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_31_Leefruimte__CAVsCAVr_type_12.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_3_Inkom__CAVsCAVr_type_16 = (buildings.Houses.cavs_zone__Huis_nr_3_Inkom__CAVsCAVr_type_16.port_b.h_outflow-buildings.Houses.zone__Huis_nr_3_Inkom.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_3_Inkom__CAVsCAVr_type_16.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_3_Leefruimte__CAVsCAVr_type_15 = (buildings.Houses.cavs_zone__Huis_nr_3_Leefruimte__CAVsCAVr_type_15.port_b.h_outflow-buildings.Houses.zone__Huis_nr_3_Leefruimte.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_3_Leefruimte__CAVsCAVr_type_15.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_5_Inkom__CAVsCAVr_type_18 = (buildings.Houses.cavs_zone__Huis_nr_5_Inkom__CAVsCAVr_type_18.port_b.h_outflow-buildings.Houses.zone__Huis_nr_5_Inkom.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_5_Inkom__CAVsCAVr_type_18.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_5_Leefruimte__CAVsCAVr_type_19 = (buildings.Houses.cavs_zone__Huis_nr_5_Leefruimte__CAVsCAVr_type_19.port_b.h_outflow-buildings.Houses.zone__Huis_nr_5_Leefruimte.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_5_Leefruimte__CAVsCAVr_type_19.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_7_Inkom__CAVsCAVr_type_21 = (buildings.Houses.cavs_zone__Huis_nr_7_Inkom__CAVsCAVr_type_21.port_b.h_outflow-buildings.Houses.zone__Huis_nr_7_Inkom.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_7_Inkom__CAVsCAVr_type_21.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_7_Leefruimte__CAVsCAVr_type_20 = (buildings.Houses.cavs_zone__Huis_nr_7_Leefruimte__CAVsCAVr_type_20.port_b.h_outflow-buildings.Houses.zone__Huis_nr_7_Leefruimte.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_7_Leefruimte__CAVsCAVr_type_20.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_cavs_zone__Huis_nr_9_Leefruimte__CAVsCAVr_type_22 = (buildings.Houses.cavs_zone__Huis_nr_9_Leefruimte__CAVsCAVr_type_22.port_b.h_outflow-buildings.Houses.zone__Huis_nr_9_Leefruimte.ports[1].h_outflow)*buildings.Houses.cavs_zone__Huis_nr_9_Leefruimte__CAVsCAVr_type_22.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_supplyCav_zone__Huis_nr_11_Slaapkamer__CAVs_type_15 = (buildings.Houses.supplyCav_zone__Huis_nr_11_Slaapkamer__CAVs_type_15.port_b.h_outflow-buildings.Houses.zone__Huis_nr_11_Slaapkamer.ports[1].h_outflow)*buildings.Houses.supplyCav_zone__Huis_nr_11_Slaapkamer__CAVs_type_15.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_supplyCav_zone__Huis_nr_13_Slaapkamer__CAVs_type_1 = (buildings.Houses.supplyCav_zone__Huis_nr_13_Slaapkamer__CAVs_type_1.port_b.h_outflow-buildings.Houses.zone__Huis_nr_13_Slaapkamer.ports[1].h_outflow)*buildings.Houses.supplyCav_zone__Huis_nr_13_Slaapkamer__CAVs_type_1.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_supplyCav_zone__Huis_nr_15_Slaapkamer__CAVs_type_2 = (buildings.Houses.supplyCav_zone__Huis_nr_15_Slaapkamer__CAVs_type_2.port_b.h_outflow-buildings.Houses.zone__Huis_nr_15_Slaapkamer.ports[1].h_outflow)*buildings.Houses.supplyCav_zone__Huis_nr_15_Slaapkamer__CAVs_type_2.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_supplyCav_zone__Huis_nr_17_Slaapkamer__CAVs_type_3 = (buildings.Houses.supplyCav_zone__Huis_nr_17_Slaapkamer__CAVs_type_3.port_b.h_outflow-buildings.Houses.zone__Huis_nr_17_Slaapkamer.ports[1].h_outflow)*buildings.Houses.supplyCav_zone__Huis_nr_17_Slaapkamer__CAVs_type_3.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_supplyCav_zone__Huis_nr_19_Slaapkamer__CAVs_type_4 = (buildings.Houses.supplyCav_zone__Huis_nr_19_Slaapkamer__CAVs_type_4.port_b.h_outflow-buildings.Houses.zone__Huis_nr_19_Slaapkamer.ports[1].h_outflow)*buildings.Houses.supplyCav_zone__Huis_nr_19_Slaapkamer__CAVs_type_4.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_supplyCav_zone__Huis_nr_21_Slaapkamer__CAVs_type_5 = (buildings.Houses.supplyCav_zone__Huis_nr_21_Slaapkamer__CAVs_type_5.port_b.h_outflow-buildings.Houses.zone__Huis_nr_21_Slaapkamer.ports[1].h_outflow)*buildings.Houses.supplyCav_zone__Huis_nr_21_Slaapkamer__CAVs_type_5.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_supplyCav_zone__Huis_nr_23_Slaapkamer__CAVs_type_6 = (buildings.Houses.supplyCav_zone__Huis_nr_23_Slaapkamer__CAVs_type_6.port_b.h_outflow-buildings.Houses.zone__Huis_nr_23_Slaapkamer.ports[1].h_outflow)*buildings.Houses.supplyCav_zone__Huis_nr_23_Slaapkamer__CAVs_type_6.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_supplyCav_zone__Huis_nr_25_Slaapkamer__CAVs_type_10 = (buildings.Houses.supplyCav_zone__Huis_nr_25_Slaapkamer__CAVs_type_10.port_b.h_outflow-buildings.Houses.zone__Huis_nr_25_Slaapkamer.ports[1].h_outflow)*buildings.Houses.supplyCav_zone__Huis_nr_25_Slaapkamer__CAVs_type_10.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_supplyCav_zone__Huis_nr_27_Slaapkamer__CAVs_type_9 = (buildings.Houses.supplyCav_zone__Huis_nr_27_Slaapkamer__CAVs_type_9.port_b.h_outflow-buildings.Houses.zone__Huis_nr_27_Slaapkamer.ports[1].h_outflow)*buildings.Houses.supplyCav_zone__Huis_nr_27_Slaapkamer__CAVs_type_9.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_supplyCav_zone__Huis_nr_29_Slaapkamer__CAVs_type_7 = (buildings.Houses.supplyCav_zone__Huis_nr_29_Slaapkamer__CAVs_type_7.port_b.h_outflow-buildings.Houses.zone__Huis_nr_29_Slaapkamer.ports[1].h_outflow)*buildings.Houses.supplyCav_zone__Huis_nr_29_Slaapkamer__CAVs_type_7.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_supplyCav_zone__Huis_nr_31_Slaapkamer__CAVs_type_8 = (buildings.Houses.supplyCav_zone__Huis_nr_31_Slaapkamer__CAVs_type_8.port_b.h_outflow-buildings.Houses.zone__Huis_nr_31_Slaapkamer.ports[1].h_outflow)*buildings.Houses.supplyCav_zone__Huis_nr_31_Slaapkamer__CAVs_type_8.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_supplyCav_zone__Huis_nr_3_Slaapkamer__CAVs_type_11 = (buildings.Houses.supplyCav_zone__Huis_nr_3_Slaapkamer__CAVs_type_11.port_b.h_outflow-buildings.Houses.zone__Huis_nr_3_Slaapkamer.ports[1].h_outflow)*buildings.Houses.supplyCav_zone__Huis_nr_3_Slaapkamer__CAVs_type_11.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_supplyCav_zone__Huis_nr_5_Slaapkamer__CAVs_type_12 = (buildings.Houses.supplyCav_zone__Huis_nr_5_Slaapkamer__CAVs_type_12.port_b.h_outflow-buildings.Houses.zone__Huis_nr_5_Slaapkamer.ports[1].h_outflow)*buildings.Houses.supplyCav_zone__Huis_nr_5_Slaapkamer__CAVs_type_12.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_supplyCav_zone__Huis_nr_7_Slaapkamer__CAVs_type_13 = (buildings.Houses.supplyCav_zone__Huis_nr_7_Slaapkamer__CAVs_type_13.port_b.h_outflow-buildings.Houses.zone__Huis_nr_7_Slaapkamer.ports[1].h_outflow)*buildings.Houses.supplyCav_zone__Huis_nr_7_Slaapkamer__CAVs_type_13.port_a.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_supplyCav_zone__Huis_nr_9_Slaapkamer__CAVs_type_14 = (buildings.Houses.supplyCav_zone__Huis_nr_9_Slaapkamer__CAVs_type_14.port_b.h_outflow-buildings.Houses.zone__Huis_nr_9_Slaapkamer.ports[1].h_outflow)*buildings.Houses.supplyCav_zone__Huis_nr_9_Slaapkamer__CAVs_type_14.port_a.m_flow "";
+	
+	//Collector
+	output Modelica.Units.NonSI.Temperature_degC TSup_collector__Heating_collector = Modelica.Units.Conversions.to_degC(buildings.Houses.collector__Heating_collector.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_collector__Heating_collector = Modelica.Units.Conversions.to_degC(buildings.Houses.collector__Heating_collector.TRet) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_collector__Heating_collector = buildings.Houses.collector__Heating_collector.port_a2.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_collector__Heating_collector = buildings.Houses.collector__Heating_collector.Q_flow "collector__Heating_collector thermal power";
+	
+	//General
+	output Modelica.Units.NonSI.Temperature_degC TDewPoi = Modelica.Units.Conversions.to_degC(sim.TDewPoi) "Dew point temperature";
+	output Modelica.Units.NonSI.Temperature_degC Te = Modelica.Units.Conversions.to_degC(sim.Te) "Outdoor air temperature";
+	output Modelica.Units.NonSI.Temperature_degC Tsky = Modelica.Units.Conversions.to_degC(sim.Tsky) "Sky temperature";
+	output Real HDifHor = sim.HDifHor.y "Diffuse solar irradiation on a horizontal surface";
+	output Real HDirNor = sim.HDirNor.y "Direct normal/beam solar irradiation";
+	output Real HGloE = sim.weaBus.solBus[5].HDirTil + sim.radSol[5].HDifTil.HGroDifTil + sim.radSol[5].HDifTil.HSkyDifTil "Total solar irradiation on the east (including offset) oriented surface";
+	output Real HGloHor = sim.weaBus.solBus[1].HDirTil + sim.radSol[1].HDifTil.HGroDifTil + sim.radSol[1].HDifTil.HSkyDifTil "Total solar irradiation on horizontal surfaces";
+	output Real HGloN = sim.weaBus.solBus[4].HDirTil + sim.radSol[4].HDifTil.HGroDifTil + sim.radSol[4].HDifTil.HSkyDifTil "Total solar irradiation on the north (including offset) oriented surface";
+	output Real HGloS = sim.weaBus.solBus[2].HDirTil + sim.radSol[2].HDifTil.HGroDifTil + sim.radSol[2].HDifTil.HSkyDifTil "Total solar irradiation on the south (including offset) oriented surface";
+	output Real HGloW = sim.weaBus.solBus[3].HDirTil + sim.radSol[3].HDifTil.HGroDifTil + sim.radSol[3].HDifTil.HSkyDifTil "Total solar irradiation on the west (including offset) oriented surface";
+
+	//Comfort
+	output Real DiscmfHea_Huis_3_Slaapkamer = max(0, TSetHea - T_zone__Huis_nr_3_Slaapkamer);
+	output Real DiscmfHea_Huis_3_Leefruimte = max(0, TSetHea - T_zone__Huis_nr_3_Leefruimte);
+	output Real DiscmfHea_Huis_3_Inkom = max(0, TSetHea - T_zone__Huis_nr_3_Inkom);
+	output Real DiscmfHea_Huis_3_Badkamer = max(0, TSetHea - T_zone__Huis_nr_3_Badkamer);
+	output Real DiscmfHea_Huis_5_Slaapkamer = max(0, TSetHea - T_zone__Huis_nr_5_Slaapkamer);
+	output Real DiscmfHea_Huis_5_Leefruimte = max(0, TSetHea - T_zone__Huis_nr_5_Leefruimte);
+	output Real DiscmfHea_Huis_5_Inkom = max(0, TSetHea - T_zone__Huis_nr_5_Inkom);
+	output Real DiscmfHea_Huis_5_Badkamer = max(0, TSetHea - T_zone__Huis_nr_5_Badkamer);
+	output Real DiscmfHea_Huis_7_Slaapkamer = max(0, TSetHea - T_zone__Huis_nr_7_Slaapkamer);
+	output Real DiscmfHea_Huis_7_Leefruimte = max(0, TSetHea - T_zone__Huis_nr_7_Leefruimte);
+	output Real DiscmfHea_Huis_7_Inkom = max(0, TSetHea - T_zone__Huis_nr_7_Inkom);
+	output Real DiscmfHea_Huis_7_Badkamer = max(0, TSetHea - T_zone__Huis_nr_7_Badkamer);
+	output Real DiscmfHea_Huis_9_Slaapkamer = max(0, TSetHea - T_zone__Huis_nr_9_Slaapkamer);
+	output Real DiscmfHea_Huis_9_Leefruimte = max(0, TSetHea - T_zone__Huis_nr_9_Leefruimte);
+	output Real DiscmfHea_Huis_9_Badkamer = max(0, TSetHea - T_zone__Huis_nr_9_Badkamer);
+	output Real DiscmfHea_Huis_11_Slaapkamer = max(0, TSetHea - T_zone__Huis_nr_11_Slaapkamer);
+	output Real DiscmfHea_Huis_11_Leefruimte = max(0, TSetHea - T_zone__Huis_nr_11_Leefruimte);
+	output Real DiscmfHea_Huis_11_Badkamer = max(0, TSetHea - T_zone__Huis_nr_11_Badkamer);
+	output Real DiscmfHea_Huis_13_Slaapkamer = max(0, TSetHea - T_zone__Huis_nr_13_Slaapkamer);
+	output Real DiscmfHea_Huis_13_Leefruimte = max(0, TSetHea - T_zone__Huis_nr_13_Leefruimte);
+	output Real DiscmfHea_Huis_13_Badkamer = max(0, TSetHea - T_zone__Huis_nr_13_Badkamer);
+	output Real DiscmfHea_Huis_15_Slaapkamer = max(0, TSetHea - T_zone__Huis_nr_15_Slaapkamer);
+	output Real DiscmfHea_Huis_15_Leefruimte = max(0, TSetHea - T_zone__Huis_nr_15_Leefruimte);
+	output Real DiscmfHea_Huis_15_Badkamer = max(0, TSetHea - T_zone__Huis_nr_15_Badkamer);
+	output Real DiscmfHea_Huis_17_Slaapkamer = max(0, TSetHea - T_zone__Huis_nr_17_Slaapkamer);
+	output Real DiscmfHea_Huis_17_Leefruimte = max(0, TSetHea - T_zone__Huis_nr_17_Leefruimte);
+	output Real DiscmfHea_Huis_17_Inkom = max(0, TSetHea - T_zone__Huis_nr_17_Inkom);
+	output Real DiscmfHea_Huis_17_Badkamer = max(0, TSetHea - T_zone__Huis_nr_17_Badkamer);
+	output Real DiscmfHea_Huis_19_Slaapkamer = max(0, TSetHea - T_zone__Huis_nr_19_Slaapkamer);
+	output Real DiscmfHea_Huis_19_Leefruimte = max(0, TSetHea - T_zone__Huis_nr_19_Leefruimte);
+	output Real DiscmfHea_Huis_19_Inkom = max(0, TSetHea - T_zone__Huis_nr_19_Inkom);
+	output Real DiscmfHea_Huis_19_Badkamer = max(0, TSetHea - T_zone__Huis_nr_19_Badkamer);
+	output Real DiscmfHea_Huis_21_Slaapkamer = max(0, TSetHea - T_zone__Huis_nr_21_Slaapkamer);
+	output Real DiscmfHea_Huis_21_Leefruimte = max(0, TSetHea - T_zone__Huis_nr_21_Leefruimte);
+	output Real DiscmfHea_Huis_21_Inkom = max(0, TSetHea - T_zone__Huis_nr_21_Inkom);
+	output Real DiscmfHea_Huis_21_Badkamer = max(0, TSetHea - T_zone__Huis_nr_21_Badkamer);
+	output Real DiscmfHea_Huis_23_Slaapkamer = max(0, TSetHea - T_zone__Huis_nr_23_Slaapkamer);
+	output Real DiscmfHea_Huis_23_Leefruimte = max(0, TSetHea - T_zone__Huis_nr_23_Leefruimte);
+	output Real DiscmfHea_Huis_23_Badkamer = max(0, TSetHea - T_zone__Huis_nr_23_Badkamer);
+	output Real DiscmfHea_Huis_25_Slaapkamer = max(0, TSetHea - T_zone__Huis_nr_25_Slaapkamer);
+	output Real DiscmfHea_Huis_25_Leefruimte = max(0, TSetHea - T_zone__Huis_nr_25_Leefruimte);
+	output Real DiscmfHea_Huis_25_Badkamer = max(0, TSetHea - T_zone__Huis_nr_25_Badkamer);
+	output Real DiscmfHea_Huis_27_Slaapkamer = max(0, TSetHea - T_zone__Huis_nr_27_Slaapkamer);
+	output Real DiscmfHea_Huis_27_Leefruimte = max(0, TSetHea - T_zone__Huis_nr_27_Leefruimte);
+	output Real DiscmfHea_Huis_27_Badkamer = max(0, TSetHea - T_zone__Huis_nr_27_Badkamer);
+	output Real DiscmfHea_Huis_29_Slaapkamer = max(0, TSetHea - T_zone__Huis_nr_29_Slaapkamer);
+	output Real DiscmfHea_Huis_29_Leefruimte = max(0, TSetHea - T_zone__Huis_nr_29_Leefruimte);
+	output Real DiscmfHea_Huis_29_Badkamer = max(0, TSetHea - T_zone__Huis_nr_29_Badkamer);
+	output Real DiscmfHea_Huis_31_Slaapkamer = max(0, TSetHea - T_zone__Huis_nr_31_Slaapkamer);
+	output Real DiscmfHea_Huis_31_Leefruimte = max(0, TSetHea - T_zone__Huis_nr_31_Leefruimte);
+	output Real DiscmfHea_Huis_31_Inkom = max(0, TSetHea - T_zone__Huis_nr_31_Inkom);
+	output Real DiscmfHea_Huis_31_Badkamer = max(0, TSetHea - T_zone__Huis_nr_31_Badkamer);
+
+	output Real DiscmfCoo_Huis_3_SlaapkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_3_Slaapkamer);
+	output Real DiscmfCoo_Huis_3_LeefruimteCoo = max(0, -TSetCoo + T_zone__Huis_nr_3_Leefruimte);
+	output Real DiscmfCoo_Huis_3_InkomCoo = max(0, -TSetCoo + T_zone__Huis_nr_3_Inkom);
+	output Real DiscmfCoo_Huis_3_BadkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_3_Badkamer);
+	output Real DiscmfCoo_Huis_5_SlaapkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_5_Slaapkamer);
+	output Real DiscmfCoo_Huis_5_LeefruimteCoo = max(0, -TSetCoo + T_zone__Huis_nr_5_Leefruimte);
+	output Real DiscmfCoo_Huis_5_InkomCoo = max(0, -TSetCoo + T_zone__Huis_nr_5_Inkom);
+	output Real DiscmfCoo_Huis_5_BadkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_5_Badkamer);
+	output Real DiscmfCoo_Huis_7_SlaapkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_7_Slaapkamer);
+	output Real DiscmfCoo_Huis_7_LeefruimteCoo = max(0, -TSetCoo + T_zone__Huis_nr_7_Leefruimte);
+	output Real DiscmfCoo_Huis_7_InkomCoo = max(0, -TSetCoo + T_zone__Huis_nr_7_Inkom);
+	output Real DiscmfCoo_Huis_7_BadkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_7_Badkamer);
+	output Real DiscmfCoo_Huis_9_SlaapkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_9_Slaapkamer);
+	output Real DiscmfCoo_Huis_9_LeefruimteCoo = max(0, -TSetCoo + T_zone__Huis_nr_9_Leefruimte);
+	output Real DiscmfCoo_Huis_9_BadkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_9_Badkamer);
+	output Real DiscmfCoo_Huis_11_SlaapkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_11_Slaapkamer);
+	output Real DiscmfCoo_Huis_11_LeefruimteCoo = max(0, -TSetCoo + T_zone__Huis_nr_11_Leefruimte);
+	output Real DiscmfCoo_Huis_11_BadkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_11_Badkamer);
+	output Real DiscmfCoo_Huis_13_SlaapkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_13_Slaapkamer);
+	output Real DiscmfCoo_Huis_13_LeefruimteCoo = max(0, -TSetCoo + T_zone__Huis_nr_13_Leefruimte);
+	output Real DiscmfCoo_Huis_13_BadkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_13_Badkamer);
+	output Real DiscmfCoo_Huis_15_SlaapkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_15_Slaapkamer);
+	output Real DiscmfCoo_Huis_15_LeefruimteCoo = max(0, -TSetCoo + T_zone__Huis_nr_15_Leefruimte);
+	output Real DiscmfCoo_Huis_15_BadkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_15_Badkamer);
+	output Real DiscmfCoo_Huis_17_SlaapkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_17_Slaapkamer);
+	output Real DiscmfCoo_Huis_17_LeefruimteCoo = max(0, -TSetCoo + T_zone__Huis_nr_17_Leefruimte);
+	output Real DiscmfCoo_Huis_17_InkomCoo = max(0, -TSetCoo + T_zone__Huis_nr_17_Inkom);
+	output Real DiscmfCoo_Huis_17_BadkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_17_Badkamer);
+	output Real DiscmfCoo_Huis_19_SlaapkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_19_Slaapkamer);
+	output Real DiscmfCoo_Huis_19_LeefruimteCoo = max(0, -TSetCoo + T_zone__Huis_nr_19_Leefruimte);
+	output Real DiscmfCoo_Huis_19_InkomCoo = max(0, -TSetCoo + T_zone__Huis_nr_19_Inkom);
+	output Real DiscmfCoo_Huis_19_BadkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_19_Badkamer);
+	output Real DiscmfCoo_Huis_21_SlaapkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_21_Slaapkamer);
+	output Real DiscmfCoo_Huis_21_LeefruimteCoo = max(0, -TSetCoo + T_zone__Huis_nr_21_Leefruimte);
+	output Real DiscmfCoo_Huis_21_InkomCoo = max(0, -TSetCoo + T_zone__Huis_nr_21_Inkom);
+	output Real DiscmfCoo_Huis_21_BadkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_21_Badkamer);
+	output Real DiscmfCoo_Huis_23_SlaapkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_23_Slaapkamer);
+	output Real DiscmfCoo_Huis_23_LeefruimteCoo = max(0, -TSetCoo + T_zone__Huis_nr_23_Leefruimte);
+	output Real DiscmfCoo_Huis_23_BadkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_23_Badkamer);
+	output Real DiscmfCoo_Huis_25_SlaapkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_25_Slaapkamer);
+	output Real DiscmfCoo_Huis_25_LeefruimteCoo = max(0, -TSetCoo + T_zone__Huis_nr_25_Leefruimte);
+	output Real DiscmfCoo_Huis_25_BadkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_25_Badkamer);
+	output Real DiscmfCoo_Huis_27_SlaapkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_27_Slaapkamer);
+	output Real DiscmfCoo_Huis_27_LeefruimteCoo = max(0, -TSetCoo + T_zone__Huis_nr_27_Leefruimte);
+	output Real DiscmfCoo_Huis_27_BadkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_27_Badkamer);
+	output Real DiscmfCoo_Huis_29_SlaapkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_29_Slaapkamer);
+	output Real DiscmfCoo_Huis_29_LeefruimteCoo = max(0, -TSetCoo + T_zone__Huis_nr_29_Leefruimte);
+	output Real DiscmfCoo_Huis_29_BadkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_29_Badkamer);
+	output Real DiscmfCoo_Huis_31_SlaapkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_31_Slaapkamer);
+	output Real DiscmfCoo_Huis_31_LeefruimteCoo = max(0, -TSetCoo + T_zone__Huis_nr_31_Leefruimte);
+	output Real DiscmfCoo_Huis_31_InkomCoo = max(0, -TSetCoo + T_zone__Huis_nr_31_Inkom);
+	output Real DiscmfCoo_Huis_31_BadkamerCoo = max(0, -TSetCoo + T_zone__Huis_nr_31_Badkamer);
+
+	///////////////////////////////////
+	// IOCS definitions //
+	///////////////////////////////////
+	// input data:
+	output Real QDem = Q_flow_collector__Heating_collector; 	// Demand profile for heat and cold: heat should be positive, cold should be negative
+	output Real PDem = P_Net_Houses;							// Demand profile for electricity in the buildings only, offtake should be positive
+	output Real QBor = enerHub.GsHp.QBorefield;
+	
+	// temperature data for COP calculation	
+	output Real T_COP_Sup = Ttank; 			// Temperatures should be in °C
+	output Real T_COP_Bor = TBorOut; 		// Temperatures should be in °C
+	output Real T_COP_Air = TAsHpEvaIn; 	// Temperatures should be in °C
+
+	// overall result data:
+	output Real DiscmfHea = DiscmfHea_Huis_3_Leefruimte +
+				DiscmfHea_Huis_5_Leefruimte +
+				DiscmfHea_Huis_7_Leefruimte +
+				DiscmfHea_Huis_9_Leefruimte +
+				DiscmfHea_Huis_11_Leefruimte +
+				DiscmfHea_Huis_13_Leefruimte +
+				DiscmfHea_Huis_15_Leefruimte +
+				DiscmfHea_Huis_17_Leefruimte +
+				DiscmfHea_Huis_19_Leefruimte +
+				DiscmfHea_Huis_21_Leefruimte +
+				DiscmfHea_Huis_23_Leefruimte +
+				DiscmfHea_Huis_25_Leefruimte +
+				DiscmfHea_Huis_27_Leefruimte +
+				DiscmfHea_Huis_29_Leefruimte +
+				DiscmfHea_Huis_31_Leefruimte; // Heating discomort in Kh
+	output Real DiscmfCoo = DiscmfCoo_Huis_3_LeefruimteCoo +
+				DiscmfCoo_Huis_5_LeefruimteCoo +
+				DiscmfCoo_Huis_7_LeefruimteCoo +
+				DiscmfCoo_Huis_9_LeefruimteCoo +
+				DiscmfCoo_Huis_11_LeefruimteCoo +
+				DiscmfCoo_Huis_13_LeefruimteCoo +
+				DiscmfCoo_Huis_15_LeefruimteCoo +
+				DiscmfCoo_Huis_17_LeefruimteCoo +
+				DiscmfCoo_Huis_19_LeefruimteCoo +
+				DiscmfCoo_Huis_21_LeefruimteCoo +
+				DiscmfCoo_Huis_23_LeefruimteCoo +
+				DiscmfCoo_Huis_25_LeefruimteCoo +
+				DiscmfCoo_Huis_27_LeefruimteCoo +
+				DiscmfCoo_Huis_29_LeefruimteCoo +
+				DiscmfCoo_Huis_31_LeefruimteCoo; // Cooling discomfort in Kh
+	output Real ElecUse = TotalPower; // Overall energy use of the entire district (buildings + energy hub), offtake should be positive	
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+
+	/// Electricity ///
+	output Real TotalPower = P_Net_enerHub + P_Net_Houses;
+
+	output Real tariff_scaler = 36000000;
+	output Real p_offtake = priceSim.p_elec_fix_offtake/(3600*1e6); // €/J
+	output Real p_offtakeSca = p_offtake * tariff_scaler;
+	output Real p_inj = priceSim.p_elec_fix_inj/(3600*1e6); // €/J
+	output Real p_injSca = p_inj * tariff_scaler;
+	output Real b = 50; // transition parameter
+	output Real smoothPrice = p_injSca + (p_offtakeSca - p_injSca) * 0.5 *(1 + TotalPower / (sqrt(TotalPower^2 + b^2)) );
+
+	output Real ObjIntElecCost = TotalPower*smoothPrice;
+
+	// Battery //
+	output Real weight_bat = 100000;
+	output Real ObjBatMax = weight_bat*max(0, Bat_soc - Bat_SOCmax)^2;
+	output Real ObjBatMin = weight_bat*max(0, Bat_SOCmin - Bat_soc)^2;
+	output Real ObjIntBat = ObjBatMax + ObjBatMin;
+	
+	// Supply temperature	
+	output Real TSupMax = 50;
+	output Real ObjIntTSupMax = 1000*max(0, Ttank - TSupMax)^2;
+	output Real TSupMin = 5;
+	output Real ObjIntTSupMin = 1000*max(0, TSupMin - Ttank)^2;
+
+	// Borefield temperature
+	output Real TBorMin_degC = enerHub.TBorMin - 273.15;
+	output Real TBorMax = 20.0;
+	output Real TBorAvg = (TBorIn + TBorOut)/2;
+	output Real ObjIntTBorMin = 10000*max(0, TBorMin_degC - TBorAvg)^2;
+	output Real ObjIntTBorMax = 10000*max(0, TBorAvg - TBorMax)^2;
+
+	/// Comfort ///
+	output Real TSetHea = 21;
+	output Real TSetCoo = 26;
+	output Real weight_hea = 10000;
+	output Real weight_coo = 10000;
+	output Real ObjIntComfSHea=weight_hea*(
+				DiscmfHea_Huis_3_Leefruimte^2 +
+				DiscmfHea_Huis_5_Leefruimte^2 +
+				DiscmfHea_Huis_7_Leefruimte^2 +
+				DiscmfHea_Huis_9_Leefruimte^2 +
+				DiscmfHea_Huis_11_Leefruimte^2 +
+				DiscmfHea_Huis_13_Leefruimte^2 +
+				DiscmfHea_Huis_15_Leefruimte^2 +
+				DiscmfHea_Huis_17_Leefruimte^2 +
+				DiscmfHea_Huis_19_Leefruimte^2 +
+				DiscmfHea_Huis_21_Leefruimte^2 +
+				DiscmfHea_Huis_23_Leefruimte^2 +
+				DiscmfHea_Huis_25_Leefruimte^2 +
+				DiscmfHea_Huis_27_Leefruimte^2 +
+				DiscmfHea_Huis_29_Leefruimte^2 +
+				DiscmfHea_Huis_31_Leefruimte^2);
+	output Real ObjIntComfSCoo=weight_coo*(
+				DiscmfCoo_Huis_3_LeefruimteCoo^2 +
+				DiscmfCoo_Huis_5_LeefruimteCoo^2 +
+				DiscmfCoo_Huis_7_LeefruimteCoo^2 +
+				DiscmfCoo_Huis_9_LeefruimteCoo^2 +
+				DiscmfCoo_Huis_11_LeefruimteCoo^2 +
+				DiscmfCoo_Huis_13_LeefruimteCoo^2 +
+				DiscmfCoo_Huis_15_LeefruimteCoo^2 +
+				DiscmfCoo_Huis_17_LeefruimteCoo^2 +
+				DiscmfCoo_Huis_19_LeefruimteCoo^2 +
+				DiscmfCoo_Huis_21_LeefruimteCoo^2 +
+				DiscmfCoo_Huis_23_LeefruimteCoo^2 +
+				DiscmfCoo_Huis_25_LeefruimteCoo^2 +
+				DiscmfCoo_Huis_27_LeefruimteCoo^2 +
+				DiscmfCoo_Huis_29_LeefruimteCoo^2 +
+				DiscmfCoo_Huis_31_LeefruimteCoo^2);
+	
+	/// Overall objective ///
+	output Real ObjInt = ObjIntElecCost + ObjIntComfSCoo + ObjIntComfSHea + ObjIntBat + ObjIntTSupMax + ObjIntTSupMin + ObjIntTBorMin + ObjIntTBorMax;
+
+end StijnStreuvel;

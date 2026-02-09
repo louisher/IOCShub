@@ -1,0 +1,17 @@
+# Sink temperature is the outlet temperature of condensor (not inlet), needed for TACO calibration
+Tsource,Tsink,eff
+-5,35,4.15
+0,45,4.73
+2,55,4.97
+10,,5.94
+15,,7.05
+,,3.19
+,,3.65
+,,3.88
+,,4.77
+,,5.44
+,,2.43
+,,2.83
+,,2.99
+,,3.66
+,,4.15

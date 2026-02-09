@@ -1,0 +1,21 @@
+{
+  "timeZone": 3600,
+  "T_start": 22,
+  "p_gas": 0.1,
+  "p_el_ene": 0.22,
+  "p_el_dist": 0.03,
+  "weeklyProfile__Always_on_monday_on": 0,
+  "weeklyProfile__Always_on_monday_off": 24,
+  "weeklyProfile__Always_on_tuesday_on": 0,
+  "weeklyProfile__Always_on_tuesday_off": 24,
+  "weeklyProfile__Always_on_wednesday_on": 0,
+  "weeklyProfile__Always_on_wednesday_off": 24,
+  "weeklyProfile__Always_on_thursday_on": 0,
+  "weeklyProfile__Always_on_thursday_off": 24,
+  "weeklyProfile__Always_on_friday_on": 0,
+  "weeklyProfile__Always_on_friday_off": 24,
+  "weeklyProfile__Always_on_saturday_on": 0,
+  "weeklyProfile__Always_on_saturday_off": 24,
+  "weeklyProfile__Always_on_sunday_on": 0,
+  "weeklyProfile__Always_on_sunday_off": 24
+}

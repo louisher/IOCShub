@@ -1,0 +1,23 @@
+Name= "StijnStreuvelRBC_TMY"
+
+OutputCPUtime=true;
+savelog(Name+"Log.txt");
+experimentSetupOutput(events=false);
+savelog(Name+"Log.txt");
+Advanced.TranslationInCommandLog = true;
+
+
+//cd("/home/u0168760/")
+savelog(Name+"Log.txt");
+
+simulateModel(
+	"IOCSmod.Simulation.StijnStreuvel.StijnStreuvel", 
+	startTime=0,
+	stopTime=365*24*3600,
+	outputInterval=3600, 
+	method="Dassl", 
+	//tolerance=1e-06, 
+	resultFile=Name
+);
+savelog(Name+"Log.txt");
+Modelica.Utilities.System.exit();

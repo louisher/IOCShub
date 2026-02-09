@@ -1,0 +1,23 @@
+Name= "MixedUseRBC_XMY"
+
+OutputCPUtime=true;
+savelog(Name+"Log.txt");
+experimentSetupOutput(events=false);
+savelog(Name+"Log.txt");
+Advanced.TranslationInCommandLog = true;
+
+
+//cd("/home/u0168760/")
+savelog(Name+"Log.txt");
+
+simulateModel(
+	"IOCSmod.Simulation.MixedUse.MixedUse(sim(filNam=Modelica.Utilities.Files.loadResource(\"modelica://IOCSmod/Resources/weatherdata/Brussels-City_XMY2021-2040_ssp245_MAR-BCC_SWDbased.mos\")))", 
+	startTime=0,
+	stopTime=365*24*3600,
+	outputInterval=3600, 
+	method="Dassl", 
+	//tolerance=1e-06, 
+	resultFile=Name
+);
+savelog(Name+"Log.txt");
+Modelica.Utilities.System.exit();

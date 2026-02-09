@@ -1,0 +1,21 @@
+optimization VerificationBorefield(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="8760*1", tolerance=1e-5, truncationDelta=1e-2)
+	extends IOCSmod.ComponentModels.Verification.VerificationBorefield;
+
+
+	output Real Qhea = hea.Q_flow;
+	output Real TEvaIn = senTHpEvaIn.T-273.15;
+	output Real TEvaOut = senTHpEvaOut.T-273.15;
+
+	output Real QAggOut[19] = borefield.groTemRes.QAgg_flow;
+	output Real Kappa[19] = borefield.groTemResDat.kappa.kappa;
+	output Real QBorGround = borefield.groTemRes.QBor_flow;
+	output Real delTBorGround = borefield.groTemRes.delTBor;
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+
+    output Real ObjInt = Qhea;
+
+
+end VerificationBorefield;

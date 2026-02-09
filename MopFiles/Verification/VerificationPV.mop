@@ -1,0 +1,60 @@
+optimization VerificationPV(objectiveIntegrand=ObjInt, startTime=15638400, finalTime=startTime+1, timeStep=3600, intervalLengths="168*1", tolerance=1e-4, truncationDelta=1e-2)
+	extends IOCSmod.ComponentModels.Verification.VerificationPV(
+											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//BEL_VLG_Uccle.064470_TMYx.2007-2021.mos"),
+											pvOpt.Size=PVSize,
+											pv.PVArea=100);
+	
+	//////////////////////////////////
+	// Energy Hub Output variables	//
+	//////////////////////////////////
+
+	// PV panels Opt
+	output Real A_PVOpt = pvOpt.PVArea;
+	output Real P_PVOpt_DC = pvOpt.solarPower.y;
+	output Real P_PVOpt_AC = pvOpt.P; // negative value as it is generation of elec
+	output Real n_PVOpt = pvOpt.n;
+
+	// PV panels 
+	output Real A_PV = pv.PVArea;
+	output Real P_PV_DC = pv.solarPower.y;
+	output Real P_PV_AC = pv.P; // negative value as it is generation of elec
+	output Real n_PV = pv.n;
+
+	
+	///////////////////////////////////
+	////////  INVESTMENT COSTS ////////
+	///////////////////////////////////
+	
+
+	// General values for cost calculations:
+	output Real interest_rate = 0.05;
+	parameter Real r = interest_rate;
+	parameter Integer observation_time = 40; // Years
+
+
+	// Values for scaling investment cost:
+	output Real lifetime=20;
+	output Real cost_to_per_second_scaler = 1/lifetime/(8760*3600);
+	output Real inv_scaler = 36000000;
+	
+	parameter input Real PVSize(free=true, min=1, max=100, start=1, nominal=0.0834); // nominal: 1/(AsHp_inv*cost_to_per_second_scaler*inv_scaler)
+	output Real PV_rel_inv_cost= pvOpt.inv.annInvCost "Relative annual investement cost of PV";
+	output Real PV_inv_cost_ann = PV_rel_inv_cost * PVSize "Annualized investment cost of PV";
+
+	output Real Total_annualized_investment = PV_inv_cost_ann;
+	output Real inv_cost_per_second = Total_annualized_investment/(8760*3600); // euro per second
+
+
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+
+	/// Investment ///
+	output Real ObjInv = inv_scaler*inv_cost_per_second;
+
+	/// Overall objective ///
+	output Real ObjInt = P_PVOpt_AC + ObjInv;
+
+
+end VerificationPV;

@@ -1,0 +1,17 @@
+{
+    "config_from_file": false,
+    "conf_file_path": "C:/Workdir/Develop/HybridSystemIntegrationSEEDS/HySIMo/Resources/Borefields/Borefield_configuration_9n.txt",
+    "N_1": 2,
+    "N_2": 2,
+    "B": 6,
+    "D": 0.8,
+    "r_b": 0.066,
+    "T_cte": 10,
+    "Tf_min": 0,
+    "Tf_max": 17,
+    "cp_ground": 1400,
+    "rho_ground": 900,
+    "k_ground": 1.9,
+    "peak_duration_ext": 1,
+    "peak_duration_inj": 1
+}

@@ -1,0 +1,739 @@
+optimization MixedUse(objectiveIntegrand= ObjInt, startTime=0, finalTime=startTime+31536000, timeStep=3600, intervalLengths="72*1", tolerance=1e-1, truncationDelta=1e-2) 
+	extends IOCSmod.Optimization.MixedUse(addDummyEquation=false,
+											buildings.Houses.house1.hvac.optVar(y=u1),
+											buildings.Houses.house2.hvac.optVar(y=u2),
+											buildings.Houses.house3.hvac.optVar(y=u3),
+											buildings.Houses.office1.hvac.optVar(y=uOff1),
+											buildings.Houses.office2.hvac.optVar(y=uOff2),
+											buildings.Houses.office3.hvac.optVar(y=uOff3),
+											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata/Brussels-City_XMY2021-2040_ssp245_MAR-BCC_SWDbased.mos"),
+											priceSim.path_economic_params_json="/homenvme/louis/software/iocs/input_data/economic_params.json",	
+											enerHub.Size_AsHp=0.1,
+											enerHub.Size_GsHp=15.3,
+											enerHub.Size_AsChi=5.6,
+											enerHub.Size_Tank=0.1,
+											enerHub.Size_PV=31.1,
+											enerHub.Size_STC=0.1,
+											enerHub.Size_PVT=0.1,
+											enerHub.hasBat=true,
+											enerHub.Size_Bat=0.17,
+											enerHub.P_max_bat_kW=5.0,
+											enerHub.TBorMin=273.15 + 0.9,
+											enerHub.borFieDat.conDat.hBor=74,
+											enerHub.borFieDat.conDat.nBor=6,
+											enerHub.groTemResDat.rCel.rCel={1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0, 2048.0, 4096.0, 8192.0, 16384.0, 32768.0, 65536.0, 131072.0, 88257.0},
+											enerHub.groTemResDat.kappa.kappa={0.00016374789564299822, 7.162284333158821e-05, 6.456171569798258e-05, 6.31879388174072e-05, 6.325188135791016e-05, 6.357384392652397e-05, 6.374772350631103e-05, 6.378485497177371e-05, 6.541514245372718e-05, 7.935258313455159e-05, 0.00011640497969343984, 0.0001679177504899012, 0.00021408319961829076, 0.0002375710253223048, 0.00023182965543912075, 0.00020091879686258396, 0.0001533245056654026, 9.968862913381548e-05, 2.7484398959093555e-05},
+                                            enerHub.borFieDat.conDat.cooBor=[0,0; 0,6]
+											);
+
+	// Optimisation variables
+	input Real u1(free=true, start=1, min=-1, max=1, nominal= 1/3663);
+	input Real u2(free=true, start=1, min=-1, max=1, nominal= 1/3663);
+	input Real u3(free=true, start=1, min=-1, max=1, nominal= 1/3663);
+	input Real uOff1(free=true, start=1, min=-1, max=1, nominal= 1/7659);
+	input Real uOff2(free=true, start=1, min=-1, max=1, nominal= 1/7659);
+	input Real uOff3(free=true, start=1, min=-1, max=1, nominal= 1/7659);
+
+	
+	////////////////////////////////
+	// Demand Output variables    //
+	////////////////////////////////
+	
+	//Overall //
+	output Real P_Net_Houses = buildings.P; // Positive value means net offtake
+	output Real P_pumDh = buildings.pumNetwork.P;
+
+	//Collector
+	output Modelica.Units.NonSI.Temperature_degC TSup_collector = Modelica.Units.Conversions.to_degC(buildings.Houses.collector.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_collector = Modelica.Units.Conversions.to_degC(buildings.Houses.collector.TRet) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_collector = buildings.Houses.collector.port_a2.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_collector = buildings.Houses.collector.Q_flow "collector__Heating_collector thermal power";
+
+	// Comfort
+	output Real TSetDayHeaPro = buildings.Houses.TSetDayHeaExpr.y;	
+	output Real TSetNigHeaPro = buildings.Houses.TSetNigHeaExpr.y;
+	output Real TSetDayCooPro = buildings.Houses.TSetDayCooExpr.y;
+	output Real TSetNigCooPro = buildings.Houses.TSetNigCooExpr.y;
+	output Real TSetOffHeaPro = buildings.Houses.TSetOffHeaExpr.y;
+	output Real TSetOffCooPro = buildings.Houses.TSetOffCooExpr.y;
+
+
+	//////////// HOUSE 1 (label A)//////////////
+	// nominal values
+	output Real house1_m_flow_nom_con = buildings.Houses.house1.hvac.m_flow_nom_con;
+	output Real house1_m_flow_nom_dh = buildings.Houses.house1.hvac.m_flow_nom_dh;
+	
+	output Real house1_dp_nom_floHeaDay = buildings.Houses.house1.hvac.floHea1.dp_nominal;
+	output Real house1_dp_nom_floHeaNig = buildings.Houses.house1.hvac.floHea2.dp_nominal;
+	output Real house1_dp_nom_valSel = buildings.Houses.house1.hvac.dp_nom_valSel;
+
+
+	output Real house1_dp_nom_con = buildings.Houses.house1.hvac.dp_nom_con;
+	output Real house1_dp_nom_eva = buildings.Houses.house1.hvac.dp_nom_eva;
+	
+
+	//pump heads and mass flows pump
+	output Real house1_dp_pumCon= buildings.Houses.house1.hvac.pumCon.dp;
+	output Real house1_dp_floHea1 = buildings.Houses.house1.hvac.floHea1.dp;
+	output Real house1_dp_floHea2 = buildings.Houses.house1.hvac.floHea2.dp;
+	output Real house1_dp_valFloHea1 = buildings.Houses.house1.hvac.valFloHea1.dp;
+	output Real house1_dp_valFloHea2 = buildings.Houses.house1.hvac.valFloHea2.dp;
+	output Real house1_P_pumCon = buildings.Houses.house1.hvac.pumCon.P;
+	
+	
+	// heat pump
+	output Real house1_PheaPum = buildings.Houses.house1.hvac.heaPum.PEl;
+	output Real house1_QCon = buildings.Houses.house1.hvac.heaPum.QCon;
+	output Real house1_QEva = buildings.Houses.house1.hvac.heaPum.Q_eva.y;
+	output Real house1_COP = buildings.Houses.house1.hvac.heaPum.COP;
+	output Real house1_TEvaIn = buildings.Houses.house1.hvac.TInEva.T - 273.15;
+	output Real house1_TEvaOut = buildings.Houses.house1.hvac.TOutEva.T - 273.15;
+	output Real house1_TConIn = buildings.Houses.house1.hvac.TInCon.T - 273.15;
+	output Real house1_TConOut = buildings.Houses.house1.hvac.TOutCon.T - 273.15;
+	output Real house1_mFlowCon = buildings.Houses.house1.hvac.pumCon.m_flow;
+	output Real house1_mFlowEva = buildings.Houses.house1.hvac.heaPum.m1_flow;
+	
+	// emission system
+	output Real house1_TFloHea1 = buildings.Houses.house1.hvac.floHea1.heatPortEmb[1].T - 273.15;
+	output Real house1_TFloHea2 = buildings.Houses.house1.hvac.floHea2.heatPortEmb[1].T - 273.15;
+	output Real house1_TFloHeaIn = buildings.Houses.house1.hvac.TEmIn.T - 273.15;
+	output Real house1_TFloHeaOut = buildings.Houses.house1.hvac.TEmOut.T - 273.15;
+	output Real house1_QDay = buildings.Houses.house1.hvac.heatPortEmb[1].Q_flow;
+	output Real house1_QNig = buildings.Houses.house1.hvac.heatPortEmb[2].Q_flow;
+	output Real house1_mFlowFloHeaDay = buildings.Houses.house1.hvac.floHea1.m_flow;
+	output Real house1_mFlowFloHeaNig = buildings.Houses.house1.hvac.floHea2.m_flow;
+	
+	// hex cooling
+	output Real house1_THexCooIn = buildings.Houses.house1.hvac.T_hexCool_primIn.T - 273.15;
+	output Real house1_THexCooOut = buildings.Houses.house1.hvac.T_hexCool_primOut.T - 273.15;
+	output Real house1_mFlowHexCoo = buildings.Houses.house1.hvac.hexCool.m2_flow;
+	output Real house1_QFlowHexCoo = buildings.Houses.house1.hvac.hexCool.Q1_flow;
+
+	//district heating 
+	output Real house1_yValSelHea = buildings.Houses.house1.hvac.valSelHea.y;
+	output Real house1_yValSelCoo = buildings.Houses.house1.hvac.valSelCoo.y;
+
+	//ventilation
+	output Real house1_mAirDayIn = buildings.Houses.house1.bui.DayZone.ports[1].m_flow;
+	output Real house1_mAirDayOut = buildings.Houses.house1.bui.DayZone.ports[2].m_flow;
+	output Real house1_mAirNigIn = buildings.Houses.house1.bui.NightZone.ports[1].m_flow;
+	output Real house1_mAirNigOut = buildings.Houses.house1.bui.NightZone.ports[2].m_flow;
+	output Real house1_P_fanSupDay = buildings.Houses.house1.fanSup[1].P;
+	output Real	house1_P_fanSupNig = buildings.Houses.house1.fanSup[2].P;
+	output Real house1_P_fanRetDay = buildings.Houses.house1.fanRet[1].P;
+	output Real	house1_P_fanRetNig = buildings.Houses.house1.fanRet[2].P;
+
+	// Comfort
+	output Real house1_TDay = buildings.Houses.house1.bui.TSensor[1];
+	output Real house1_TNig = buildings.Houses.house1.bui.TSensor[2];
+	output Real house1_DiscmfHeaDay = max(0, TSetDayHeaPro - house1_TDay);
+	output Real house1_DiscmfHeaNig = max(0, TSetNigHeaPro - house1_TNig);
+	output Real house1_DiscmfCooDay = max(0, house1_TDay - TSetDayCooPro);
+	output Real house1_DiscmfCooNig = max(0, house1_TNig - TSetNigCooPro);
+
+
+	//////////// HOUSE 2 (label A)//////////////
+	// nominal values
+	output Real house2_m_flow_nom_con = buildings.Houses.house2.hvac.m_flow_nom_con;
+	output Real house2_m_flow_nom_dh = buildings.Houses.house2.hvac.m_flow_nom_dh;
+	
+	output Real house2_dp_nom_floHeaDay = buildings.Houses.house2.hvac.floHea1.dp_nominal;
+	output Real house2_dp_nom_floHeaNig = buildings.Houses.house2.hvac.floHea2.dp_nominal;
+	output Real house2_dp_nom_valSel = buildings.Houses.house2.hvac.dp_nom_valSel;
+
+
+	output Real house2_dp_nom_con = buildings.Houses.house2.hvac.dp_nom_con;
+	output Real house2_dp_nom_eva = buildings.Houses.house2.hvac.dp_nom_eva;
+	
+
+	//pump heads and mass flows pump
+	output Real house2_dp_pumCon= buildings.Houses.house2.hvac.pumCon.dp;
+	output Real house2_dp_floHea1 = buildings.Houses.house2.hvac.floHea1.dp;
+	output Real house2_dp_floHea2 = buildings.Houses.house2.hvac.floHea2.dp;
+	output Real house2_dp_valFloHea1 = buildings.Houses.house2.hvac.valFloHea1.dp;
+	output Real house2_dp_valFloHea2 = buildings.Houses.house2.hvac.valFloHea2.dp;
+	output Real house2_P_pumCon = buildings.Houses.house2.hvac.pumCon.P;
+	
+	// heat pump
+	output Real house2_PheaPum = buildings.Houses.house2.hvac.heaPum.PEl;
+	output Real house2_QCon = buildings.Houses.house2.hvac.heaPum.QCon;
+	output Real house2_QEva = buildings.Houses.house2.hvac.heaPum.Q_eva.y;
+	output Real house2_COP = buildings.Houses.house2.hvac.heaPum.COP;
+	output Real house2_TEvaIn = buildings.Houses.house2.hvac.TInEva.T - 273.15;
+	output Real house2_TEvaOut = buildings.Houses.house2.hvac.TOutEva.T - 273.15;
+	output Real house2_TConIn = buildings.Houses.house2.hvac.TInCon.T - 273.15;
+	output Real house2_TConOut = buildings.Houses.house2.hvac.TOutCon.T - 273.15;
+	output Real house2_mFlowCon = buildings.Houses.house2.hvac.pumCon.m_flow;
+	output Real house2_mFlowEva = buildings.Houses.house2.hvac.heaPum.m1_flow;
+	
+	// emission system
+	output Real house2_TFloHea1 = buildings.Houses.house2.hvac.floHea1.heatPortEmb[1].T - 273.15;
+	output Real house2_TFloHea2 = buildings.Houses.house2.hvac.floHea2.heatPortEmb[1].T - 273.15;
+	output Real house2_TFloHeaIn = buildings.Houses.house2.hvac.TEmIn.T - 273.15;
+	output Real house2_TFloHeaOut = buildings.Houses.house2.hvac.TEmOut.T - 273.15;
+	output Real house2_QDay = buildings.Houses.house2.hvac.heatPortEmb[1].Q_flow;
+	output Real house2_QNig = buildings.Houses.house2.hvac.heatPortEmb[2].Q_flow;
+	output Real house2_mFlowFloHeaDay = buildings.Houses.house2.hvac.floHea1.m_flow;
+	output Real house2_mFlowFloHeaNig = buildings.Houses.house2.hvac.floHea2.m_flow;
+	
+	// hex cooling
+	output Real house2_THexCooIn = buildings.Houses.house2.hvac.T_hexCool_primIn.T - 273.15;
+	output Real house2_THexCooOut = buildings.Houses.house2.hvac.T_hexCool_primOut.T - 273.15;
+	output Real house2_mFlowHexCoo = buildings.Houses.house2.hvac.hexCool.m2_flow;
+	output Real house2_QFlowHexCoo = buildings.Houses.house2.hvac.hexCool.Q1_flow;
+
+	//district heating 
+	output Real house2_yValSelHea = buildings.Houses.house2.hvac.valSelHea.y;
+	output Real house2_yValSelCoo = buildings.Houses.house2.hvac.valSelCoo.y;
+
+	//ventilation
+	output Real house2_mAirDayIn = buildings.Houses.house2.bui.DayZone.ports[1].m_flow;
+	output Real house2_mAirDayOut = buildings.Houses.house2.bui.DayZone.ports[2].m_flow;
+	output Real house2_mAirNigIn = buildings.Houses.house2.bui.NightZone.ports[1].m_flow;
+	output Real house2_mAirNigOut = buildings.Houses.house2.bui.NightZone.ports[2].m_flow;
+	output Real house2_P_fanSupDay = buildings.Houses.house2.fanSup[1].P;
+	output Real	house2_P_fanSupNig = buildings.Houses.house2.fanSup[2].P;
+	output Real house2_P_fanRetDay = buildings.Houses.house2.fanRet[1].P;
+	output Real	house2_P_fanRetNig = buildings.Houses.house2.fanRet[2].P;
+
+	// Comfort
+	output Real house2_TDay = buildings.Houses.house2.bui.TSensor[1];
+	output Real house2_TNig = buildings.Houses.house2.bui.TSensor[2];
+	output Real house2_DiscmfHeaDay = max(0, TSetDayHeaPro - house2_TDay);
+	output Real house2_DiscmfHeaNig = max(0, TSetNigHeaPro - house2_TNig);
+	output Real house2_DiscmfCooDay = max(0, house2_TDay - TSetDayCooPro);
+	output Real house2_DiscmfCooNig = max(0, house2_TNig - TSetNigCooPro);
+
+	//////////// HOUSE 3 (label A)//////////////
+	// nominal values
+	output Real house3_m_flow_nom_con = buildings.Houses.house3.hvac.m_flow_nom_con;
+	output Real house3_m_flow_nom_dh = buildings.Houses.house3.hvac.m_flow_nom_dh;
+	
+	output Real house3_dp_nom_floHeaDay = buildings.Houses.house3.hvac.floHea1.dp_nominal;
+	output Real house3_dp_nom_floHeaNig = buildings.Houses.house3.hvac.floHea2.dp_nominal;
+	output Real house3_dp_nom_valSel = buildings.Houses.house3.hvac.dp_nom_valSel;
+
+
+	output Real house3_dp_nom_con = buildings.Houses.house3.hvac.dp_nom_con;
+	output Real house3_dp_nom_eva = buildings.Houses.house3.hvac.dp_nom_eva;
+	
+
+	//pump heads and mass flows pump
+	output Real house3_dp_pumCon= buildings.Houses.house3.hvac.pumCon.dp;
+	output Real house3_dp_floHea1 = buildings.Houses.house3.hvac.floHea1.dp;
+	output Real house3_dp_floHea2 = buildings.Houses.house3.hvac.floHea2.dp;
+	output Real house3_dp_valFloHea1 = buildings.Houses.house3.hvac.valFloHea1.dp;
+	output Real house3_dp_valFloHea2 = buildings.Houses.house3.hvac.valFloHea2.dp;
+	output Real house3_P_pumCon = buildings.Houses.house3.hvac.pumCon.P;
+
+	
+	// heat pump
+	output Real house3_PheaPum = buildings.Houses.house3.hvac.heaPum.PEl;
+	output Real house3_QCon = buildings.Houses.house3.hvac.heaPum.QCon;
+	output Real house3_QEva = buildings.Houses.house3.hvac.heaPum.Q_eva.y;
+	output Real house3_COP = buildings.Houses.house3.hvac.heaPum.COP;
+	output Real house3_TEvaIn = buildings.Houses.house3.hvac.TInEva.T - 273.15;
+	output Real house3_TEvaOut = buildings.Houses.house3.hvac.TOutEva.T - 273.15;
+	output Real house3_TConIn = buildings.Houses.house3.hvac.TInCon.T - 273.15;
+	output Real house3_TConOut = buildings.Houses.house3.hvac.TOutCon.T - 273.15;
+	output Real house3_mFlowCon = buildings.Houses.house3.hvac.pumCon.m_flow;
+	output Real house3_mFlowEva = buildings.Houses.house3.hvac.heaPum.m1_flow;
+	
+	// emission system
+	output Real house3_TFloHea1 = buildings.Houses.house3.hvac.floHea1.heatPortEmb[1].T - 273.15;
+	output Real house3_TFloHea2 = buildings.Houses.house3.hvac.floHea2.heatPortEmb[1].T - 273.15;
+	output Real house3_TFloHeaIn = buildings.Houses.house3.hvac.TEmIn.T - 273.15;
+	output Real house3_TFloHeaOut = buildings.Houses.house3.hvac.TEmOut.T - 273.15;
+	output Real house3_QDay = buildings.Houses.house3.hvac.heatPortEmb[1].Q_flow;
+	output Real house3_QNig = buildings.Houses.house3.hvac.heatPortEmb[2].Q_flow;
+	output Real house3_mFlowFloHeaDay = buildings.Houses.house3.hvac.floHea1.m_flow;
+	output Real house3_mFlowFloHeaNig = buildings.Houses.house3.hvac.floHea2.m_flow;
+	
+	// hex cooling
+	output Real house3_THexCooIn = buildings.Houses.house3.hvac.T_hexCool_primIn.T - 273.15;
+	output Real house3_THexCooOut = buildings.Houses.house3.hvac.T_hexCool_primOut.T - 273.15;
+	output Real house3_mFlowHexCoo = buildings.Houses.house3.hvac.hexCool.m2_flow;
+	output Real house3_QFlowHexCoo = buildings.Houses.house3.hvac.hexCool.Q1_flow;
+
+	//district heating 
+	output Real house3_yValSelHea = buildings.Houses.house3.hvac.valSelHea.y;
+	output Real house3_yValSelCoo = buildings.Houses.house3.hvac.valSelCoo.y;
+
+	//ventilation
+	output Real house3_mAirDayIn = buildings.Houses.house3.bui.DayZone.ports[1].m_flow;
+	output Real house3_mAirDayOut = buildings.Houses.house3.bui.DayZone.ports[2].m_flow;
+	output Real house3_mAirNigIn = buildings.Houses.house3.bui.NightZone.ports[1].m_flow;
+	output Real house3_mAirNigOut = buildings.Houses.house3.bui.NightZone.ports[2].m_flow;
+	output Real house3_P_fanSupDay = buildings.Houses.house3.fanSup[1].P;
+	output Real	house3_P_fanSupNig = buildings.Houses.house3.fanSup[2].P;
+	output Real house3_P_fanRetDay = buildings.Houses.house3.fanRet[1].P;
+	output Real	house3_P_fanRetNig = buildings.Houses.house3.fanRet[2].P;
+
+	// Comfort
+	output Real house3_TDay = buildings.Houses.house3.bui.TSensor[1];
+	output Real house3_TNig = buildings.Houses.house3.bui.TSensor[2];
+	output Real house3_DiscmfHeaDay = max(0, TSetDayHeaPro - house3_TDay);
+	output Real house3_DiscmfHeaNig = max(0, TSetNigHeaPro - house3_TNig);
+	output Real house3_DiscmfCooDay = max(0, house3_TDay - TSetDayCooPro);
+	output Real house3_DiscmfCooNig = max(0, house3_TNig - TSetNigCooPro);
+
+
+	//////////// OFFICE 1 (label A)//////////////
+	// nominal values
+	output Real office1_m_flow_nom_con = buildings.Houses.office1.hvac.m_flow_nom_con;
+	output Real office1_m_flow_nom_dh = buildings.Houses.office1.hvac.m_flow_nom_dh;
+	
+	output Real office1_dp_nom_floHeaDay = buildings.Houses.office1.hvac.floHea1.dp_nominal;
+	output Real office1_dp_nom_floHeaNig = buildings.Houses.office1.hvac.floHea2.dp_nominal;
+	output Real office1_dp_nom_valSel = buildings.Houses.office1.hvac.dp_nom_valSel;
+
+
+	output Real office1_dp_nom_con = buildings.Houses.office1.hvac.dp_nom_con;
+	output Real office1_dp_nom_eva = buildings.Houses.office1.hvac.dp_nom_eva;
+	
+
+	//pump heads and mass flows pump
+	output Real office1_dp_pumCon= buildings.Houses.office1.hvac.pumCon.dp;
+	output Real office1_dp_floHea1 = buildings.Houses.office1.hvac.floHea1.dp;
+	output Real office1_dp_floHea2 = buildings.Houses.office1.hvac.floHea2.dp;
+	output Real office1_dp_valFloHea1 = buildings.Houses.office1.hvac.valFloHea1.dp;
+	output Real office1_dp_valFloHea2 = buildings.Houses.office1.hvac.valFloHea2.dp;
+	output Real office1_P_pumCon = buildings.Houses.office1.hvac.pumCon.P;
+
+	
+	// heat pump
+	output Real office1_PheaPum = buildings.Houses.office1.hvac.heaPum.PEl;
+	output Real office1_QCon = buildings.Houses.office1.hvac.heaPum.QCon;
+	output Real office1_QEva = buildings.Houses.office1.hvac.heaPum.Q_eva.y;
+	output Real office1_COP = buildings.Houses.office1.hvac.heaPum.COP;
+	output Real office1_TEvaIn = buildings.Houses.office1.hvac.TInEva.T - 273.15;
+	output Real office1_TEvaOut = buildings.Houses.office1.hvac.TOutEva.T - 273.15;
+	output Real office1_TConIn = buildings.Houses.office1.hvac.TInCon.T - 273.15;
+	output Real office1_TConOut = buildings.Houses.office1.hvac.TOutCon.T - 273.15;
+	output Real office1_mFlowCon = buildings.Houses.office1.hvac.pumCon.m_flow;
+	output Real office1_mFlowEva = buildings.Houses.office1.hvac.heaPum.m1_flow;
+	
+	// emission system
+	output Real office1_TFloHea1 = buildings.Houses.office1.hvac.floHea1.heatPortEmb[1].T - 273.15;
+	output Real office1_TFloHea2 = buildings.Houses.office1.hvac.floHea2.heatPortEmb[1].T - 273.15;
+	output Real office1_TFloHeaIn = buildings.Houses.office1.hvac.TEmIn.T - 273.15;
+	output Real office1_TFloHeaOut = buildings.Houses.office1.hvac.TEmOut.T - 273.15;
+	output Real office1_QNor = buildings.Houses.office1.hvac.heatPortEmb[1].Q_flow;
+	output Real office1_QSou = buildings.Houses.office1.hvac.heatPortEmb[2].Q_flow;
+	output Real office1_mFlowFloHeaNor = buildings.Houses.office1.hvac.floHea1.m_flow;
+	output Real office1_mFlowFloHeaSou = buildings.Houses.office1.hvac.floHea2.m_flow;
+	
+	// hex cooling
+	output Real office1_THexCooIn = buildings.Houses.office1.hvac.T_hexCool_primIn.T - 273.15;
+	output Real office1_THexCooOut = buildings.Houses.office1.hvac.T_hexCool_primOut.T - 273.15;
+	output Real office1_mFlowHexCoo = buildings.Houses.office1.hvac.hexCool.m2_flow;
+	output Real office1_QFlowHexCoo = buildings.Houses.office1.hvac.hexCool.Q1_flow;
+
+	//district heating 
+	output Real office1_yValSelHea = buildings.Houses.office1.hvac.valSelHea.y;
+	output Real office1_yValSelCoo = buildings.Houses.office1.hvac.valSelCoo.y;
+
+	//ventilation
+	output Real office1_mAirDayIn = buildings.Houses.office1.office.officeNor.ports[1].m_flow;
+	output Real office1_mAirDayOut = buildings.Houses.office1.office.officeNor.ports[2].m_flow;
+	output Real office1_mAirNigIn = buildings.Houses.office1.office.officeSou.ports[1].m_flow;
+	output Real office1_mAirNigOut = buildings.Houses.office1.office.officeSou.ports[2].m_flow;
+	output Real office1_P_fanSupDay = buildings.Houses.office1.fanSup[1].P;
+	output Real	office1_P_fanSupNig = buildings.Houses.office1.fanSup[2].P;
+	output Real office1_P_fanRetDay = buildings.Houses.office1.fanRet[1].P;
+	output Real	office1_P_fanRetNig = buildings.Houses.office1.fanRet[2].P;
+
+	// Comfort
+	output Real office1_TNor = buildings.Houses.office1.office.TSensor[1];
+	output Real office1_TSou = buildings.Houses.office1.office.TSensor[2];
+	output Real office1_DiscmfHeaNor = max(0, TSetOffHeaPro - office1_TNor);
+	output Real office1_DiscmfHeaSou = max(0, TSetOffHeaPro - office1_TSou);
+	output Real office1_DiscmfCooNor = max(0, office1_TNor - TSetOffCooPro);
+	output Real office1_DiscmfCooSou = max(0, office1_TSou - TSetOffCooPro);
+
+	//////////// OFFICE 2 (label A)//////////////
+	// nominal values
+	output Real office2_m_flow_nom_con = buildings.Houses.office2.hvac.m_flow_nom_con;
+	output Real office2_m_flow_nom_dh = buildings.Houses.office2.hvac.m_flow_nom_dh;
+	
+	output Real office2_dp_nom_floHeaDay = buildings.Houses.office2.hvac.floHea1.dp_nominal;
+	output Real office2_dp_nom_floHeaNig = buildings.Houses.office2.hvac.floHea2.dp_nominal;
+	output Real office2_dp_nom_valSel = buildings.Houses.office2.hvac.dp_nom_valSel;
+
+
+	output Real office2_dp_nom_con = buildings.Houses.office2.hvac.dp_nom_con;
+	output Real office2_dp_nom_eva = buildings.Houses.office2.hvac.dp_nom_eva;
+	
+
+	//pump heads and mass flows pump
+	output Real office2_dp_pumCon= buildings.Houses.office2.hvac.pumCon.dp;
+	output Real office2_dp_floHea1 = buildings.Houses.office2.hvac.floHea1.dp;
+	output Real office2_dp_floHea2 = buildings.Houses.office2.hvac.floHea2.dp;
+	output Real office2_dp_valFloHea1 = buildings.Houses.office2.hvac.valFloHea1.dp;
+	output Real office2_dp_valFloHea2 = buildings.Houses.office2.hvac.valFloHea2.dp;
+	output Real office2_P_pumCon = buildings.Houses.office2.hvac.pumCon.P;
+
+	
+	// heat pump
+	output Real office2_PheaPum = buildings.Houses.office2.hvac.heaPum.PEl;
+	output Real office2_QCon = buildings.Houses.office2.hvac.heaPum.QCon;
+	output Real office2_QEva = buildings.Houses.office2.hvac.heaPum.Q_eva.y;
+	output Real office2_COP = buildings.Houses.office2.hvac.heaPum.COP;
+	output Real office2_TEvaIn = buildings.Houses.office2.hvac.TInEva.T - 273.15;
+	output Real office2_TEvaOut = buildings.Houses.office2.hvac.TOutEva.T - 273.15;
+	output Real office2_TConIn = buildings.Houses.office2.hvac.TInCon.T - 273.15;
+	output Real office2_TConOut = buildings.Houses.office2.hvac.TOutCon.T - 273.15;
+	output Real office2_mFlowCon = buildings.Houses.office2.hvac.pumCon.m_flow;
+	output Real office2_mFlowEva = buildings.Houses.office2.hvac.heaPum.m1_flow;
+	
+	// emission system
+	output Real office2_TFloHea1 = buildings.Houses.office2.hvac.floHea1.heatPortEmb[1].T - 273.15;
+	output Real office2_TFloHea2 = buildings.Houses.office2.hvac.floHea2.heatPortEmb[1].T - 273.15;
+	output Real office2_TFloHeaIn = buildings.Houses.office2.hvac.TEmIn.T - 273.15;
+	output Real office2_TFloHeaOut = buildings.Houses.office2.hvac.TEmOut.T - 273.15;
+	output Real office2_QNor = buildings.Houses.office2.hvac.heatPortEmb[1].Q_flow;
+	output Real office2_QSou = buildings.Houses.office2.hvac.heatPortEmb[2].Q_flow;
+	output Real office2_mFlowFloHeaNor = buildings.Houses.office2.hvac.floHea1.m_flow;
+	output Real office2_mFlowFloHeaSou = buildings.Houses.office2.hvac.floHea2.m_flow;
+	
+	// hex cooling
+	output Real office2_THexCooIn = buildings.Houses.office2.hvac.T_hexCool_primIn.T - 273.15;
+	output Real office2_THexCooOut = buildings.Houses.office2.hvac.T_hexCool_primOut.T - 273.15;
+	output Real office2_mFlowHexCoo = buildings.Houses.office2.hvac.hexCool.m2_flow;
+	output Real office2_QFlowHexCoo = buildings.Houses.office2.hvac.hexCool.Q1_flow;
+
+	//district heating 
+	output Real office2_yValSelHea = buildings.Houses.office2.hvac.valSelHea.y;
+	output Real office2_yValSelCoo = buildings.Houses.office2.hvac.valSelCoo.y;
+
+	//ventilation
+	output Real office2_mAirDayIn = buildings.Houses.office2.office.officeNor.ports[1].m_flow;
+	output Real office2_mAirDayOut = buildings.Houses.office2.office.officeNor.ports[2].m_flow;
+	output Real office2_mAirNigIn = buildings.Houses.office2.office.officeSou.ports[1].m_flow;
+	output Real office2_mAirNigOut = buildings.Houses.office2.office.officeSou.ports[2].m_flow;
+	output Real office2_P_fanSupDay = buildings.Houses.office2.fanSup[1].P;
+	output Real	office2_P_fanSupNig = buildings.Houses.office2.fanSup[2].P;
+	output Real office2_P_fanRetDay = buildings.Houses.office2.fanRet[1].P;
+	output Real	office2_P_fanRetNig = buildings.Houses.office2.fanRet[2].P;
+
+	// Comfort
+	output Real office2_TNor = buildings.Houses.office2.office.TSensor[1];
+	output Real office2_TSou = buildings.Houses.office2.office.TSensor[2];
+	output Real office2_DiscmfHeaNor = max(0, TSetOffHeaPro - office2_TNor);
+	output Real office2_DiscmfHeaSou = max(0, TSetOffHeaPro - office2_TSou);
+	output Real office2_DiscmfCooNor = max(0, office2_TNor - TSetOffCooPro);
+	output Real office2_DiscmfCooSou = max(0, office2_TSou - TSetOffCooPro);
+
+	//////////// OFFICE 3 (label A)//////////////
+	// nominal values
+	output Real office3_m_flow_nom_con = buildings.Houses.office3.hvac.m_flow_nom_con;
+	output Real office3_m_flow_nom_dh = buildings.Houses.office3.hvac.m_flow_nom_dh;
+	
+	output Real office3_dp_nom_floHeaDay = buildings.Houses.office3.hvac.floHea1.dp_nominal;
+	output Real office3_dp_nom_floHeaNig = buildings.Houses.office3.hvac.floHea2.dp_nominal;
+	output Real office3_dp_nom_valSel = buildings.Houses.office3.hvac.dp_nom_valSel;
+
+
+	output Real office3_dp_nom_con = buildings.Houses.office3.hvac.dp_nom_con;
+	output Real office3_dp_nom_eva = buildings.Houses.office3.hvac.dp_nom_eva;
+	
+
+	//pump heads and mass flows pump
+	output Real office3_dp_pumCon= buildings.Houses.office3.hvac.pumCon.dp;
+	output Real office3_dp_floHea1 = buildings.Houses.office3.hvac.floHea1.dp;
+	output Real office3_dp_floHea2 = buildings.Houses.office3.hvac.floHea2.dp;
+	output Real office3_dp_valFloHea1 = buildings.Houses.office3.hvac.valFloHea1.dp;
+	output Real office3_dp_valFloHea2 = buildings.Houses.office3.hvac.valFloHea2.dp;
+	output Real office3_P_pumCon = buildings.Houses.office3.hvac.pumCon.P;
+
+	
+	// heat pump
+	output Real office3_PheaPum = buildings.Houses.office3.hvac.heaPum.PEl;
+	output Real office3_QCon = buildings.Houses.office3.hvac.heaPum.QCon;
+	output Real office3_QEva = buildings.Houses.office3.hvac.heaPum.Q_eva.y;
+	output Real office3_COP = buildings.Houses.office3.hvac.heaPum.COP;
+	output Real office3_TEvaIn = buildings.Houses.office3.hvac.TInEva.T - 273.15;
+	output Real office3_TEvaOut = buildings.Houses.office3.hvac.TOutEva.T - 273.15;
+	output Real office3_TConIn = buildings.Houses.office3.hvac.TInCon.T - 273.15;
+	output Real office3_TConOut = buildings.Houses.office3.hvac.TOutCon.T - 273.15;
+	output Real office3_mFlowCon = buildings.Houses.office3.hvac.pumCon.m_flow;
+	output Real office3_mFlowEva = buildings.Houses.office3.hvac.heaPum.m1_flow;
+	
+	// emission system
+	output Real office3_TFloHea1 = buildings.Houses.office3.hvac.floHea1.heatPortEmb[1].T - 273.15;
+	output Real office3_TFloHea2 = buildings.Houses.office3.hvac.floHea2.heatPortEmb[1].T - 273.15;
+	output Real office3_TFloHeaIn = buildings.Houses.office3.hvac.TEmIn.T - 273.15;
+	output Real office3_TFloHeaOut = buildings.Houses.office3.hvac.TEmOut.T - 273.15;
+	output Real office3_QNor = buildings.Houses.office3.hvac.heatPortEmb[1].Q_flow;
+	output Real office3_QSou = buildings.Houses.office3.hvac.heatPortEmb[2].Q_flow;
+	output Real office3_mFlowFloHeaNor = buildings.Houses.office3.hvac.floHea1.m_flow;
+	output Real office3_mFlowFloHeaSou = buildings.Houses.office3.hvac.floHea2.m_flow;
+	
+	// hex cooling
+	output Real office3_THexCooIn = buildings.Houses.office3.hvac.T_hexCool_primIn.T - 273.15;
+	output Real office3_THexCooOut = buildings.Houses.office3.hvac.T_hexCool_primOut.T - 273.15;
+	output Real office3_mFlowHexCoo = buildings.Houses.office3.hvac.hexCool.m2_flow;
+	output Real office3_QFlowHexCoo = buildings.Houses.office3.hvac.hexCool.Q1_flow;
+
+	//district heating 
+	output Real office3_yValSelHea = buildings.Houses.office3.hvac.valSelHea.y;
+	output Real office3_yValSelCoo = buildings.Houses.office3.hvac.valSelCoo.y;
+
+	//ventilation
+	output Real office3_mAirDayIn = buildings.Houses.office3.office.officeNor.ports[1].m_flow;
+	output Real office3_mAirDayOut = buildings.Houses.office3.office.officeNor.ports[2].m_flow;
+	output Real office3_mAirNigIn = buildings.Houses.office3.office.officeSou.ports[1].m_flow;
+	output Real office3_mAirNigOut = buildings.Houses.office3.office.officeSou.ports[2].m_flow;
+	output Real office3_P_fanSupDay = buildings.Houses.office3.fanSup[1].P;
+	output Real	office3_P_fanSupNig = buildings.Houses.office3.fanSup[2].P;
+	output Real office3_P_fanRetDay = buildings.Houses.office3.fanRet[1].P;
+	output Real	office3_P_fanRetNig = buildings.Houses.office3.fanRet[2].P;
+
+	// Comfort
+	output Real office3_TNor = buildings.Houses.office3.office.TSensor[1];
+	output Real office3_TSou = buildings.Houses.office3.office.TSensor[2];
+	output Real office3_DiscmfHeaNor = max(0, TSetOffHeaPro - office3_TNor);
+	output Real office3_DiscmfHeaSou = max(0, TSetOffHeaPro - office3_TSou);
+	output Real office3_DiscmfCooNor = max(0, office3_TNor - TSetOffCooPro);
+	output Real office3_DiscmfCooSou = max(0, office3_TSou - TSetOffCooPro);
+
+	//////////////////////////////////
+	// Energy Hub Output variables	//
+	//////////////////////////////////
+
+	// General
+	output Real P_Net_enerHub = enerHub.P;
+	output Real Q_enerHub = enerHub.QEnergyHub;
+	
+	// GSHP
+	output Real QNom_GSHP = enerHub.Qnom_GsHp;
+	output Real P_GSHP = enerHub.GsHp.GsHp.PEl;
+	output Real E_GSHP_kWh = enerHub.GsHp.EGsHp_kWh.y;
+	output Real QCon_GSHP = enerHub.GsHp.GsHp.QCon;
+	output Real QEva_GSHP = -enerHub.GsHp.GsHp.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_GSHP = enerHub.GsHp.GsHp.COP;
+
+	output Real P_pumCoo = enerHub.GsHp.pumHexCooEva.P;
+	output Real E_pumCoo_kWh = enerHub.GsHp.EpumCoo_kWh.y;
+	output Real QhexCoo = enerHub.GsHp.hexCoo.Q2_flow; // will be positive if heat is added to the borefield i.e. cooling of buffertank is happening
+
+	output Real TGsHpConIn = enerHub.GsHp.senTGsHpConIn.T - 273.15; //°C
+	output Real TGsHpConOut = enerHub.GsHp.senTGsHpConOut.T - 273.15; //°C
+	output Real TGsHpEvaIn = enerHub.GsHp.senTGsHpEvaIn.T - 273.15; //°C
+	output Real TGsHpEvaOut = enerHub.GsHp.senTGsHpEvaOut.T - 273.15; //°C
+
+	output Real TBorIn = enerHub.GsHp.senTBorIn.T - 273.15; //°C
+	output Real TBorOut = enerHub.GsHp.senTBorOut.T - 273.15; //°C
+
+	output Real THexCooConIn = enerHub.GsHp.senTHexCooConIn.T - 273.15; //°C
+	output Real THexCooConOut = enerHub.GsHp.senTHexCooConOut.T - 273.15; //°C
+	output Real THexCooEvaIn = enerHub.GsHp.senTHexCooEvaIn.T - 273.15; //°C
+	output Real THexCooEvaOut = enerHub.GsHp.senTHexCooEvaOut.T - 273.15; //°C
+
+	output Real mFlowGsHpCon = enerHub.GsHp.GsHp.m2_flow;
+	output Real mFlowGsHpEva = enerHub.GsHp.GsHp.m1_flow;
+	output Real mFlowBor = enerHub.GsHp.pumBor.m_flow;
+
+	output Real mFlowHexCooCon = enerHub.GsHp.hexCoo.m2_flow;
+	output Real mFlowHexCooEva = enerHub.GsHp.hexCoo.m1_flow;
+
+	output Real chBor_delTBor = enerHub.GsHp.borefield.groTemRes.delTBor;
+	output Real chBor_QAggFlow1 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[1];
+	output Real chBor_QAggFlow2 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[2];
+	output Real chBor_QAggFlow3 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[3];
+
+	// ASHP
+	output Real QNom_ASHP = enerHub.Qnom_AsHp;
+	output Real P_ASHP = enerHub.AsHp.AsHp.PEl;
+	output Real E_ASHP_kWh = enerHub.AsHp.EAsHp_kWh.y;
+	output Real QCon_ASHP = enerHub.AsHp.AsHp.QCon;
+	output Real QEva_ASHP = -enerHub.AsHp.AsHp.HP.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_ASHP = enerHub.AsHp.AsHp.COP;
+
+	output Real TAsHpConIn = enerHub.AsHp.senTAsHpConIn.T - 273.15; //°C
+	output Real TAsHpConOut = enerHub.AsHp.senTAsHpConOut.T - 273.15; //°C
+	output Real TAsHpEvaIn = enerHub.AsHp.AsHp.HP.TEvaIn.T - 273.15; //°C
+	output Real TAsHpEvaOut = enerHub.AsHp.AsHp.HP.TEvaOut.T - 273.15; //°C
+
+	output Real mFlowAsHpCon = enerHub.AsHp.AsHp.HP.m2_flow;
+
+	// ASCHI
+	output Real QNom_ASCHI = enerHub.Qnom_AsChi;
+	output Real P_ASCHI = enerHub.AsChi.AsChi.PEl;
+	output Real E_ASCHI_kWh = enerHub.AsChi.EAsChi_kWh.y;
+	output Real QCon_ASCHI = enerHub.AsChi.AsChi.Chi.con.Q_flow;
+	output Real QEva_ASCHI = enerHub.AsChi.AsChi.QEva; // !!! Positive value
+	output Real EER_ASHP = enerHub.AsChi.AsChi.EER;
+
+	output Real TAsChiEvaIn = enerHub.AsChi.senTAsChiEvaIn.T - 273.15; //°C
+	output Real TAsChiEvaOut = enerHub.AsChi.senTAsChiEvaOut.T - 273.15; //°C
+	output Real TAsChiConIn = enerHub.AsChi.AsChi.Chi.TConIn.T - 273.15; //°C
+	output Real TAsChiConOut = enerHub.AsChi.AsChi.Chi.TConOut.T - 273.15; //°C
+
+	output Real mFlowAsChiEva = enerHub.AsChi.AsChi.Chi.m1_flow;
+
+	// Tank
+	output Real Ttank = enerHub.tan.vol.T - 273.15; //°C
+	output Real Vtank = enerHub.tan.VTan;
+
+	// PV panels
+	output Real A_PV = enerHub.Size_PV;
+	output Real P_PV_DC = enerHub.pv.solarPower.y;
+	output Real P_PV_AC = enerHub.pv.P;
+
+	// Battery 
+	output Real Bat_cap = enerHub.bat.EBat_max ;
+	output Real Bat_soc = enerHub.bat.SoC ;
+	output Real Bat_eff = enerHub.bat.eff ;
+	output Real Bat_Pcha = enerHub.bat.PCha ;
+	output Real Bat_PDem = enerHub.bat.PDem ;
+	output Real Bat_PGrid = enerHub.bat.PGrid ;
+	output Real Bat_SOCmax = enerHub.SoC_max;
+	output Real Bat_SOCmin = enerHub.SoC_min;
+
+	// STC panels
+	output Real A_STC = enerHub.stc.panels.totalArea;
+	output Real QStc = enerHub.stc.panels.QTot;
+
+	output Real QStcHex = enerHub.stc.hex.Q2_flow;
+
+	output Real TStcIn = enerHub.stc.senTPanelsIn.T - 273.15; //°C
+	output Real TStcOut = enerHub.stc.senTPanelsOut.T - 273.15; //°C
+	output Real TStcRegIn = enerHub.stc.senTRegIn.T - 273.15; //°C
+	output Real TStcRegOut = enerHub.stc.senTRegOut.T - 273.15; //°C
+	output Real TStcHeaIn = enerHub.stc.senTHeaIn.T - 273.15; //°C
+	output Real TStcHeaOut = enerHub.stc.senTHeaOut.T - 273.15; //°C
+	output Real TStcHexIn = enerHub.stc.senTHexIn.T -273.15; //°C
+	output Real TStcHexOut = enerHub.stc.senTHexOut.T -273.15; //°C
+
+	output Real mFlowStc = enerHub.stc.pumPanels.m_flow;
+	output Real mFlowStcHex = enerHub.stc.hex.m2_flow;
+	output Real mFlowStcHeaIn = enerHub.stc.valSupHea.m_flow;
+	output Real mFlowStcHeaOut = enerHub.stc.valRetHea.m_flow;
+	output Real mFlowStcRegIn = enerHub.stc.valSupReg.m_flow;
+	output Real mFlowStcRegOut = enerHub.stc.valRetReg.m_flow;
+
+	// PVT
+	output Real A_PVT = enerHub.pvt.panels.totalArea;
+	output Real QPvt = enerHub.pvt.panels.QTot;
+	output Real PPvt = enerHub.pvt.P;
+	
+	output Real QPvtHex = enerHub.pvt.hex.Q2_flow;
+
+	output Real TPvtIn = enerHub.pvt.senTPanelsIn.T - 273.15; //°C
+	output Real TPvtOut = enerHub.pvt.senTPanelsOut.T - 273.15; //°C
+	output Real TPvtHexIn = enerHub.pvt.senTHexIn.T - 273.15; //°C
+	output Real TPvtHexOut = enerHub.pvt.senTHexOut.T - 273.15; //°C
+	output Real TPvtRegIn = enerHub.pvt.senTRegIn.T - 273.15; //°C
+	output Real TPvtRegOut = enerHub.pvt.senTRegOut.T - 273.15; //°C
+	output Real TPvtHeaIn = enerHub.pvt.senTHeaIn.T - 273.15; //°C
+	output Real TPvtHeaOut = enerHub.pvt.senTHeaOut.T - 273.15; //°C
+
+	output Real mFlowPvt = enerHub.pvt.pumPanels.m_flow;
+	output Real mFlowPvtHex = enerHub.pvt.hex.m2_flow;
+	output Real mFlowPvtHeaIn = enerHub.pvt.valSupHea.m_flow;
+	output Real mFlowPvtHeaOut = enerHub.pvt.valRetHea.m_flow;
+	output Real mFlowPvtRegIn = enerHub.pvt.valSupReg.m_flow;
+	output Real mFlowPVtRegOut = enerHub.pvt.valRetReg.m_flow;
+
+	///////////////////////////////////
+	// IOCS definitions //
+	///////////////////////////////////
+	// input data:
+	output Real QDem = Q_flow_collector; 	// Demand profile for heat and cold: heat should be positive, cold should be negative
+	output Real PDem = P_Net_Houses;							// Demand profile for electricity in the buildings only, offtake should be positive
+	output Real QBor = enerHub.GsHp.QBorefield;
+	
+	// temperature data for COP calculation	
+	output Real T_COP_Sup = Ttank; 			// Temperatures should be in °C
+	output Real T_COP_Bor = TBorOut; 		// Temperatures should be in °C
+	output Real T_COP_Air = TAsHpEvaIn; 	// Temperatures should be in °C
+
+	// overall result data:
+	output Real DiscmfHea = house1_DiscmfHeaDay + house1_DiscmfHeaNig +
+							house2_DiscmfHeaDay + house2_DiscmfHeaNig +
+							house3_DiscmfHeaDay + house3_DiscmfHeaNig +
+							office1_DiscmfHeaNor + office1_DiscmfHeaSou + 
+							office2_DiscmfHeaNor + office2_DiscmfHeaSou + 
+							office3_DiscmfHeaNor + office3_DiscmfHeaSou; // Heating discomort in Kh
+	output Real DiscmfCoo = house1_DiscmfCooDay + house1_DiscmfCooNig +
+							house2_DiscmfCooDay + house2_DiscmfCooNig +
+							house3_DiscmfCooDay + house3_DiscmfCooNig +
+							office1_DiscmfCooNor + office1_DiscmfCooSou + 
+							office2_DiscmfCooNor + office2_DiscmfCooSou + 
+							office3_DiscmfCooNor + office3_DiscmfCooSou; // Cooling discomfort in Kh
+
+	output Real ElecUse = TotalPower; // Overall energy use of the entire district (buildings + energy hub), offtake should be positive
+
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+
+	/// Electricity ///
+	output Real TotalPower = P_Net_enerHub + P_Net_Houses;
+	
+	output Real tariff_scaler = 36000000;
+	output Real p_offtake = priceSim.p_elec_fix_offtake/(3600*1e6); // €/J
+	output Real p_offtakeSca = p_offtake * tariff_scaler;
+	output Real p_inj = priceSim.p_elec_fix_inj/(3600*1e6); // €/J
+	output Real p_injSca = p_inj * tariff_scaler;
+	output Real b = 50; // transition parameter
+	output Real smoothPrice = p_injSca + (p_offtakeSca - p_injSca) * 0.5 *(1 + TotalPower / (sqrt(TotalPower^2 + b^2)) );
+
+	output Real ObjIntElecCost = TotalPower*smoothPrice;
+
+	// Battery //
+	output Real weight_bat = 100000;
+	output Real ObjBatMax = weight_bat*max(0, Bat_soc - Bat_SOCmax)^2;
+	output Real ObjBatMin = weight_bat*max(0, Bat_SOCmin - Bat_soc)^2;
+	output Real ObjIntBat = ObjBatMax + ObjBatMin;
+	
+	// Supply temperature	
+	output Real TSupMax = 60;
+	output Real ObjIntTSupMax = 10000*max(0, Ttank - TSupMax)^2;
+	output Real TSupMin = 5;
+	output Real ObjIntTSupMin = 10000*max(0, TSupMin - Ttank)^2;
+
+	// Borefield temperature
+	output Real TBorMin_degC = enerHub.TBorMin - 273.15;
+	output Real TBorMax = 17.1;
+	output Real TBorAvg = (TBorIn + TBorOut)/2;
+	output Real ObjIntTBorMin = 10000*max(0, TBorMin_degC - TBorAvg)^2;
+	output Real ObjIntTBorMax = 10000*max(0, TBorAvg - TBorMax)^2;
+
+	// Minimum floor heating temperature
+	output Real RH = sim.relHum*100;
+	parameter Real weight_fh = 100;
+	//real Tmin=17 (increased it a bit and lowered the weighting factor)
+	output Real TFloHea_min = 17.5; 
+    output Real ObjIntFloHeaMin1 = weight_fh*(max(0, TFloHea_min - house1_TFloHea1)^2 + max(0, TFloHea_min - house1_TFloHea2)^2);
+    output Real ObjIntFloHeaMin2 = weight_fh*(max(0, TFloHea_min - house2_TFloHea1)^2 + max(0, TFloHea_min - house2_TFloHea2)^2);
+    output Real ObjIntFloHeaMin3 = weight_fh*(max(0, TFloHea_min - house3_TFloHea1)^2 + max(0, TFloHea_min - house3_TFloHea2)^2);
+    output Real ObjIntFloHeaMinOff1 = weight_fh*(max(0, TFloHea_min - office1_TFloHea1)^2 + max(0, TFloHea_min - office1_TFloHea2)^2);
+    output Real ObjIntFloHeaMinOff2 = weight_fh*(max(0, TFloHea_min - office2_TFloHea1)^2 + max(0, TFloHea_min - office2_TFloHea2)^2);
+    output Real ObjIntFloHeaMinOff3 = weight_fh*(max(0, TFloHea_min - office3_TFloHea1)^2 + max(0, TFloHea_min - office3_TFloHea2)^2);
+    output Real ObjIntFloHeaMin = ObjIntFloHeaMin1 + ObjIntFloHeaMin2 + ObjIntFloHeaMin3 + ObjIntFloHeaMinOff1 + ObjIntFloHeaMinOff2 + ObjIntFloHeaMinOff3;
+
+
+	// Comfort
+	output Real weight_hea = 10000;
+	output Real weight_coo = 10000;
+	output Real ObjIntComfSHea=weight_hea*(house1_DiscmfHeaDay^2 + house1_DiscmfHeaNig^2 +
+											house2_DiscmfHeaDay^2 + house2_DiscmfHeaNig^2 +
+											house3_DiscmfHeaDay^2 + house3_DiscmfHeaNig^2 +
+											office1_DiscmfHeaNor^2 + office1_DiscmfHeaSou^2 +
+											office2_DiscmfHeaNor^2 + office2_DiscmfHeaSou^2 +
+											office3_DiscmfHeaNor^2 + office3_DiscmfHeaSou^2);
+	output Real ObjIntComfSCoo=weight_coo*(house1_DiscmfCooDay^2 + house1_DiscmfCooNig^2 +
+											house2_DiscmfCooDay^2 + house2_DiscmfCooNig^2 +
+											house3_DiscmfCooDay^2 + house3_DiscmfCooNig^2 +
+											office1_DiscmfCooNor^2 + office1_DiscmfCooSou^2 +
+											office2_DiscmfCooNor^2 + office2_DiscmfCooSou^2 +
+											office3_DiscmfCooNor^2 + office3_DiscmfCooSou^2);
+
+	/// Overall objective ///
+	output Real ObjInt = ObjIntElecCost + ObjIntComfSCoo + ObjIntComfSHea + ObjIntBat + ObjIntTSupMax + ObjIntTSupMin + ObjIntTBorMin + ObjIntTBorMax + ObjIntFloHeaMin;
+
+
+end MixedUse;

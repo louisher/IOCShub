@@ -1,0 +1,235 @@
+{
+    "GSHP": {
+        "feasible": true,
+        "size_parameters": {
+            "Size": {
+                "value": 44.0,
+                "name_in_mop": "enerHub.Size_GsHp=",
+                "excel_row": 4
+            }
+        },
+        "inv_cost": 250,
+        "life_time": 20,
+        "cost_om": 0.03,
+        "min_cap": 0,
+        "max_cap": 10000,
+        "COP": "PLACEHOLDER"
+    },
+
+    "ASHP": {        
+        "feasible": true,
+        "size_parameters": {
+            "Size": {
+                "value": 28.0,
+                "name_in_mop": "enerHub.Size_AsHp=",
+                "excel_row": 3
+            }
+        },
+        "inv_cost": 900,
+        "life_time": 20,
+        "cost_om": 0.03,
+        "min_cap": 0,
+        "max_cap": 10000,
+        "COP": "PLACEHOLDER"
+    },
+
+    "ASCHI": {
+        "feasible": true,
+        "size_parameters": {
+            "Size": {
+                "value": 0.1,
+                "name_in_mop": "enerHub.Size_AsChi=",
+                "excel_row": 8
+            }
+        },
+        "inv_cost": 900,
+        "life_time": 20,
+        "cost_om": 0.03,
+        "min_cap": 0,
+        "max_cap": 10000, 
+        "EER": "PLACEHOLDER"
+    },
+
+    "PV": {
+        "feasible": true,
+        "size_parameters": {
+            "Size": {
+                "value": 0.01,
+                "name_in_mop": "enerHub.Size_PV=",
+                "excel_row": 10
+            }   
+        },
+        "life_time": 20,
+        "inv_cost": 200,
+        "cost_om": 0.02,
+        "max_area": 100,
+        "min_area": 0,
+        "norm_power": "PLACEHOLDER"
+    },
+    "STC": {
+        "feasible": true,
+        "size_parameters": {
+            "Size": {
+                "value": 17.6,
+                "name_in_mop": "enerHub.Size_STC=",
+                "excel_row": 11
+            }
+        },
+        "inv_cost": 400,
+        "life_time": 20,
+        "cost_om": 0.02,
+        "max_area": 100,
+        "min_area": 0,
+        "specific_heat": "PLACEHOLDER"
+    },
+    "PVT": {
+        "feasible": true,
+        "size_parameters": {
+            "Size": {
+                "value": 0.01,
+                "name_in_mop": "enerHub.Size_PVT=",
+                "excel_row": 12
+            }
+        },
+        "inv_cost": 500,
+        "life_time": 20,
+        "cost_om": 0.02,
+        "max_area": 100,
+        "min_area": 0,
+        "norm_power": "PLACEHOLDER",
+        "specific_heat": "PLACEHOLDER"
+    },
+    "TES": {
+        "feasible": true,
+        "size_parameters": {
+            "Size": {"value": 1.9, 
+                    "name_in_mop": "enerHub.Size_Tank=", 
+                    "excel_row": 9}
+        },
+        "inv_cost": 1000,
+        "sto_loss": 0.01,
+        "life_time": 20,
+        "cost_om": 0.01,
+        "min_vol": 0,
+        "max_vol": 3,
+        "delta_T": 25,
+        "soc_init": 0.5
+    },
+    "BAT": {
+        "feasible": true,
+        "size_parameters": {
+            "Size": {
+                "value": 0.1,
+                "name_in_mop": "enerHub.Size_Bat=",
+                "excel_row": 13
+            },
+            "hasBat": {
+                "value": "false",
+                "name_in_mop": "enerHub.hasBat=",
+                "excel_row": "X"
+            },
+            "PCha_max": {
+                "value": 0.01,
+                "name_in_mop": "enerHub.P_max_bat_kW=",
+                "excel_row": "X"
+            }
+        },
+        "inv_cost": 500,
+        "life_time": 10,
+        "cost_om": 0.01,
+        "min_cap": 0,
+        "max_cap": 10000,
+        "sto_loss": 0,
+        "soc_init": 0.5
+    },
+    "Borefield": {
+        "feasible": true,
+        "size_parameters": {
+            "Size": {"value": 1250, 
+                    "name_in_mop": "XXXXX", 
+                    "excel_row": 5
+            },
+            "depth": {
+                "value": 125,
+                "name_in_mop": "enerHub.borFieDat.conDat.hBor=",
+                "excel_row": 6
+            },
+            "nBor": {
+                "value": 10,
+                "name_in_mop": "enerHub.borFieDat.conDat.nBor=",
+                "excel_row": 7
+            },
+            "TBorMin": {
+                "value": 273.15,
+                "name_in_mop": "enerHub.TBorMin=",
+                "excel_row": "X"
+            },
+            "rCel": {
+                "value": "{1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0, 2048.0, 4096.0, 8192.0, 16384.0, 32768.0, 65536.0, 131072.0, 88257.0}",
+                "name_in_mop": "enerHub.groTemResDat.rCel.rCel=",
+                "excel_row": "X"
+            },
+            "kappa": {
+                "value": "{5.8172630391817344e-05, 2.5494645394638947e-05, 2.2957414619713648e-05, 2.2478775080945156e-05, 2.2518826009357176e-05, 2.2656737119406577e-05, 2.2753551927001475e-05, 2.2824256598981304e-05, 2.358419112820156e-05, 2.9422627182251287e-05, 4.528538358549057e-05, 6.965392755597932e-05, 9.739002539931637e-05, 0.00012200931467394284, 0.00013693912506484367, 0.00013766864861179825, 0.00012408673529210306, 9.959811723621553e-05, 3.3008506172307796e-05}",
+                "name_in_mop": "enerHub.groTemResDat.kappa.kappa=",
+                "excel_row": "X"
+            }
+        },
+        "inv_cost": 40,
+        "life_time": 40,
+        "cost_om": 0.01,
+        "min_depth": 25,
+        "max_depth": 300,
+        "fixed_T_model": false,
+        "regeneration_cap": 10000,
+        "intialize_length": true
+    },
+    "CTES": {
+        "feasible": false,
+        "size_parameters": {
+            "Size": {"value": 1.62, 
+                    "name_in_mop": "enerHub.Size_CTank=", 
+                    "excel_row": "X"}
+        },
+        "inv_cost": 500,
+        "sto_loss": 0.005,
+        "life_time": 20,
+        "cost_om": 0.01,
+        "min_vol": 0,
+        "max_vol": 100,
+        "delta_T": 10,
+        "soc_init": 0.5
+    },
+    "BOI": {
+        "feasible": false,
+        "size_parameters": {
+            "Size": {
+                "value": 0.01,
+                "name_in_mop": "enerHub.Size_Boi=",
+                "excel_row": 14
+            }
+        },
+        "inv_cost": 150,
+        "eta_th": 0.95,
+        "life_time": 20,
+        "cost_om": 0.01,
+        "min_cap": 0,
+        "max_cap": 10000
+    },
+    "EB" : {
+        "feasible": false,
+        "size_parameters": {
+            "Size": {
+                "value": 0.01,
+                "name_in_mop": "enerHub.Size_EBoi=",
+                "excel_row": "X"
+            }
+        },
+        "inv_cost": 80,
+        "eta_th": 0.98,
+        "life_time": 20,
+        "cost_om": 0.01,
+        "min_cap": 0,
+        "max_cap": 10000
+    }    
+}

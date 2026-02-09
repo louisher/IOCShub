@@ -1,0 +1,1537 @@
+optimization DeSchipjesOneZoneOpt(tolerance=1e-1, objectiveIntegrand=ObjInt, terminalObjective=termObj, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="8760*1", truncationDelta=1e-2)
+	extends IOCSmod.Optimization.SizeOpt.DeSchipjesOneZoneOpt(
+											buildings.Houses.nr136.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr138.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr140.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr142.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr144.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr146.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr148.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr150.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr152.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr154.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr156.heatingSystem.valveBhp.y=1,
+											buildings.Houses.nr158.heatingSystem.valveBhp.y=1,
+
+											addDummyEquation=false,
+											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//Brussels-City_XMY2021-2040_ssp245_MAR-BCC_SWDbased.mos"),
+											priceSim.path_economic_params_json="/home/louis/software/iocs/input_data/economic_params.json",
+											enerHub.path_devices_json="/home/louis/software/iocs/input_data/devices.json",
+											enerHub.Size_AsHp=AsHpSize,
+											enerHub.AsHp.Size_nominal=20.0,
+											enerHub.Size_GsHp=GsHpSize,
+											enerHub.GsHp.Size_nominal=20.0,
+											enerHub.Size_AsChi=AsChiSize,
+											enerHub.AsChi.Size_nominal=5.0,
+											enerHub.Size_Tank=TankSize,
+											enerHub.Size_PV=PVSize,
+											enerHub.Size_STC=STCSize,
+											enerHub.stc.Size_nominal=10.0,
+											enerHub.Size_PVT=PVTSize,
+											enerHub.pvt.Size_nominal=10.0,
+											enerHub.hasBat=true,
+											enerHub.Size_Bat=BatSize,
+											enerHub.P_max_bat_kW=5,
+											enerHub.TBorMin=273.15,
+											enerHub.borFieDat.conDat.nBor=14,
+											enerHub.groTemResDat.rCel.rCel={1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0, 2048.0, 4096.0, 8192.0, 16384.0, 32768.0, 65536.0, 131072.0, 88257.0},
+                                            enerHub.groTemResDat.kappa.kappa={0.00012117729480712768, 5.315575943043797e-05, 4.785087410583819e-05, 4.684645672961804e-05, 4.693814066320326e-05, 4.723811128840786e-05, 4.745763782935296e-05, 4.7624566536216286e-05, 4.886462804239806e-05, 5.8101255446173727e-05, 8.194135556696821e-05, 0.000112950845866406, 0.00013802195155999096, 0.00015095446932675554, 0.00015214103571410957, 0.00014430997436454544, 0.00012941092497862857, 0.00010835450288530475, 3.792544497066433e-05},
+                                            enerHub.borFieDat.conDat.cooBor=[0,0; 0,6],
+											enerHub.GsHp.borefield.depth=BorSize, 	
+											enerHub.GsHp.borefield.groTemRes.Kappa_agg_Constants=Kappa_agg_Constants,
+											enerHub.GsHp.borefield.groTemResFin.Gamma_Constants=Gamma_Constants,
+											enerHub.GsHp.borefield.groTemResFin.Xi_Ext_Constants=Xi_Ext_Constants,
+											enerHub.GsHp.borefield.groTemResFin.Xi_Inj_Constants=Xi_Inj_Constants,
+											enerHub.GsHp.borefield.groTemResFin.Kappa_L3_Constants=Kappa_L3_Constants,
+											enerHub.GsHp.borefield.groTemResFin.QpeakExtExpr.y=QpExtOpt, 
+											enerHub.GsHp.borefield.groTemResFin.QpeakInjExpr.y=QpInjOpt
+											);
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+
+	/// Investment ///
+	parameter Real inv_scaler = 36000000;
+	output Real ObjInv = inv_scaler*inv_cost_per_second;
+
+	/// Electricity ///
+	output Real TotalPower = P_Net_enerHub + P_Net_Houses;
+
+	output Real tariff_scaler = 36000000;
+	output Real p_offtake = priceSim.p_elec_fix_offtake/(3600*1e6); // €/J
+	output Real p_offtakeSca = p_offtake * tariff_scaler;
+	output Real p_inj = priceSim.p_elec_fix_inj/(3600*1e6); // €/J
+	output Real p_injSca = p_inj * tariff_scaler;
+	output Real b = 50; // transition parameter
+	output Real smoothPrice = p_injSca + (p_offtakeSca - p_injSca) * 0.5 *(1 + TotalPower / (sqrt(TotalPower^2 + b^2)) );
+
+	output Real ObjIntElecCost = TotalPower*smoothPrice;
+
+	// Battery //
+	output Real weight_bat = 100000;
+	output Real ObjBatMax = weight_bat*max(0, Bat_soc - Bat_SOCmax)^2;
+	output Real ObjBatMin = weight_bat*max(0, Bat_SOCmin - Bat_soc)^2;
+	output Real ObjIntBat = ObjBatMax + ObjBatMin;
+
+	// Supply temperature	
+	output Real TSupMax = 60;
+	output Real ObjIntTSupMax = 10000*max(0, Ttank - TSupMax)^2;
+	output Real TSupMin = 5;
+	output Real ObjIntTSupMin = 10000*max(0, TSupMin - Ttank)^2;
+
+	// Borefield temperature
+	output Real TBorMin_degC = enerHub.TBorMin - 273.15;
+	output Real TBorMax = 25;
+	output Real TBorAvg = (TBorIn + TBorOut)/2;
+	output Real ObjIntTBorMin = 10000*max(0, TBorMin_degC - TBorAvg)^2;
+	output Real ObjIntTBorMax = 10000*max(0, TBorAvg - TBorMax)^2;
+
+	// Borefield peak
+	output Real ObjIntBorPeak = 0.1*(max(0, QpExtOpt - QBorIn_L3)^2 + max(0, -QpInjOpt + QBorIn_L3)^2);
+	
+	// Borefield temperature
+	output Real termObj = 1000000*(sum(max(0, delTfInjOut[i]-7)^2 for i in 1:enerHub.GsHp.borefield.groTemResFin.nStepsYear) + sum(max(0, -10 - delTfExtOut[i])^2 for i in 1:enerHub.GsHp.borefield.groTemResFin.nStepsYear));
+	
+	// DHW tank temperature
+	output Real TTankDhwSet = 323.15;
+	output Real ObjIntComfDHW = 100*max(0,TTankDhwSet-TTankDhw136)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw138)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw140)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw142)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw144)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw146)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw148)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw150)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw152)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw154)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw156)^2
+		+ 100*max(0,TTankDhwSet-TTankDhw158)^2;
+
+	// Comfort
+	output Real weight_hea = 10000;
+	output Real weight_coo = 10000;
+	output Real ObjIntComfSHea = weight_hea * (
+												DiscmfHea136^2 + DiscmfHea138^2 +
+												DiscmfHea140^2 + DiscmfHea142^2 +
+												DiscmfHea144^2 + DiscmfHea146^2 +
+												DiscmfHea148^2 + DiscmfHea150^2 +
+												DiscmfHea152^2 + DiscmfHea154^2 +
+												DiscmfHea156^2 + DiscmfHea158^2
+											);
+
+	output Real ObjIntComfSCoo = weight_coo * (
+												DiscmfCoo136^2 + DiscmfCoo138^2 +
+												DiscmfCoo140^2 + DiscmfCoo142^2 +
+												DiscmfCoo144^2 + DiscmfCoo146^2 +
+												DiscmfCoo148^2 + DiscmfCoo150^2 +
+												DiscmfCoo152^2 + DiscmfCoo154^2 +
+												DiscmfCoo156^2 + DiscmfCoo158^2
+											);
+
+	/// Overall objective ///
+	output Real ObjInt = ObjInv + ObjIntElecCost + ObjIntComfSCoo + ObjIntComfSHea + ObjIntComfDHW + ObjIntBat + ObjIntTSupMax + ObjIntTSupMin + ObjIntTBorMin + ObjIntTBorMax + ObjIntBorPeak;
+
+	///////////////////////////////////
+	// IOCS definitions //
+	///////////////////////////////////
+	// input data:
+	output Real QDem = Q_flow_collector; 	// Demand profile for heat and cold: heat should be positive, cold should be negative
+	output Real PDem = P_Net_Houses;							// Demand profile for electricity in the buildings only, offtake should be positive
+	output Real QBor = enerHub.GsHp.QBorefield;
+	
+	// temperature data for COP calculation	
+	output Real T_COP_Sup = Ttank; 			// Temperatures should be in °C
+	output Real T_COP_Bor = TBorOut; 		// Temperatures should be in °C
+	output Real T_COP_Air = TAsHpEvaIn; 	// Temperatures should be in °C
+
+	// overall result data:
+	output Real DiscmfHea =
+							DiscmfHea136 + DiscmfHea138 +
+							DiscmfHea140 + DiscmfHea142 +
+							DiscmfHea144 + DiscmfHea146 +
+							DiscmfHea148 + DiscmfHea150 +
+							DiscmfHea152 + DiscmfHea154 +
+							DiscmfHea156 + DiscmfHea158; // Heating discomfort in Kh
+
+	output Real DiscmfCoo =
+							DiscmfCoo136 + DiscmfCoo138 +
+							DiscmfCoo140 + DiscmfCoo142 +
+							DiscmfCoo144 + DiscmfCoo146 +
+							DiscmfCoo148 + DiscmfCoo150 +
+							DiscmfCoo152 + DiscmfCoo154 +
+							DiscmfCoo156 + DiscmfCoo158; // Cooling discomfort in Kh
+
+	output Real ElecUse = TotalPower; // Overall energy use of the entire district (buildings + energy hub), offtake should be positive	
+
+	///////////////////////////////////
+	////////  INVESTMENT COSTS ////////
+	///////////////////////////////////
+	
+	parameter input Real GsHpSize(free=true, min=0.1, max=60, start=35.0, nominal=1/(21.1*inv_scaler/(8760*3600))); // nominal: 1/(GsHp_inv*cost_to_per_second_scaler*inv_scaler)
+	output Real GsHp_rel_inv_cost= enerHub.GsHp.inv_hp.annInvCost "Relative annual investement cost of GsHp";
+	output Real GsHp_inv_cost_ann = GsHp_rel_inv_cost * GsHpSize "Annualized investment cost of GsHp";
+
+	parameter input Real BorSize(free=true, min=50, max=300, start=115.0, nominal=1/(2.39*enerHub.borFieDat.conDat.nBor*inv_scaler/(8760*3600))); 
+    parameter input Real QpExtOpt(free=true, min=-15000, max=0, start=0, nominal=1);
+    parameter input Real QpInjOpt(free=true, min=0, max=15000, start=0, nominal=1);
+	output Real Bor_rel_inv_cost = enerHub.GsHp.inv_bor.annInvCost "Relative annual investement cost of Borefield";
+	output Real Bor_inv_cost_ann = Bor_rel_inv_cost * BorSize "Annualized investment cost of Borefield";
+
+	parameter input Real AsHpSize(free=true, min=0.1, max=10, start=8, nominal=1/(76.1*inv_scaler/(8760*3600))); // nominal: 1/(AsHp_inv*cost_to_per_second_scaler*inv_scaler)
+	output Real AsHp_rel_inv_cost= enerHub.AsHp.inv.annInvCost "Relative annual investement cost of AsHp";
+	output Real AsHp_inv_cost_ann = AsHp_rel_inv_cost * AsHpSize "Annualized investment cost of AsHp";
+
+	parameter input Real AsChiSize(free=true, min=0.1, max=60, start=0.1, nominal=1/(33.8*inv_scaler/(8760*3600))); // nominal: 1/(AsHp_inv*cost_to_per_second_scaler*inv_scaler)
+	output Real AsChi_rel_inv_cost= enerHub.AsChi.inv.annInvCost "Relative annual investement cost of AsChi";
+	output Real AsChi_inv_cost_ann = AsChi_rel_inv_cost * AsChiSize "Annualized investment cost of AsChi";
+
+	parameter input Real TankSize(free=true, min=0.1, max=10, start=1.9, nominal=1/(84.5*inv_scaler/(8760*3600)));
+	output Real Tank_rel_inv_cost= enerHub.tan.inv.annInvCost "Relative annual investement cost of Tank";
+	output Real Tank_inv_cost_ann = Tank_rel_inv_cost * TankSize "Annualized investment cost of Tank";
+
+	parameter input Real STCSize(free=true, min=0.1, max=20, start=10.0, nominal=1/(33.8*inv_scaler/(8760*3600)));
+	output Real Stc_rel_inv_cost = enerHub.stc.inv.annInvCost "Relative annual investement cost of STC";
+	output Real Stc_inv_cost_ann = Stc_rel_inv_cost * STCSize "Annualized investment cost of STC";
+
+	parameter input Real PVTSize(free=true, min=0.1, max=20, start=10.0, nominal=1/(42.3*inv_scaler/(8760*3600)));
+	output Real Pvt_rel_inv_cost = enerHub.pvt.inv.annInvCost "Relative annual investement cost of PVT";
+	output Real Pvt_inv_cost_ann = Pvt_rel_inv_cost * PVTSize "Annualized investment cost of PVT";
+
+	parameter input Real PVSize(free=true, min=0.1, max=20, start=20.0, nominal=1/(16.9*inv_scaler/(8760*3600))); // nominal: 1/(AsHp_inv*cost_to_per_second_scaler*inv_scaler)
+	output Real PV_rel_inv_cost= enerHub.pv.inv.annInvCost "Relative annual investement cost of PV";
+	output Real PV_inv_cost_ann = PV_rel_inv_cost * PVSize "Annualized investment cost of PV";
+
+	parameter input Real BatSize(free=true, min=0.1, max=50, start=0.1, nominal=1/(53.3*inv_scaler/(8760*3600)));
+	output Real Bat_rel_inv_cost = enerHub.bat.inv.annInvCost "Relative annual investement cost of Bat";
+	output Real Bat_inv_cost_ann = Bat_rel_inv_cost * BatSize "Annualized investment cost of Bat";
+
+	output Real Total_annualized_investment = GsHp_inv_cost_ann + Bor_inv_cost_ann + AsHp_inv_cost_ann + AsChi_inv_cost_ann + PV_inv_cost_ann + Bat_inv_cost_ann + Stc_inv_cost_ann + Pvt_inv_cost_ann + Tank_inv_cost_ann;
+	output Real inv_cost_per_second = Total_annualized_investment/(8760*3600); // euro per second
+
+	//////////////////////////////////
+	// Energy Hub Output variables	//
+	//////////////////////////////////
+
+	// General
+	output Real P_Net_enerHub = enerHub.P;
+	output Real Q_enerHub = enerHub.QEnergyHub;
+	
+	// GSHP
+    output Real QNom_GSHP_kW = enerHub.GsHp.Size;
+	output Real P_GSHP = enerHub.GsHp.GsHp.PEl;
+	output Real E_GSHP_kWh = enerHub.GsHp.EGsHp_kWh.y;
+	output Real QCon_GSHP = enerHub.GsHp.GsHp.QCon;
+	output Real QEva_GSHP = -enerHub.GsHp.GsHp.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_GSHP = enerHub.GsHp.GsHp.COP;
+
+	output Real P_pumCoo = enerHub.GsHp.pumHexCooEva.P;
+	output Real E_pumCoo_kWh = enerHub.GsHp.EpumCoo_kWh.y;
+	output Real QhexCoo = enerHub.GsHp.hexCoo.Q2_flow; // will be positive if heat is added to the borefield i.e. cooling of buffertank is happening
+
+	output Real TGsHpConIn = enerHub.GsHp.senTGsHpConIn.T - 273.15; //°C
+	output Real TGsHpConOut = enerHub.GsHp.senTGsHpConOut.T - 273.15; //°C
+	output Real TGsHpEvaIn = enerHub.GsHp.senTGsHpEvaIn.T - 273.15; //°C
+	output Real TGsHpEvaOut = enerHub.GsHp.senTGsHpEvaOut.T - 273.15; //°C
+
+	output Real TBorIn = enerHub.GsHp.senTBorIn.T - 273.15; //°C
+	output Real TBorOut = enerHub.GsHp.senTBorOut.T - 273.15; //°C
+
+	output Real THexCooConIn = enerHub.GsHp.senTHexCooConIn.T - 273.15; //°C
+	output Real THexCooConOut = enerHub.GsHp.senTHexCooConOut.T - 273.15; //°C
+	output Real THexCooEvaIn = enerHub.GsHp.senTHexCooEvaIn.T - 273.15; //°C
+	output Real THexCooEvaOut = enerHub.GsHp.senTHexCooEvaOut.T - 273.15; //°C
+
+	output Real mFlowGsHpCon = enerHub.GsHp.GsHp.m2_flow;
+	output Real mFlowGsHpEva = enerHub.GsHp.GsHp.m1_flow;
+	output Real mFlowBor = enerHub.GsHp.pumBor.m_flow;
+
+	output Real mFlowHexCooCon = enerHub.GsHp.hexCoo.m2_flow;
+	output Real mFlowHexCooEva = enerHub.GsHp.hexCoo.m1_flow;
+
+	output Real chBor_delTBor = enerHub.GsHp.borefield.groTemRes.delTBor;
+	output Real chBor_QAggFlow1 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[1];
+	output Real chBor_QAggFlow2 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[2];
+	output Real chBor_QAggFlow3 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[3];
+
+	output Real delTBorOut[enerHub.GsHp.borefield.groTemResFin.nStepsYear] = enerHub.GsHp.borefield.groTemResFin.delTBor;
+	output Real delTfExtOut[enerHub.GsHp.borefield.groTemResFin.nStepsYear] = enerHub.GsHp.borefield.groTemResFin.delTfExt;
+	output Real delTfInjOut[enerHub.GsHp.borefield.groTemResFin.nStepsYear] = enerHub.GsHp.borefield.groTemResFin.delTfInj;
+	output Real QBorIn_L3 = enerHub.GsHp.borefield.groTemResFin.QBor_flow;
+	output Real Last = enerHub.GsHp.borefield.groTemResFin.lastInterval;
+	output Real QpExtOut = enerHub.GsHp.borefield.groTemResFin.QpeakExtExpr.y;
+	output Real QpInjOut = enerHub.GsHp.borefield.groTemResFin.QpeakInjExpr.y;
+	output Real QBorInjAvg_M1  = enerHub.GsHp.borefield.groTemResFin.QBorInjStepAvg[1].y;
+	output Real QBorExtAvg_M1  = enerHub.GsHp.borefield.groTemResFin.QBorExtStepAvg[1].y;
+	output Real QBorAvg_M1     = enerHub.GsHp.borefield.groTemResFin.QBorStepAvg[1].y;
+	output Real QBorInjAvg_M2  = enerHub.GsHp.borefield.groTemResFin.QBorInjStepAvg[2].y;
+	output Real QBorExtAvg_M2  = enerHub.GsHp.borefield.groTemResFin.QBorExtStepAvg[2].y;
+	output Real QBorAvg_M2     = enerHub.GsHp.borefield.groTemResFin.QBorStepAvg[2].y;
+	output Real QBorInjAvg_M3  = enerHub.GsHp.borefield.groTemResFin.QBorInjStepAvg[3].y;
+	output Real QBorExtAvg_M3  = enerHub.GsHp.borefield.groTemResFin.QBorExtStepAvg[3].y;
+	output Real QBorAvg_M3     = enerHub.GsHp.borefield.groTemResFin.QBorStepAvg[3].y;
+	output Real QBorInjAvg_M4  = enerHub.GsHp.borefield.groTemResFin.QBorInjStepAvg[4].y;
+	output Real QBorExtAvg_M4  = enerHub.GsHp.borefield.groTemResFin.QBorExtStepAvg[4].y;
+	output Real QBorAvg_M4     = enerHub.GsHp.borefield.groTemResFin.QBorStepAvg[4].y;
+	output Real QBorInjAvg_M5  = enerHub.GsHp.borefield.groTemResFin.QBorInjStepAvg[5].y;
+	output Real QBorExtAvg_M5  = enerHub.GsHp.borefield.groTemResFin.QBorExtStepAvg[5].y;
+	output Real QBorAvg_M5     = enerHub.GsHp.borefield.groTemResFin.QBorStepAvg[5].y;
+	output Real QBorInjAvg_M6  = enerHub.GsHp.borefield.groTemResFin.QBorInjStepAvg[6].y;
+	output Real QBorExtAvg_M6  = enerHub.GsHp.borefield.groTemResFin.QBorExtStepAvg[6].y;
+	output Real QBorAvg_M6     = enerHub.GsHp.borefield.groTemResFin.QBorStepAvg[6].y;
+	output Real QBorInjAvg_M7  = enerHub.GsHp.borefield.groTemResFin.QBorInjStepAvg[7].y;
+	output Real QBorExtAvg_M7  = enerHub.GsHp.borefield.groTemResFin.QBorExtStepAvg[7].y;
+	output Real QBorAvg_M7     = enerHub.GsHp.borefield.groTemResFin.QBorStepAvg[7].y;
+	output Real QBorInjAvg_M8  = enerHub.GsHp.borefield.groTemResFin.QBorInjStepAvg[8].y;
+	output Real QBorExtAvg_M8  = enerHub.GsHp.borefield.groTemResFin.QBorExtStepAvg[8].y;
+	output Real QBorAvg_M8     = enerHub.GsHp.borefield.groTemResFin.QBorStepAvg[8].y;
+	output Real QBorInjAvg_M9  = enerHub.GsHp.borefield.groTemResFin.QBorInjStepAvg[9].y;
+	output Real QBorExtAvg_M9  = enerHub.GsHp.borefield.groTemResFin.QBorExtStepAvg[9].y;
+	output Real QBorAvg_M9     = enerHub.GsHp.borefield.groTemResFin.QBorStepAvg[9].y;
+	output Real QBorInjAvg_M10 = enerHub.GsHp.borefield.groTemResFin.QBorInjStepAvg[10].y;
+	output Real QBorExtAvg_M10 = enerHub.GsHp.borefield.groTemResFin.QBorExtStepAvg[10].y;
+	output Real QBorAvg_M10    = enerHub.GsHp.borefield.groTemResFin.QBorStepAvg[10].y;
+	output Real QBorInjAvg_M11 = enerHub.GsHp.borefield.groTemResFin.QBorInjStepAvg[11].y;
+	output Real QBorExtAvg_M11 = enerHub.GsHp.borefield.groTemResFin.QBorExtStepAvg[11].y;
+	output Real QBorAvg_M11    = enerHub.GsHp.borefield.groTemResFin.QBorStepAvg[11].y;
+	output Real QBorInjAvg_M12 = enerHub.GsHp.borefield.groTemResFin.QBorInjStepAvg[12].y;
+	output Real QBorExtAvg_M12 = enerHub.GsHp.borefield.groTemResFin.QBorExtStepAvg[12].y;
+	output Real QBorAvg_M12    = enerHub.GsHp.borefield.groTemResFin.QBorStepAvg[12].y;
+
+	// ASHP
+    output Real QNom_ASHP_kW = enerHub.AsHp.Size;
+	output Real P_ASHP = enerHub.AsHp.AsHp.PEl;
+	output Real E_ASHP_kWh = enerHub.AsHp.EAsHp_kWh.y;
+	output Real QCon_ASHP = enerHub.AsHp.AsHp.QCon;
+	output Real QEva_ASHP = -enerHub.AsHp.AsHp.HP.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_ASHP = enerHub.AsHp.AsHp.COP;
+
+	output Real TAsHpConIn = enerHub.AsHp.senTAsHpConIn.T - 273.15; //°C
+	output Real TAsHpConOut = enerHub.AsHp.senTAsHpConOut.T - 273.15; //°C
+	output Real TAsHpEvaIn = enerHub.AsHp.AsHp.HP.TEvaIn.T - 273.15; //°C
+	output Real TAsHpEvaOut = enerHub.AsHp.AsHp.HP.TEvaOut.T - 273.15; //°C
+
+	output Real mFlowAsHpCon = enerHub.AsHp.AsHp.HP.m2_flow;
+
+	// ASCHI
+	output Real QNom_ASCHI = enerHub.AsChi.Size;
+	output Real P_ASCHI = enerHub.AsChi.AsChi.PEl;
+	output Real E_ASCHI_kWh = enerHub.AsChi.EAsChi_kWh.y;
+	output Real QCon_ASCHI = enerHub.AsChi.AsChi.Chi.con.Q_flow;
+	output Real QEva_ASCHI = enerHub.AsChi.AsChi.QEva; // !!! Positive value
+	output Real EER_ASHP = enerHub.AsChi.AsChi.EER;
+
+	output Real TAsChiEvaIn = enerHub.AsChi.senTAsChiEvaIn.T - 273.15; //°C
+	output Real TAsChiEvaOut = enerHub.AsChi.senTAsChiEvaOut.T - 273.15; //°C
+	output Real TAsChiConIn = enerHub.AsChi.AsChi.Chi.TConIn.T - 273.15; //°C
+	output Real TAsChiConOut = enerHub.AsChi.AsChi.Chi.TConOut.T - 273.15; //°C
+
+	output Real mFlowAsChiEva = enerHub.AsChi.AsChi.Chi.m1_flow;
+
+	// Tank
+	output Real Ttank = enerHub.tan.vol.T - 273.15; //°C
+	output Real Vtank = enerHub.tan.VTan;
+    output Real hTank = enerHub.tan.hTan;
+    output Real RTank = enerHub.tan.RTan;
+    output Real UTank = enerHub.tan.vol.U;    
+    output Real TMedTank = enerHub.tan.vol.dynBal.medium.T -273.15;
+    output Real uMedTank = enerHub.tan.vol.dynBal.medium.u;
+
+	// PV panels
+	output Real A_PV = enerHub.pv.PVArea;
+	output Real P_PV_DC = enerHub.pv.solarPower.y;
+	output Real P_PV_AC = enerHub.pv.P;
+    output Real n_PV = enerHub.pv.n;
+
+	// Battery 
+    output Real Bat_present = if enerHub.hasBat then 1 else 0;
+    output Real Bat_cap = enerHub.bat.EBat_max_kWh;
+    output Real Bat_P_max = enerHub.bat.P_max;
+	output Real Bat_soc = enerHub.bat.SoC ;
+	output Real Bat_eff = enerHub.bat.eff ;
+	output Real Bat_Pcha = enerHub.bat.PCha ;
+	output Real Bat_PDem = enerHub.bat.PDem ;
+	output Real Bat_PGrid = enerHub.bat.PGrid ;
+	output Real Bat_SOCmax = enerHub.SoC_max;
+	output Real Bat_SOCmin = enerHub.SoC_min;
+
+	// STC panels
+	output Real A_STC = enerHub.stc.panels.totalArea;
+	output Real QStc = enerHub.stc.panels.QTot;
+
+	output Real QStcHex = enerHub.stc.hex.Q2_flow;
+
+	output Real TStcIn = enerHub.stc.senTPanelsIn.T - 273.15; //°C
+	output Real TStcOut = enerHub.stc.senTPanelsOut.T - 273.15; //°C
+	output Real TStcRegIn = enerHub.stc.senTRegIn.T - 273.15; //°C
+	output Real TStcRegOut = enerHub.stc.senTRegOut.T - 273.15; //°C
+	output Real TStcHeaIn = enerHub.stc.senTHeaIn.T - 273.15; //°C
+	output Real TStcHeaOut = enerHub.stc.senTHeaOut.T - 273.15; //°C
+	output Real TStcHexIn = enerHub.stc.senTHexIn.T -273.15; //°C
+	output Real TStcHexOut = enerHub.stc.senTHexOut.T -273.15; //°C
+
+	output Real mFlowStc = enerHub.stc.pumPanels.m_flow;
+	output Real mFlowStcHex = enerHub.stc.hex.m2_flow;
+	output Real mFlowStcHeaIn = enerHub.stc.valSupHea.m_flow;
+	output Real mFlowStcHeaOut = enerHub.stc.valRetHea.m_flow;
+	output Real mFlowStcRegIn = enerHub.stc.valSupReg.m_flow;
+	output Real mFlowStcRegOut = enerHub.stc.valRetReg.m_flow;
+
+	// PVT
+	output Real A_PVT = enerHub.pvt.panels.totalArea;
+	output Real QPvt = enerHub.pvt.panels.QTot;
+	output Real PPvt = enerHub.pvt.P;
+	
+	output Real QPvtHex = enerHub.pvt.hex.Q2_flow;
+
+	output Real TPvtIn = enerHub.pvt.senTPanelsIn.T - 273.15; //°C
+	output Real TPvtOut = enerHub.pvt.senTPanelsOut.T - 273.15; //°C
+	output Real TPvtHexIn = enerHub.pvt.senTHexIn.T - 273.15; //°C
+	output Real TPvtHexOut = enerHub.pvt.senTHexOut.T - 273.15; //°C
+	output Real TPvtRegIn = enerHub.pvt.senTRegIn.T - 273.15; //°C
+	output Real TPvtRegOut = enerHub.pvt.senTRegOut.T - 273.15; //°C
+	output Real TPvtHeaIn = enerHub.pvt.senTHeaIn.T - 273.15; //°C
+	output Real TPvtHeaOut = enerHub.pvt.senTHeaOut.T - 273.15; //°C
+
+	output Real mFlowPvt = enerHub.pvt.pumPanels.m_flow;
+	output Real mFlowPvtHex = enerHub.pvt.hex.m2_flow;
+	output Real mFlowPvtHeaIn = enerHub.pvt.valSupHea.m_flow;
+	output Real mFlowPvtHeaOut = enerHub.pvt.valRetHea.m_flow;
+	output Real mFlowPvtRegIn = enerHub.pvt.valSupReg.m_flow;
+	output Real mFlowPVtRegOut = enerHub.pvt.valRetReg.m_flow;
+
+
+	////////////////////////////////
+	// Demand Output variables    //
+	////////////////////////////////
+	//Overall //
+	output Real P_Net_Houses = buildings.P; // Positive value means net offtake
+	output Real P_pumDh = buildings.pumNetwork.P;
+
+	//Collector
+	output Modelica.Units.NonSI.Temperature_degC TSup_collector = Modelica.Units.Conversions.to_degC(buildings.Houses.collector.TSup) "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_collector = Modelica.Units.Conversions.to_degC(buildings.Houses.collector.TRet) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_collector = buildings.Houses.collector.port_a2.m_flow "";
+	output Modelica.Units.SI.Power Q_flow_collector = buildings.Houses.collector.Q_flow "collector__Heating_collector thermal power";
+
+	// Heat distribution
+	output Modelica.Units.SI.HeatFlowRate QlossDistrMpc = buildings.Houses.QlossDistr.y;
+
+	// Heat demand
+	output Modelica.Units.SI.HeatFlowRate Qhex136 = -buildings.Houses.nr136.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva136 = -buildings.Houses.nr136.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon136 = buildings.Houses.nr136.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl136 = buildings.Houses.nr136.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor136 = buildings.Houses.nr136.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed136 = buildings.Houses.nr136.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec136 = PpumpSec136 + PpumpBhp136;
+	output Modelica.Units.SI.HeatFlowRate QlossSec136 = QlossTankDhw136;
+	output Modelica.Units.SI.HeatFlowRate Qrad136 = -buildings.Houses.nr136.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh136 = buildings.Houses.nr136.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw136 = buildings.Houses.nr136.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec136 = buildings.Houses.nr136.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp136 = buildings.Houses.nr136.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex136 = buildings.Houses.nr136.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex136 = buildings.Houses.nr136.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup136 = buildings.Houses.nr136.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet136 = buildings.Houses.nr136.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut136 = buildings.Houses.nr136.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn136 = buildings.Houses.nr136.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut136 = buildings.Houses.nr136.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor136 = buildings.Houses.nr136.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw136 = buildings.Houses.nr136.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn136 = buildings.Houses.nr136.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut136 = buildings.Houses.nr136.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn136 = buildings.Houses.nr136.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut136 = buildings.Houses.nr136.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut136 = buildings.Houses.nr136.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec136 = buildings.Houses.nr136.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim136 = buildings.Houses.nr136.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon136 = buildings.Houses.nr136.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad136 = buildings.Houses.nr136.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh136 = buildings.Houses.nr136.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva136 = buildings.Houses.nr136.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup136 = buildings.Houses.nr136.heatingSystem.valvePrimSup.y;
+	output Real yValveRad136 = buildings.Houses.nr136.heatingSystem.valveRad.y;
+	output Real yValveFh136 = buildings.Houses.nr136.heatingSystem.valveFh.y;
+	output Real yValveBhp136 = buildings.Houses.nr136.heatingSystem.valveBhp.y;
+	output Real modBhp136 = buildings.Houses.nr136.heatingSystem.bhp.mod;
+	output Real COPBhp136 = buildings.Houses.nr136.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem136 = buildings.Houses.nr136.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant136 = buildings.Houses.nr136.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw136 = buildings.Houses.nr136.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc136 = buildings.Houses.nr136.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc136 = buildings.Houses.nr136.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope136 = buildings.Houses.nr136.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope136 = buildings.Houses.nr136.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex138 = -buildings.Houses.nr138.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva138 = -buildings.Houses.nr138.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon138 = buildings.Houses.nr138.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl138 = buildings.Houses.nr138.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor138 = buildings.Houses.nr138.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed138 = buildings.Houses.nr138.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec138 = PpumpSec138 + PpumpBhp138;
+	output Modelica.Units.SI.HeatFlowRate QlossSec138 = QlossTankDhw138;
+	output Modelica.Units.SI.HeatFlowRate Qrad138 = -buildings.Houses.nr138.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh138 = buildings.Houses.nr138.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw138 = buildings.Houses.nr138.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec138 = buildings.Houses.nr138.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp138 = buildings.Houses.nr138.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex138 = buildings.Houses.nr138.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex138 = buildings.Houses.nr138.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup138 = buildings.Houses.nr138.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet138 = buildings.Houses.nr138.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut138 = buildings.Houses.nr138.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn138 = buildings.Houses.nr138.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut138 = buildings.Houses.nr138.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor138 = buildings.Houses.nr138.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw138 = buildings.Houses.nr138.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn138 = buildings.Houses.nr138.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut138 = buildings.Houses.nr138.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn138 = buildings.Houses.nr138.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut138 = buildings.Houses.nr138.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut138 = buildings.Houses.nr138.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec138 = buildings.Houses.nr138.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim138 = buildings.Houses.nr138.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon138 = buildings.Houses.nr138.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad138 = buildings.Houses.nr138.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh138 = buildings.Houses.nr138.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva138 = buildings.Houses.nr138.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup138 = buildings.Houses.nr138.heatingSystem.valvePrimSup.y;
+	output Real yValveRad138 = buildings.Houses.nr138.heatingSystem.valveRad.y;
+	output Real yValveFh138 = buildings.Houses.nr138.heatingSystem.valveFh.y;
+	output Real yValveBhp138 = buildings.Houses.nr138.heatingSystem.valveBhp.y;
+	output Real modBhp138 = buildings.Houses.nr138.heatingSystem.bhp.mod;
+	output Real COPBhp138 = buildings.Houses.nr138.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem138 = buildings.Houses.nr138.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant138 = buildings.Houses.nr138.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw138 = buildings.Houses.nr138.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc138 = buildings.Houses.nr138.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc138 = buildings.Houses.nr138.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope138 = buildings.Houses.nr138.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope138 = buildings.Houses.nr138.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex140 = -buildings.Houses.nr140.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva140 = -buildings.Houses.nr140.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon140 = buildings.Houses.nr140.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl140 = buildings.Houses.nr140.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor140 = buildings.Houses.nr140.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed140 = buildings.Houses.nr140.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec140 = PpumpSec140 + PpumpBhp140;
+	output Modelica.Units.SI.HeatFlowRate QlossSec140 = QlossTankDhw140;
+	output Modelica.Units.SI.HeatFlowRate Qrad140 = -buildings.Houses.nr140.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh140 = buildings.Houses.nr140.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw140 = buildings.Houses.nr140.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec140 = buildings.Houses.nr140.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp140 = buildings.Houses.nr140.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex140 = buildings.Houses.nr140.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex140 = buildings.Houses.nr140.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup140 = buildings.Houses.nr140.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet140 = buildings.Houses.nr140.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut140 = buildings.Houses.nr140.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn140 = buildings.Houses.nr140.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut140 = buildings.Houses.nr140.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor140 = buildings.Houses.nr140.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw140 = buildings.Houses.nr140.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn140 = buildings.Houses.nr140.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut140 = buildings.Houses.nr140.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn140 = buildings.Houses.nr140.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut140 = buildings.Houses.nr140.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut140 = buildings.Houses.nr140.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec140 = buildings.Houses.nr140.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim140 = buildings.Houses.nr140.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon140 = buildings.Houses.nr140.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad140 = buildings.Houses.nr140.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh140 = buildings.Houses.nr140.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva140 = buildings.Houses.nr140.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup140 = buildings.Houses.nr140.heatingSystem.valvePrimSup.y;
+	output Real yValveRad140 = buildings.Houses.nr140.heatingSystem.valveRad.y;
+	output Real yValveFh140 = buildings.Houses.nr140.heatingSystem.valveFh.y;
+	output Real yValveBhp140 = buildings.Houses.nr140.heatingSystem.valveBhp.y;
+	output Real modBhp140 = buildings.Houses.nr140.heatingSystem.bhp.mod;
+	output Real COPBhp140 = buildings.Houses.nr140.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem140 = buildings.Houses.nr140.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant140 = buildings.Houses.nr140.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw140 = buildings.Houses.nr140.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc140 = buildings.Houses.nr140.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc140 = buildings.Houses.nr140.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope140 = buildings.Houses.nr140.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope140 = buildings.Houses.nr140.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex142 = -buildings.Houses.nr142.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva142 = -buildings.Houses.nr142.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon142 = buildings.Houses.nr142.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl142 = buildings.Houses.nr142.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor142 = buildings.Houses.nr142.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed142 = buildings.Houses.nr142.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec142 = PpumpSec142 + PpumpBhp142;
+	output Modelica.Units.SI.HeatFlowRate QlossSec142 = QlossTankDhw142;
+	output Modelica.Units.SI.HeatFlowRate Qrad142 = -buildings.Houses.nr142.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh142 = buildings.Houses.nr142.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw142 = buildings.Houses.nr142.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec142 = buildings.Houses.nr142.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp142 = buildings.Houses.nr142.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex142 = buildings.Houses.nr142.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex142 = buildings.Houses.nr142.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup142 = buildings.Houses.nr142.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet142 = buildings.Houses.nr142.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut142 = buildings.Houses.nr142.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn142 = buildings.Houses.nr142.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut142 = buildings.Houses.nr142.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor142 = buildings.Houses.nr142.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw142 = buildings.Houses.nr142.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn142 = buildings.Houses.nr142.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut142 = buildings.Houses.nr142.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn142 = buildings.Houses.nr142.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut142 = buildings.Houses.nr142.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut142 = buildings.Houses.nr142.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec142 = buildings.Houses.nr142.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim142 = buildings.Houses.nr142.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon142 = buildings.Houses.nr142.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad142 = buildings.Houses.nr142.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh142 = buildings.Houses.nr142.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva142 = buildings.Houses.nr142.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup142 = buildings.Houses.nr142.heatingSystem.valvePrimSup.y;
+	output Real yValveRad142 = buildings.Houses.nr142.heatingSystem.valveRad.y;
+	output Real yValveFh142 = buildings.Houses.nr142.heatingSystem.valveFh.y;
+	output Real yValveBhp142 = buildings.Houses.nr142.heatingSystem.valveBhp.y;
+	output Real modBhp142 = buildings.Houses.nr142.heatingSystem.bhp.mod;
+	output Real COPBhp142 = buildings.Houses.nr142.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem142 = buildings.Houses.nr142.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant142 = buildings.Houses.nr142.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw142 = buildings.Houses.nr142.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc142 = buildings.Houses.nr142.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc142 = buildings.Houses.nr142.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope142 = buildings.Houses.nr142.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope142 = buildings.Houses.nr142.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex144 = -buildings.Houses.nr144.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva144 = -buildings.Houses.nr144.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon144 = buildings.Houses.nr144.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl144 = buildings.Houses.nr144.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor144 = buildings.Houses.nr144.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed144 = buildings.Houses.nr144.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec144 = PpumpSec144 + PpumpBhp144;
+	output Modelica.Units.SI.HeatFlowRate QlossSec144 = QlossTankDhw144;
+	output Modelica.Units.SI.HeatFlowRate Qrad144 = -buildings.Houses.nr144.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh144 = buildings.Houses.nr144.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw144 = buildings.Houses.nr144.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec144 = buildings.Houses.nr144.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp144 = buildings.Houses.nr144.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex144 = buildings.Houses.nr144.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex144 = buildings.Houses.nr144.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup144 = buildings.Houses.nr144.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet144 = buildings.Houses.nr144.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut144 = buildings.Houses.nr144.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn144 = buildings.Houses.nr144.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut144 = buildings.Houses.nr144.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor144 = buildings.Houses.nr144.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw144 = buildings.Houses.nr144.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn144 = buildings.Houses.nr144.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut144 = buildings.Houses.nr144.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn144 = buildings.Houses.nr144.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut144 = buildings.Houses.nr144.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut144 = buildings.Houses.nr144.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec144 = buildings.Houses.nr144.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim144 = buildings.Houses.nr144.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon144 = buildings.Houses.nr144.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad144 = buildings.Houses.nr144.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh144 = buildings.Houses.nr144.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva144 = buildings.Houses.nr144.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup144 = buildings.Houses.nr144.heatingSystem.valvePrimSup.y;
+	output Real yValveRad144 = buildings.Houses.nr144.heatingSystem.valveRad.y;
+	output Real yValveFh144 = buildings.Houses.nr144.heatingSystem.valveFh.y;
+	output Real yValveBhp144 = buildings.Houses.nr144.heatingSystem.valveBhp.y;
+	output Real modBhp144 = buildings.Houses.nr144.heatingSystem.bhp.mod;
+	output Real COPBhp144 = buildings.Houses.nr144.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem144 = buildings.Houses.nr144.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant144 = buildings.Houses.nr144.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw144 = buildings.Houses.nr144.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc144 = buildings.Houses.nr144.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc144 = buildings.Houses.nr144.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope144 = buildings.Houses.nr144.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope144 = buildings.Houses.nr144.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex146 = -buildings.Houses.nr146.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva146 = -buildings.Houses.nr146.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon146 = buildings.Houses.nr146.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl146 = buildings.Houses.nr146.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor146 = buildings.Houses.nr146.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed146 = buildings.Houses.nr146.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec146 = PpumpSec146 + PpumpBhp146;
+	output Modelica.Units.SI.HeatFlowRate QlossSec146 = QlossTankDhw146;
+	output Modelica.Units.SI.HeatFlowRate Qrad146 = -buildings.Houses.nr146.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh146 = buildings.Houses.nr146.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw146 = buildings.Houses.nr146.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec146 = buildings.Houses.nr146.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp146 = buildings.Houses.nr146.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex146 = buildings.Houses.nr146.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex146 = buildings.Houses.nr146.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup146 = buildings.Houses.nr146.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet146 = buildings.Houses.nr146.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut146 = buildings.Houses.nr146.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn146 = buildings.Houses.nr146.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut146 = buildings.Houses.nr146.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor146 = buildings.Houses.nr146.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw146 = buildings.Houses.nr146.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn146 = buildings.Houses.nr146.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut146 = buildings.Houses.nr146.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn146 = buildings.Houses.nr146.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut146 = buildings.Houses.nr146.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut146 = buildings.Houses.nr146.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec146 = buildings.Houses.nr146.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim146 = buildings.Houses.nr146.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon146 = buildings.Houses.nr146.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad146 = buildings.Houses.nr146.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh146 = buildings.Houses.nr146.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva146 = buildings.Houses.nr146.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup146 = buildings.Houses.nr146.heatingSystem.valvePrimSup.y;
+	output Real yValveRad146 = buildings.Houses.nr146.heatingSystem.valveRad.y;
+	output Real yValveFh146 = buildings.Houses.nr146.heatingSystem.valveFh.y;
+	output Real yValveBhp146 = buildings.Houses.nr146.heatingSystem.valveBhp.y;
+	output Real modBhp146 = buildings.Houses.nr146.heatingSystem.bhp.mod;
+	output Real COPBhp146 = buildings.Houses.nr146.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem146 = buildings.Houses.nr146.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant146 = buildings.Houses.nr146.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw146 = buildings.Houses.nr146.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc146 = buildings.Houses.nr146.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc146 = buildings.Houses.nr146.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope146 = buildings.Houses.nr146.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope146 = buildings.Houses.nr146.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex148 = -buildings.Houses.nr148.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva148 = -buildings.Houses.nr148.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon148 = buildings.Houses.nr148.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl148 = buildings.Houses.nr148.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor148 = buildings.Houses.nr148.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed148 = buildings.Houses.nr148.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec148 = PpumpSec148 + PpumpBhp148;
+	output Modelica.Units.SI.HeatFlowRate QlossSec148 = QlossTankDhw148;
+	output Modelica.Units.SI.HeatFlowRate Qrad148 = -buildings.Houses.nr148.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh148 = buildings.Houses.nr148.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw148 = buildings.Houses.nr148.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec148 = buildings.Houses.nr148.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp148 = buildings.Houses.nr148.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex148 = buildings.Houses.nr148.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex148 = buildings.Houses.nr148.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup148 = buildings.Houses.nr148.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet148 = buildings.Houses.nr148.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut148 = buildings.Houses.nr148.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn148 = buildings.Houses.nr148.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut148 = buildings.Houses.nr148.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor148 = buildings.Houses.nr148.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw148 = buildings.Houses.nr148.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn148 = buildings.Houses.nr148.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut148 = buildings.Houses.nr148.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn148 = buildings.Houses.nr148.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut148 = buildings.Houses.nr148.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut148 = buildings.Houses.nr148.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec148 = buildings.Houses.nr148.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim148 = buildings.Houses.nr148.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon148 = buildings.Houses.nr148.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad148 = buildings.Houses.nr148.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh148 = buildings.Houses.nr148.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva148 = buildings.Houses.nr148.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup148 = buildings.Houses.nr148.heatingSystem.valvePrimSup.y;
+	output Real yValveRad148 = buildings.Houses.nr148.heatingSystem.valveRad.y;
+	output Real yValveFh148 = buildings.Houses.nr148.heatingSystem.valveFh.y;
+	output Real yValveBhp148 = buildings.Houses.nr148.heatingSystem.valveBhp.y;
+	output Real modBhp148 = buildings.Houses.nr148.heatingSystem.bhp.mod;
+	output Real COPBhp148 = buildings.Houses.nr148.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem148 = buildings.Houses.nr148.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant148 = buildings.Houses.nr148.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw148 = buildings.Houses.nr148.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc148 = buildings.Houses.nr148.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc148 = buildings.Houses.nr148.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope148 = buildings.Houses.nr148.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope148 = buildings.Houses.nr148.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex150 = -buildings.Houses.nr150.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva150 = -buildings.Houses.nr150.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon150 = buildings.Houses.nr150.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl150 = buildings.Houses.nr150.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor150 = buildings.Houses.nr150.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed150 = buildings.Houses.nr150.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec150 = PpumpSec150 + PpumpBhp150;
+	output Modelica.Units.SI.HeatFlowRate QlossSec150 = QlossTankDhw150;
+	output Modelica.Units.SI.HeatFlowRate Qrad150 = -buildings.Houses.nr150.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh150 = buildings.Houses.nr150.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw150 = buildings.Houses.nr150.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec150 = buildings.Houses.nr150.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp150 = buildings.Houses.nr150.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex150 = buildings.Houses.nr150.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex150 = buildings.Houses.nr150.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup150 = buildings.Houses.nr150.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet150 = buildings.Houses.nr150.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut150 = buildings.Houses.nr150.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn150 = buildings.Houses.nr150.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut150 = buildings.Houses.nr150.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor150 = buildings.Houses.nr150.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw150 = buildings.Houses.nr150.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn150 = buildings.Houses.nr150.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut150 = buildings.Houses.nr150.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn150 = buildings.Houses.nr150.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut150 = buildings.Houses.nr150.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut150 = buildings.Houses.nr150.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec150 = buildings.Houses.nr150.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim150 = buildings.Houses.nr150.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon150 = buildings.Houses.nr150.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad150 = buildings.Houses.nr150.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh150 = buildings.Houses.nr150.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva150 = buildings.Houses.nr150.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup150 = buildings.Houses.nr150.heatingSystem.valvePrimSup.y;
+	output Real yValveRad150 = buildings.Houses.nr150.heatingSystem.valveRad.y;
+	output Real yValveFh150 = buildings.Houses.nr150.heatingSystem.valveFh.y;
+	output Real yValveBhp150 = buildings.Houses.nr150.heatingSystem.valveBhp.y;
+	output Real modBhp150 = buildings.Houses.nr150.heatingSystem.bhp.mod;
+	output Real COPBhp150 = buildings.Houses.nr150.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem150 = buildings.Houses.nr150.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant150 = buildings.Houses.nr150.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw150 = buildings.Houses.nr150.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc150 = buildings.Houses.nr150.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc150 = buildings.Houses.nr150.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope150 = buildings.Houses.nr150.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope150 = buildings.Houses.nr150.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex152 = -buildings.Houses.nr152.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva152 = -buildings.Houses.nr152.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon152 = buildings.Houses.nr152.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl152 = buildings.Houses.nr152.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor152 = buildings.Houses.nr152.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed152 = buildings.Houses.nr152.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec152 = PpumpSec152 + PpumpBhp152;
+	output Modelica.Units.SI.HeatFlowRate QlossSec152 = QlossTankDhw152;
+	output Modelica.Units.SI.HeatFlowRate Qrad152 = -buildings.Houses.nr152.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh152 = buildings.Houses.nr152.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw152 = buildings.Houses.nr152.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec152 = buildings.Houses.nr152.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp152 = buildings.Houses.nr152.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex152 = buildings.Houses.nr152.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex152 = buildings.Houses.nr152.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup152 = buildings.Houses.nr152.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet152 = buildings.Houses.nr152.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut152 = buildings.Houses.nr152.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn152 = buildings.Houses.nr152.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut152 = buildings.Houses.nr152.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor152 = buildings.Houses.nr152.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw152 = buildings.Houses.nr152.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn152 = buildings.Houses.nr152.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut152 = buildings.Houses.nr152.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn152 = buildings.Houses.nr152.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut152 = buildings.Houses.nr152.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut152 = buildings.Houses.nr152.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec152 = buildings.Houses.nr152.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim152 = buildings.Houses.nr152.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon152 = buildings.Houses.nr152.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad152 = buildings.Houses.nr152.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh152 = buildings.Houses.nr152.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva152 = buildings.Houses.nr152.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup152 = buildings.Houses.nr152.heatingSystem.valvePrimSup.y;
+	output Real yValveRad152 = buildings.Houses.nr152.heatingSystem.valveRad.y;
+	output Real yValveFh152 = buildings.Houses.nr152.heatingSystem.valveFh.y;
+	output Real yValveBhp152 = buildings.Houses.nr152.heatingSystem.valveBhp.y;
+	output Real modBhp152 = buildings.Houses.nr152.heatingSystem.bhp.mod;
+	output Real COPBhp152 = buildings.Houses.nr152.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem152 = buildings.Houses.nr152.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant152 = buildings.Houses.nr152.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw152 = buildings.Houses.nr152.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc152 = buildings.Houses.nr152.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc152 = buildings.Houses.nr152.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope152 = buildings.Houses.nr152.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope152 = buildings.Houses.nr152.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex154 = -buildings.Houses.nr154.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva154 = -buildings.Houses.nr154.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon154 = buildings.Houses.nr154.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl154 = buildings.Houses.nr154.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor154 = buildings.Houses.nr154.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed154 = buildings.Houses.nr154.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec154 = PpumpSec154 + PpumpBhp154;
+	output Modelica.Units.SI.HeatFlowRate QlossSec154 = QlossTankDhw154;
+	output Modelica.Units.SI.HeatFlowRate Qrad154 = -buildings.Houses.nr154.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh154 = buildings.Houses.nr154.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw154 = buildings.Houses.nr154.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec154 = buildings.Houses.nr154.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp154 = buildings.Houses.nr154.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex154 = buildings.Houses.nr154.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex154 = buildings.Houses.nr154.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup154 = buildings.Houses.nr154.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet154 = buildings.Houses.nr154.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut154 = buildings.Houses.nr154.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn154 = buildings.Houses.nr154.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut154 = buildings.Houses.nr154.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor154 = buildings.Houses.nr154.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw154 = buildings.Houses.nr154.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn154 = buildings.Houses.nr154.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut154 = buildings.Houses.nr154.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn154 = buildings.Houses.nr154.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut154 = buildings.Houses.nr154.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut154 = buildings.Houses.nr154.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec154 = buildings.Houses.nr154.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim154 = buildings.Houses.nr154.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon154 = buildings.Houses.nr154.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad154 = buildings.Houses.nr154.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh154 = buildings.Houses.nr154.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva154 = buildings.Houses.nr154.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup154 = buildings.Houses.nr154.heatingSystem.valvePrimSup.y;
+	output Real yValveRad154 = buildings.Houses.nr154.heatingSystem.valveRad.y;
+	output Real yValveFh154 = buildings.Houses.nr154.heatingSystem.valveFh.y;
+	output Real yValveBhp154 = buildings.Houses.nr154.heatingSystem.valveBhp.y;
+	output Real modBhp154 = buildings.Houses.nr154.heatingSystem.bhp.mod;
+	output Real COPBhp154 = buildings.Houses.nr154.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem154 = buildings.Houses.nr154.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant154 = buildings.Houses.nr154.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw154 = buildings.Houses.nr154.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc154 = buildings.Houses.nr154.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc154 = buildings.Houses.nr154.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope154 = buildings.Houses.nr154.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope154 = buildings.Houses.nr154.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex156 = -buildings.Houses.nr156.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva156 = -buildings.Houses.nr156.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon156 = buildings.Houses.nr156.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl156 = buildings.Houses.nr156.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor156 = buildings.Houses.nr156.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed156 = buildings.Houses.nr156.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec156 = PpumpSec156 + PpumpBhp156;
+	output Modelica.Units.SI.HeatFlowRate QlossSec156 = QlossTankDhw156;
+	output Modelica.Units.SI.HeatFlowRate Qrad156 = -buildings.Houses.nr156.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh156 = buildings.Houses.nr156.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw156 = buildings.Houses.nr156.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec156 = buildings.Houses.nr156.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp156 = buildings.Houses.nr156.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex156 = buildings.Houses.nr156.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex156 = buildings.Houses.nr156.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup156 = buildings.Houses.nr156.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet156 = buildings.Houses.nr156.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut156 = buildings.Houses.nr156.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn156 = buildings.Houses.nr156.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut156 = buildings.Houses.nr156.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor156 = buildings.Houses.nr156.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw156 = buildings.Houses.nr156.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn156 = buildings.Houses.nr156.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut156 = buildings.Houses.nr156.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn156 = buildings.Houses.nr156.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut156 = buildings.Houses.nr156.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut156 = buildings.Houses.nr156.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec156 = buildings.Houses.nr156.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim156 = buildings.Houses.nr156.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon156 = buildings.Houses.nr156.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad156 = buildings.Houses.nr156.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh156 = buildings.Houses.nr156.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva156 = buildings.Houses.nr156.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup156 = buildings.Houses.nr156.heatingSystem.valvePrimSup.y;
+	output Real yValveRad156 = buildings.Houses.nr156.heatingSystem.valveRad.y;
+	output Real yValveFh156 = buildings.Houses.nr156.heatingSystem.valveFh.y;
+	output Real yValveBhp156 = buildings.Houses.nr156.heatingSystem.valveBhp.y;
+	output Real modBhp156 = buildings.Houses.nr156.heatingSystem.bhp.mod;
+	output Real COPBhp156 = buildings.Houses.nr156.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem156 = buildings.Houses.nr156.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant156 = buildings.Houses.nr156.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw156 = buildings.Houses.nr156.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc156 = buildings.Houses.nr156.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc156 = buildings.Houses.nr156.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope156 = buildings.Houses.nr156.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope156 = buildings.Houses.nr156.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qhex158 = -buildings.Houses.nr158.heatingSystem.hex.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QbhpEva158 = -buildings.Houses.nr158.heatingSystem.bhp.Q_eva.y;
+	output Modelica.Units.SI.HeatFlowRate QbhpCon158 = buildings.Houses.nr158.heatingSystem.bhp.Q_con.y;
+	output Modelica.Units.SI.Power PbhpEl158 = buildings.Houses.nr158.heatingSystem.bhp.PEl;
+	output Modelica.Units.SI.HeatFlowRate QdhwStor158 = buildings.Houses.nr158.heatingSystem.QdhwStor;
+	output Modelica.Units.SI.HeatFlowRate QdhwUsed158 = buildings.Houses.nr158.heatingSystem.QdhwUsed;
+	output Modelica.Units.SI.Power PpumpElSec158 = PpumpSec158 + PpumpBhp158;
+	output Modelica.Units.SI.HeatFlowRate QlossSec158 = QlossTankDhw158;
+	output Modelica.Units.SI.HeatFlowRate Qrad158 = -buildings.Houses.nr158.heatingSystem.rad.Q_flow;
+	output Modelica.Units.SI.HeatFlowRate Qfh158 = buildings.Houses.nr158.heatingSystem.floorHeating.QTot;
+	output Modelica.Units.SI.HeatFlowRate QlossTankDhw158 = buildings.Houses.nr158.heatingSystem.TSensorPrescribedTemperature.port.Q_flow;
+	output Modelica.Units.SI.Power PpumpSec158 = buildings.Houses.nr158.heatingSystem.pumpSec.P;
+	output Modelica.Units.SI.Power PpumpBhp158 = buildings.Houses.nr158.heatingSystem.pumpBhp.P;
+	output Modelica.Units.SI.Temperature TPrimSupHex158 = buildings.Houses.nr158.heatingSystem.TPrimSup.T;
+	output Modelica.Units.SI.Temperature TPrimRetHex158 = buildings.Houses.nr158.heatingSystem.TPrimRet.T;
+	output Modelica.Units.SI.Temperature TSecSup158 = buildings.Houses.nr158.heatingSystem.TSecSup.T;
+	output Modelica.Units.SI.Temperature TSecRet158 = buildings.Houses.nr158.heatingSystem.TSecRet.T;
+	output Modelica.Units.SI.Temperature TRadOut158 = buildings.Houses.nr158.heatingSystem.TRadOut.T;
+	output Modelica.Units.SI.Temperature TFhIn158 = buildings.Houses.nr158.heatingSystem.TFhIn.T;
+	output Modelica.Units.SI.Temperature TFhOut158 = buildings.Houses.nr158.heatingSystem.TFhOut.T;
+	output Modelica.Units.SI.Temperature TSensor158 = buildings.Houses.nr158.heatingSystem.TSensor[1];
+	output Modelica.Units.SI.Temperature TTankDhw158 = buildings.Houses.nr158.heatingSystem.tankDhw.T;
+	output Modelica.Units.SI.Temperature TBhpEvaIn158 = buildings.Houses.nr158.heatingSystem.TBhpEvaIn.T;
+	output Modelica.Units.SI.Temperature TBhpEvaOut158 = buildings.Houses.nr158.heatingSystem.TBhpEvaOut.T;
+	output Modelica.Units.SI.Temperature TBhpConIn158 = buildings.Houses.nr158.heatingSystem.TBhpConIn.T;
+	output Modelica.Units.SI.Temperature TBhpConOut158 = buildings.Houses.nr158.heatingSystem.TBhpConOut.T;
+	output Modelica.Units.SI.Temperature TTankDhwOut158 = buildings.Houses.nr158.heatingSystem.TTankDhwOut.T;
+	output Modelica.Units.SI.MassFlowRate mFlowSec158 = buildings.Houses.nr158.heatingSystem.pumpSec.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowHexPrim158 = buildings.Houses.nr158.heatingSystem.valvePrimSup.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpCon158 = buildings.Houses.nr158.heatingSystem.pumpBhp.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowRad158 = buildings.Houses.nr158.heatingSystem.valveRad.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowFh158 = buildings.Houses.nr158.heatingSystem.valveFh.m_flow;
+	output Modelica.Units.SI.MassFlowRate mFlowBhpEva158 = buildings.Houses.nr158.heatingSystem.valveBhp.m_flow;
+	output Real yValvePrimSup158 = buildings.Houses.nr158.heatingSystem.valvePrimSup.y;
+	output Real yValveRad158 = buildings.Houses.nr158.heatingSystem.valveRad.y;
+	output Real yValveFh158 = buildings.Houses.nr158.heatingSystem.valveFh.y;
+	output Real yValveBhp158 = buildings.Houses.nr158.heatingSystem.valveBhp.y;
+	output Real modBhp158 = buildings.Houses.nr158.heatingSystem.bhp.mod;
+	output Real COPBhp158 = buildings.Houses.nr158.heatingSystem.bhp.COP;
+	output Modelica.Units.SI.Temperature TSetHeatingSystem158 = buildings.Houses.nr158.heatingSystem.TSet[1];
+	output Modelica.Units.SI.Temperature TSetOccupant158 = buildings.Houses.nr158.occupant.TSet[1];
+	output Modelica.Units.SI.MassFlowRate mFlowDhw158 = buildings.Houses.nr158.heatingSystem.mDHW;
+	output Modelica.Units.SI.HeatFlowRate QconOcc158 = buildings.Houses.nr158.occupant.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradOcc158 = buildings.Houses.nr158.occupant.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QconBuildingEnvelope158 = buildings.Houses.nr158.buildingEnvelope.heatPortCon[1].Q_flow;
+	output Modelica.Units.SI.HeatFlowRate QradBuildingEnvelope158 = buildings.Houses.nr158.buildingEnvelope.heatPortRad[1].Q_flow;
+	output Modelica.Units.SI.Power PbhpEl = PbhpEl136
+		+ PbhpEl138
+		+ PbhpEl140
+		+ PbhpEl142
+		+ PbhpEl144
+		+ PbhpEl146
+		+ PbhpEl148
+		+ PbhpEl150
+		+ PbhpEl152
+		+ PbhpEl154
+		+ PbhpEl156
+		+ PbhpEl158;
+	output Modelica.Units.SI.Power PpumpElSec = PpumpElSec136
+		+ PpumpElSec138
+		+ PpumpElSec140
+		+ PpumpElSec142
+		+ PpumpElSec144
+		+ PpumpElSec146
+		+ PpumpElSec148
+		+ PpumpElSec150
+		+ PpumpElSec152
+		+ PpumpElSec154
+		+ PpumpElSec156
+		+ PpumpElSec158;
+
+	// Comfort
+	output Real TSetHea = 21 + 273.15;
+	output Real TSetCoo = if ((time < 90*24*3600) or (time > 273*24*3600)) then (23 + 273.15) else (26 + 273.15);
+
+	output Real DiscmfHea136 = max(0, TSetHea - TSensor136);
+	output Real DiscmfCoo136 = max(0, TSensor136 - TSetCoo);
+	output Real DiscmfHea138 = max(0, TSetHea - TSensor138);
+	output Real DiscmfCoo138 = max(0, TSensor138 - TSetCoo);
+	output Real DiscmfHea140 = max(0, TSetHea - TSensor140);
+	output Real DiscmfCoo140 = max(0, TSensor140 - TSetCoo);
+	output Real DiscmfHea142 = max(0, TSetHea - TSensor142);
+	output Real DiscmfCoo142 = max(0, TSensor142 - TSetCoo);
+	output Real DiscmfHea144 = max(0, TSetHea - TSensor144);
+	output Real DiscmfCoo144 = max(0, TSensor144 - TSetCoo);
+	output Real DiscmfHea146 = max(0, TSetHea - TSensor146);
+	output Real DiscmfCoo146 = max(0, TSensor146 - TSetCoo);
+	output Real DiscmfHea148 = max(0, TSetHea - TSensor148);
+	output Real DiscmfCoo148 = max(0, TSensor148 - TSetCoo);
+	output Real DiscmfHea150 = max(0, TSetHea - TSensor150);
+	output Real DiscmfCoo150 = max(0, TSensor150 - TSetCoo);
+	output Real DiscmfHea152 = max(0, TSetHea - TSensor152);
+	output Real DiscmfCoo152 = max(0, TSensor152 - TSetCoo);
+	output Real DiscmfHea154 = max(0, TSetHea - TSensor154);
+	output Real DiscmfCoo154 = max(0, TSensor154 - TSetCoo);
+	output Real DiscmfHea156 = max(0, TSetHea - TSensor156);
+	output Real DiscmfCoo156 = max(0, TSensor156 - TSetCoo);
+	output Real DiscmfHea158 = max(0, TSetHea - TSensor158);
+	output Real DiscmfCoo158 = max(0, TSensor158 - TSetCoo);
+
+	///////////////////////////////////
+	// Borefield Constants //
+	///////////////////////////////////
+	parameter Real Kappa_agg_Constants[19, 7] = [
+		0.0, -1.3554604191348972e-10, 1.0646804946432836e-07, -2.776608272900715e-05, 0.3747289943462678, 71.58334012611125, 20.679455302223122;
+		0.0, 4.973777144811277e-10, -3.6609111166946316e-07, 8.638460741593629e-05, 0.3129190876940959, 140.60148455468732, -60.10551256587334;
+		0.0, -1.469732717417197e-11, 8.921158854872341e-09, -1.6275921768090828e-06, 0.014087377336940614, 6.805791913910265, 2.7003245787566534;
+		0.0, 1.6736719521903752e-13, 4.848587339981884e-11, -3.4780502127177046e-08, 0.002469400102271446, 1.2253007859582525, 0.43186052076932935;
+		0.0, 3.827484587833347e-11, -1.4723304518897416e-08, -1.0823702481345362e-07, 0.5343421126360285, 264.72032987525705, 119.63640342474656;
+		0.0, -1.1457449503219157e-11, 8.603990198729211e-09, -3.1376477635141354e-06, 0.37328802640755454, 183.43298601515494, 119.68926391097018;
+		0.0, -1.1055979925750819e-11, 7.833881465057808e-09, -2.141310543259823e-06, 0.10186334608577045, 49.67048356212659, 48.45694263360798;
+		0.0, -6.218499237742008e-13, 4.5215862717997406e-10, -1.213201206796413e-07, 0.0026771240629121333, 1.2932954380766157, 1.971617563426047;
+		0.0, -1.897620233762963e-12, 1.3990466751419428e-09, -3.782322006739223e-07, 0.003968174810094829, 1.8313582489719047, 4.548833480628135;
+		0.0, -8.31363527915719e-11, 6.261957782806357e-08, -1.741286747135099e-05, 0.09877181436843442, 35.52289704935979, 145.71678197513108;
+		0.0, -9.119139058678382e-11, 7.10066271618667e-08, -2.0720293457057413e-05, 0.07238391197888501, 16.170020703859688, 109.08617853488867;
+		0.0, -3.04488817875343e-10, 2.437260099501879e-07, -7.454503720002126e-05, 0.16055149527566517, 21.750433760684235, 248.73996879034578;
+		0.0, -3.227824555890957e-11, 2.5403535936967777e-08, -7.694407854544157e-06, 0.008407075114561378, 0.7112127411176407, 15.160901100061983;
+		0.0, -1.3460070350052384e-09, 1.0487030933807914e-06, -0.00031048796832628225, 0.13733459941974968, 6.59922002398643, 329.9109194274674;
+		0.0, -3.539847690513806e-09, 2.8996213166154935e-06, -0.0009010394457549134, 0.16853109325721372, 1.9093176244160575, 584.8240598051067;
+		0.0, 2.2151885465786507e-08, -1.588591077591043e-05, 0.004247881571436743, -0.16362900701971586, 16.874878520122266, -770.0044544156669;
+		0.0, 1.281853857269203e-09, -9.93631782804573e-07, 0.000293114597748929, -0.008349994811579551, 1.316428197689093, -29.06916179944497;
+		0.0, 7.797778453450778e-10, -6.144716662573794e-07, 0.00018229740381095057, -0.004469280070397046, 0.7542387002793215, 17.104501518064485;
+		0.0, 0.0, -9.1327909904596e-05, 0.05763184487405375, -1.796298573120012, 909.7413168223294, 18053.526585889216
+	];
+	parameter Real Gamma_Constants[7] = {0.0, -6.393200056316852e-11, 4.788120684755121e-08, 4.119553230794912e-06, 0.0009991960536635434, 0.3565765758564511, -1.8928987329521505};
+	parameter Real Xi_Ext_Constants[7] = {0.0, -3.6644992145668024e-09, 2.7334248839330166e-06, 0.0002694239449749445, 0.3268066346261403, 20.936445658589477, -22.566715346489204};
+	parameter Real Xi_Inj_Constants[7] = {0.0, -3.6644992145668024e-09, 2.7334248839330166e-06, 0.0002694239449749445, 0.3268066346261403, 20.936445658589477, -22.566715346489204};
+	parameter Real Kappa_L3_Constants[480, 7] = [
+		0.0, -1.1868670588450525e-10, 8.794156006844573e-08, -2.390753460937852e-05, 1.2110591781810451, 52.287588755908324, 41.58300543200742;
+		0.0, -2.845307915807693e-11, 2.1779022959289678e-08, -6.197193639440639e-06, 0.027184145951022236, 7.775711503020011, 41.14694199014102;
+		0.0, -7.79913438355473e-11, 6.125462194301722e-08, -1.810544740960877e-05, 0.05532564638269713, 18.182337797398493, 140.67442904963104;
+		0.0, -2.3144801440430686e-12, 1.8456627279069017e-09, -5.592774225025078e-07, 0.0013473420799142517, 0.48609048106969976, 4.8793043058925525;
+		0.0, -3.722148507363134e-10, 2.98446277413599e-07, -9.156896844303589e-05, 0.18145751589630804, 70.69378625207393, 870.9756913135649;
+		0.0, -2.779689134746165e-11, 2.2243054624022956e-08, -6.840225562792047e-06, 0.011360267618847597, 4.7244007923272795, 69.18580804020948;
+		0.0, -6.211682211987849e-11, 4.9467643286106155e-08, -1.516577557833428e-05, 0.021272603972425214, 9.334394456554937, 159.1601499439741;
+		0.0, -1.1207942036126167e-11, 8.865737544634612e-09, -2.700595478485161e-06, 0.003239631154043758, 1.4903381137425697, 29.178813916235796;
+		0.0, -1.446990057837864e-10, 1.1385821190984387e-07, -3.446223398300407e-05, 0.03556092703403175, 16.985245537221424, 377.90753123505925;
+		0.0, -7.724323947304884e-11, 6.046304796853492e-08, -1.8176341092734403e-05, 0.016385902097886457, 8.096884826360734, 202.72809666496883;
+		0.0, -7.341082880601368e-11, 5.728830546863015e-08, -1.7136810141126727e-05, 0.013474515869163208, 6.814278133221134, 191.70676432642077;
+		0.0, -4.2640937135918853e-11, 3.3201744029962956e-08, -9.890845632152007e-06, 0.006928204443603549, 3.5835289702043793, 112.06076269591584;
+		0.0, -8.865280454447772e-11, 6.892805237843338e-08, -2.046669236157991e-05, 0.012826095172870108, 6.740653881262782, 233.8459888505479;
+		0.0, -3.204345030507473e-11, 2.4905960365550467e-08, -7.38021386570958e-06, 0.0041285806636959035, 2.1845089089598857, 84.37593638714114;
+		0.0, -7.572253893395685e-12, 5.888006914079621e-09, -1.7429986028168761e-06, 0.0008853712333739158, 0.47143387576808476, 20.102855673303743;
+		0.0, -1.797091069363106e-10, 1.3985879469947745e-07, -4.139119087697803e-05, 0.01940215678823829, 10.39966031116706, 484.94926831899124;
+		0.0, -2.209763194789041e-11, 1.7219111204724713e-08, -5.0964920027312535e-06, 0.0021792642071610576, 1.1607290183943864, 59.92826697499531;
+		0.0, -7.220435826268618e-10, 5.636248583073685e-07, -0.00016695134897239664, 0.06538482624562426, 34.40922223078276, 1970.4826736061164;
+		0.0, -5.943890383995742e-11, 4.6495428436951744e-08, -1.3791609730333654e-05, 0.005006817688091576, 2.601846324179373, 164.28193739806517;
+		0.0, -6.580921002856433e-11, 5.159659783792384e-08, -1.5332786023792974e-05, 0.0052265851393246444, 2.6860009040897665, 185.36828110754738;
+		0.0, -4.7376797711806095e-11, 3.7234814654506536e-08, -1.1088120565689085e-05, 0.0035712093824030516, 1.8114308086400248, 136.22620071168035;
+		0.0, -9.26124092647558e-11, 7.299203112642424e-08, -2.17877714408828e-05, 0.006533762090931088, 3.207082895589375, 269.0768503665028;
+		0.0, 0.0, 9.767285471642329e-09, -6.128667406802241e-06, 0.004434930419068732, 2.9772146366634478, 182.51257573657122;
+		0.0, -4.078864910676312e-11, 3.2347921469714866e-08, -9.711618983946751e-06, 0.002572444682458365, 1.1689136752130445, 122.09876984011431;
+		0.0, -2.8648784898900138e-09, 2.2793126019083838e-06, -0.0006864971443359511, 0.1729733278463388, 75.56165950479455, 8751.516732085172;
+		0.0, -1.4226108034949597e-10, 1.1353838393239172e-07, -3.43076278952591e-05, 0.008293343016803019, 3.4924730422405394, 444.926992338569;
+		0.0, -1.0272078024943445e-10, 8.223546943574404e-08, -2.4930917477743376e-05, 0.005811711319185768, 2.3588380011633565, 329.3451586097656;
+		0.0, -5.515052584602697e-10, 4.432165213453736e-07, -0.00013489592362059375, 0.02991719097209116, 11.318223968634472, 1800.454604984307;
+		0.0, -1.7115758628186699e-10, 1.381135329818065e-07, -4.2214023898320754e-05, 0.008922558623793382, 3.1050555521817396, 569.5079933338984;
+		0.0, -2.478612939154971e-10, 2.0084413271073285e-07, -6.165788549346337e-05, 0.012480811496006597, 3.9632382967864315, 842.476300223139;
+		0.0, -6.74221914680154e-10, 5.486207018230237e-07, -0.00016918017405185296, 0.03295965062704887, 9.480915832769037, 2345.722059240743;
+		0.0, -3.7134545254682446e-09, 3.0341806518195687e-06, -0.0009398692287398765, 0.17712025185469094, 45.88673280902277, 13247.560527092335;
+		0.0, -6.961936716565765e-10, 5.711148874153302e-07, -0.00017768700585926462, 0.03255606363576084, 7.5725544104225, 2550.279577851457;
+		0.0, -4.587888418574242e-09, 3.7777120655073265e-06, -0.0011802579529428888, 0.2113250109758984, 44.182564517085126, 17275.37243422789;
+		0.0, -9.85048965279667e-10, 8.140970453986933e-07, -0.00025540393533397826, 0.04479230692020274, 8.332964489429559, 3813.295942980372;
+		0.0, -3.139295291538532e-09, 2.607706927799008e-06, -0.0008226312767625771, 0.13991805411708239, 20.799894805442577, 12475.74872386869;
+		0.0, -1.7386749593477209e-09, 1.45213752801458e-06, -0.00046080419071884684, 0.07610449861970638, 8.309715660452392, 7103.04778728508;
+		0.0, -5.861566052829652e-10, 4.922810613179101e-07, -0.00015716115968323228, 0.025282065359658008, 1.7769797073323221, 2465.530311525325;
+		0.0, -3.5622328490085836e-09, 3.008537294827541e-06, -0.000966373952067543, 0.15188496946742427, 4.922674113116759, 15447.701619548314;
+		0.0, -9.22343071455297e-10, 7.833456271888656e-07, -0.0002531645174173796, 0.03899123262389412, -0.15582718209610846, 4127.835574371025;
+		0.0, -1.1397757523359143e-09, 9.733511439618425e-07, -0.00031647883334591043, 0.04790166759623554, -1.844295757352663, 5267.862008759141;
+		0.0, -1.218207989350116e-10, 1.0458821609165835e-07, -3.4206395416185246e-05, 0.005101973877526491, -0.3607931694678687, 581.6206525960451;
+		0.0, -1.4465603267342886e-10, 1.2482137548652573e-07, -4.105272200281385e-05, 0.00604943411087887, -0.606548030256961, 713.3282518420223;
+		0.0, -6.893833402694996e-11, 5.976395892923297e-08, -1.9758437806108766e-05, 0.002883475954592975, -0.3655965414329257, 350.899751979668;
+		0.0, -3.7870126748046143e-10, 3.296924014443522e-07, -0.00010951786751354013, 0.015862476889833756, -2.3827509065120487, 1987.7533553314465;
+		0.0, -1.0892838120071639e-09, 9.5402514280032e-07, -0.00031899497190617394, 0.045689236297481166, -8.39228865052172, 5918.013317047431;
+		0.0, -2.391483038346013e-10, 2.1099077501725114e-07, -7.110762888992045e-05, 0.01006001853745262, -2.2430058138350546, 1349.6983423044564;
+		0.0, -1.8028172612085434e-10, 1.6024493670698073e-07, -5.444077473546187e-05, 0.007622109359773779, -1.988837014441558, 1058.1416220667445;
+		0.0, -5.629306300814923e-10, 5.041501310961178e-07, -0.0001726714496464326, 0.023966436833906972, -7.128028875916959, 3439.102682421706;
+		0.0, -2.461022562630075e-10, 2.2207890745996914e-07, -7.668297474998919e-05, 0.010569037896630046, -3.511401460253376, 1565.9506542010042;
+		0.0, -8.512327414557323e-10, 7.739437343218852e-07, -0.000269406966857564, 0.036927031515648905, -13.489884150827057, 5642.917267491475;
+		0.0, -2.351720775810817e-10, 2.1541055146232795e-07, -7.55819025514979e-05, 0.010316367692116713, -4.091272635044556, 1624.0691326660453;
+		0.0, -3.664704960847012e-11, 3.381155501191655e-08, -1.1955962178064315e-05, 0.0016270359725176489, -0.692949592407911, 263.55855890602106;
+		0.0, -8.191140970798272e-10, 7.610199183946669e-07, -0.00027111626954021633, 0.03682101091622105, -16.692610736751863, 6129.832785608203;
+		0.0, -1.3727453408776247e-10, 1.283863611216548e-07, -4.60639983225053e-05, 0.006248984292811462, -2.9920707110170848, 1067.7891023028776;
+		0.0, -5.741670620450118e-11, 5.403216883295523e-08, -1.951537919478343e-05, 0.00264617390276712, -1.3293564629578043, 463.50112811074706;
+		0.0, -4.934516466910432e-11, 4.670016096208978e-08, -1.6970337837977888e-05, 0.0023012302010410467, -1.2057621683857966, 412.6291564861766;
+		0.0, 7.280980709110228e-10, -5.111931666137032e-07, 0.0001330503145327278, -0.00535866504148788, 20.118104900836652, -980.6133327970874;
+		0.0, 1.0862737890753247e-09, -7.646675330421911e-07, 0.00019969889472811934, -0.00800625867223207, 30.837757913761784, -1492.893502208264;
+		0.0, 6.734565440510517e-11, -4.7582804128860353e-08, 1.2483939064506766e-05, -0.0004965559961798026, 1.9753853807456843, -94.53345332633572;
+		0.0, 5.860894187352641e-10, -4.155978897575624e-07, 0.0001095274422858134, -0.004321002619611639, 17.753622141190924, -839.5211104943046;
+		0.0, 2.975960038329706e-10, -2.1175049832118876e-07, 5.604324572224527e-05, -0.0021931562236155084, 9.299701702007914, -434.57131538293436;
+		0.0, 2.127748195286112e-11, -1.518890778708488e-08, 4.036256746529342e-06, -0.00015669830964160932, 0.6852112273821725, -31.645773735124813;
+		0.0, 2.126737045777361e-11, -1.5228282299226948e-08, 4.062206590380719e-06, -0.00015647681222026098, 0.7050604673184658, -32.18679988375371;
+		0.0, 2.286908710038639e-14, 1.3273981600583914e-11, -1.6133655319418867e-08, 4.485561165880694e-06, 0.0, 1;
+		0.0, 3.1294862324672085e-11, -2.2534789370680383e-08, 6.0536777179914755e-06, -0.00022971185029846143, 1.0961826524406488, -48.92598351244471;
+		0.0, 6.317321660457882e-10, -4.5606868866485965e-07, 0.00012291296859132559, -0.004630840204405613, 22.71145316270784, -1002.7232656696626;
+		0.0, 1.4262345951569268e-10, -1.0321405959835543e-07, 2.7901596408539684e-05, -0.001044032436818344, 5.257569343941925, -229.69251483087376;
+		0.0, 1.4795431292753163e-10, -1.0731535384003644e-07, 2.9093667284765428e-05, -0.001081535111259658, 5.587147469685322, -241.62483248464423;
+		0.0, 7.91562403049448e-11, -5.7536774977373505e-08, 1.5640741948766093e-05, -0.0005778405529064808, 3.059244654979852, -131.0231293134924;
+		0.0, 3.712354960495605e-10, -2.703814105884646e-07, 7.368758235372568e-05, -0.002706514299487538, 14.670583591761893, -622.5465981248035;
+		0.0, 7.642551500240186e-12, -5.576674336515077e-09, 1.5234605330196643e-06, -5.565155994120071e-05, 0.30854114896017226, -12.979457204356462;
+		0.0, 3.1871962113636635e-11, -2.3297014281633023e-08, 6.378676401199212e-06, -0.00023183657631379207, 1.3133344286046915, -54.80119515943674;
+		0.0, 7.19404356254486e-11, -5.2670253917358896e-08, 1.4451334283302619e-05, -0.0005228136039538335, 3.023085124189896, -125.20143598986893;
+		0.0, 6.253925464833783e-09, -4.5855735439980336e-06, 0.0012606318195682478, -0.04541562545869122, 267.77089418456956, -11014.431413096156;
+		0.0, 4.3129358689308556e-10, -3.1667384497001727e-07, 8.721701045961197e-05, -0.0031303404887964275, 18.79950746523246, -768.5943647596042;
+		0.0, 1.8265352642499754e-09, -1.3434537106781898e-06, 0.0003708297639584287, -0.013233193034195515, 81.22133714141187, -3289.1820755409435;
+		0.0, 3.4096014039218973e-10, -2.5128943970663215e-07, 6.95369787404737e-05, -0.00246303606735292, 15.492957417093919, -619.5808052843856;
+		0.0, 1.2207939915894074e-09, -9.014742117194409e-07, 0.0002500583178784373, -0.008792941342575685, 56.65418294106179, -2237.496344735085;
+		0.0, 8.817690631342602e-10, -6.52336741473494e-07, 0.00018136973054639065, -0.00633250762324526, 41.77129820637472, -1629.3217094393854;
+		0.0, 7.652347780394718e-14, -2.7788636094149904e-11, -4.586777594146462e-09, 3.0233925587698602e-06, 0.0, 1;
+		0.0, 1.496684252647793e-10, -1.1111213084181087e-07, 3.1027472923797847e-05, -0.0010686975941527992, 7.376677042056934, -280.7511594103253;
+		0.0, 2.1039870873345374e-11, -1.5645328005238893e-08, 4.3778339813814394e-06, -0.00014981462731806787, 1.056951996541472, -39.74360874661156;
+		0.0, 6.28722142174581e-10, -4.6825389159246895e-07, 0.00013128364206199902, -0.004464667134509944, 32.17693855371033, -1195.5823809036938;
+		0.0, 9.180671363943184e-11, -6.847780851370954e-08, 1.9235341786270518e-05, -0.0006502200682631274, 4.7844330214302815, -175.69867993506392;
+		0.0, 4.060608341715461e-07, -0.0003033137461500172, 0.0853553170421558, -2.868615735402897, 21538.62160773242, -781896.0411507619;
+		0.0, 1.235442929224193e-10, -9.24108940123079e-08, 2.6050682247083755e-05, -0.000870646665541299, 6.666924286577846, -239.3036508957506;
+		0.0, 3.755554198861426e-11, -2.8128656373113847e-08, 7.942783399741062e-06, -0.00026404374379624063, 2.0609272338385685, -73.162482513944;
+		0.0, 7.01538147650264e-11, -5.2611017348583654e-08, 1.4879895507424536e-05, -0.0004921319660621815, 3.9132702135671775, -137.43160439551315;
+		0.0, 1.1813952817099706e-10, -8.870498241427585e-08, 2.5127165134460012e-05, -0.0008269898874902294, 6.695792805613936, -232.70114940370252;
+		0.0, 2.4349377089544726e-10, -1.830399482191138e-07, 5.192634196123943e-05, -0.0017010374924736945, 14.016364123014185, -482.1925311754138;
+		0.0, 4.1602694689518696e-09, -3.1308587732281142e-06, 0.0008894609233733285, -0.02900777308904822, 243.12865759376376, -8282.449645250945;
+		0.0, 1.7884513649581994e-10, -1.3473570391264042e-07, 3.833044809619917e-05, -0.0012447494061607765, 10.606916626122649, -357.93876579583196;
+		0.0, 3.742254443341163e-11, -2.8221674367530866e-08, 8.03931551316794e-06, -0.00026001227742076583, 2.2515229787125786, -75.29445193157986;
+		0.0, 1.0160095414094427e-13, -4.810358337748204e-11, 1.5442626450373142e-09, 2.17613450983353e-06, 0.0, 1;
+		0.0, 6.229563238185309e-10, -4.706941193152113e-07, 0.0001344190789510022, -0.004314754931422029, 38.52801153764415, -1266.9280424222195;
+		0.0, 1.1137556331086632e-10, -8.422872351627465e-08, 2.4082130120557647e-05, -0.0007703149871518833, 6.980064995530472, -227.76131829243732;
+		0.0, 4.034894431352161e-10, -3.05403911326853e-07, 8.741835867173047e-05, -0.0027869543003651953, 25.61516992110143, -829.8121106315913;
+		0.0, 4.405652370285237e-11, -3.337416039524553e-08, 9.563467673301449e-06, -0.00030391633549711804, 2.832261397157822, -91.12912703797946;
+		0.0, 3.727067912729975e-12, -2.8261353088847892e-09, 8.108454917762697e-07, -2.5651864900676434e-05, 0.24290123295487373, -7.72945575915199;
+		0.0, 1.3177949656589438e-11, -1.0002921113612848e-08, 2.8736589017462996e-06, -9.044790739603159e-05, 0.8710718953883829, -27.348266766205576;
+		0.0, 4.930893598771771e-11, -3.74665302679997e-08, 1.0776983703794786e-05, -0.00033753087561963296, 3.3049548248316363, -102.37453888441135;
+		0.0, 1.5635665564292704e-09, -1.1892113158664046e-06, 0.0003424845125095036, -0.01067531888799278, 106.23850741838851, -3246.8129670427284;
+		0.0, 5.553562748534853e-12, -4.227909094254459e-09, 1.21904325341425e-06, -3.782275240535928e-05, 0.38243445441536994, -11.531448238268489;
+		0.0, 7.461140806741853e-11, -5.685353293473362e-08, 1.641143448240876e-05, -0.0005069259038787034, 5.206027601325795, -154.87880059452812;
+		0.0, 1.7908638992025503e-11, -1.36584221244359e-08, 3.947025180928372e-06, -0.00012139492066326631, 1.2658378022864702, -37.15641913298242;
+		0.0, 2.842142076719479e-10, -2.1694888362656077e-07, 6.27613621732716e-05, -0.0019223080672355608, 20.345862063893673, -589.275586889259;
+		0.0, 6.723834743149958e-11, -5.136778193256947e-08, 1.4875694808061226e-05, -0.0004538093326636132, 4.873770436083002, -139.28843161189536;
+		0.0, 6.099604508046902e-10, -4.663656334126002e-07, 0.00013519201183654386, -0.004108431914164919, 44.75820014236799, -1262.2813788373057;
+		0.0, 2.0073073153024996e-11, -1.5359579972416185e-08, 4.456862018410791e-06, -0.0001349412795852806, 1.4907868351488438, -41.49208097339181;
+		0.0, 1.1521092428238522e-13, -6.048646811570563e-11, 5.757636525668005e-09, 1.5192890107930644e-06, 0.0, 1;
+		0.0, 3.3628089234029665e-09, -2.577025964087045e-06, 0.0007491742269820877, -0.02252412710030239, 255.67986262268263, -6932.460758764571;
+		0.0, 6.127940401793642e-11, -4.699403979819462e-08, 1.3674049098074745e-05, -0.0004097474962365533, 4.712768478266666, -126.14093209604677;
+		0.0, 1.1690949533409413e-13, -6.216272692387525e-11, 6.369582481933668e-09, 1.4178780801364404e-06, 0.0, 1;
+		0.0, 2.918496026796079e-10, -2.2412230092672409e-07, 6.532650042416754e-05, -0.0019451639590590114, 22.951377382254485, -598.8676448448747;
+		0.0, 7.050243426284036e-12, -5.417726464673497e-09, 1.5804553362161367e-06, -4.6917486577939864e-05, 0.5605048819573397, -14.44331171753586;
+		0.0, 4.163983013232841e-11, -3.201854198617097e-08, 9.348002467422101e-06, -0.0002766893962111546, 3.346061803620957, -85.16429681735501;
+		0.0, 3.353197174694251e-11, -2.5800282654251666e-08, 7.538514143112992e-06, -0.00022249071510479265, 2.7230800043022567, -68.46965760189165;
+		0.0, 1.8725080031370093e-10, -1.4416352393985332e-07, 4.215539620518761e-05, -0.0012406763235951776, 15.364915857635273, -381.73934789901546;
+		0.0, 1.0444050057908236e-10, -8.045646778985516e-08, 2.3544434289870535e-05, -0.0006910268213091422, 8.657884412678559, -212.58839584674698;
+		0.0, 4.765913786747936e-11, -3.673608729832771e-08, 1.0758290548629699e-05, -0.00031489715509840446, 3.9907886740449516, -96.86727996841415;
+		0.0, 3.170298655346331e-10, -2.445098937187826e-07, 7.165789165251934e-05, -0.00209180528145419, 26.81131588874648, -643.479634662752;
+		0.0, 5.663487568815133e-10, -4.3704380351431346e-07, 0.0001281753256109362, -0.0037316565465188804, 48.36654514782882, -1148.0898280500924;
+		0.0, 5.078598339357229e-11, -3.9212568730832656e-08, 1.1508318079628607e-05, -0.00033415874937351987, 4.37913288031911, -102.83897068291789;
+		0.0, 1.4803424055277985e-11, -1.1436154128533822e-08, 3.358685688958737e-06, -9.726425156237195e-05, 1.2886394759417354, -29.948381225515398;
+		0.0, 8.302876284058377e-11, -6.41769683655333e-08, 1.8861126585545202e-05, -0.0005447400445044852, 7.29569670843485, -167.85113450515183;
+		0.0, 6.94506350722261e-11, -5.371016203853668e-08, 1.579576837882848e-05, -0.00045497855136908936, 6.159270160030967, -140.33166080168883;
+		0.0, 1.7631720716433758e-11, -1.364274350790862e-08, 4.014941023645004e-06, -0.00011533059370220748, 1.5780117421072426, -35.61797818975665;
+		0.0, 4.112174628902361e-11, -3.183476993940484e-08, 9.374895335447289e-06, -0.0002685491230500806, 3.7137282114394354, -83.0185773245512;
+		0.0, 1.1696588712801162e-10, -9.0593538750762e-08, 2.669374054362003e-05, -0.0007624431933932553, 10.66025699900833, -234.54065827357485;
+		0.0, 1.2376894297795621e-11, -9.590650111876215e-09, 2.8274210887811428e-06, -8.05307513840746e-05, 1.138297950201876, -24.605213756087824;
+		0.0, 2.141512260415273e-12, -1.6601555534603087e-09, 4.896807492961686e-07, -1.390926251963096e-05, 0.19872121630071501, -4.219353702386374;
+		0.0, 4.0054515723726176e-11, -3.1064572765362695e-08, 9.16734200997134e-06, -0.0002597168314765499, 3.749726065716778, -78.18842380339483;
+		0.0, 1.3719070408817438e-12, -1.0644329719762954e-09, 3.1426966702376613e-07, -8.881149955483384e-06, 0.12955172043819166, -2.6523952464556575;
+		0.0, 9.725265904785953e-09, -7.548648852916696e-06, 0.002229729534914002, -0.06285969843362714, 926.2706831037965, -18616.461379011118;
+		0.0, 2.6708844038690446e-12, -2.0739181579574234e-09, 6.128673564807602e-07, -1.7237796036786412e-05, 0.2565418994558803, -5.060511780892115;
+		0.0, 1.566867841232915e-11, -1.217117830790341e-08, 3.5982628965218125e-06, -0.00010098187217872943, 1.5175834193673854, -29.37510429940023;
+		0.0, 1.4388616998564077e-10, -1.1180938713994433e-07, 3.3068748483870494e-05, -0.0009260658466592128, 14.051018483398202, -266.8333751057389;
+		0.0, 2.8085239621521083e-11, -2.1831917316883314e-08, 6.459588752932961e-06, -0.00018052567782379051, 2.7649582941747988, -51.50421706609804;
+		0.0, 3.818127343541364e-11, -2.969029313794653e-08, 8.788112300166456e-06, -0.0002451172958030287, 3.789108468747565, -69.21984681268333;
+		0.0, 5.753275538533753e-11, -4.475337112660536e-08, 1.3251652850144344e-05, -0.00036891366772093335, 5.754851618519434, -103.08290563241177;
+		0.0, 9.259766748748152e-11, -7.205325202817843e-08, 2.1343053015518667e-05, -0.000593085487005847, 9.334886548282922, -163.92378536373369;
+		0.0, 2.7819060780171047e-11, -2.1653877362067248e-08, 6.41642457492543e-06, -0.0001779864871939013, 2.8261849985311422, -48.64488049255012;
+		0.0, 7.657513685056304e-10, -5.962353780408018e-07, 0.00017673636598884566, -0.004894154640556455, 78.3891484533799, -1322.2765901882708;
+		0.0, 6.8766763735654076e-12, -5.356026149749306e-09, 1.5881749218875439e-06, -4.390660288146946e-05, 0.7092826630090674, -11.723152504983801;
+		0.0, 3.815312881144e-12, -2.9725285337900706e-09, 8.817108630653432e-07, -2.4336403413604566e-05, 0.3964674203663848, -6.419819046444806;
+		0.0, 7.184184034905501e-10, -5.598904463912022e-07, 0.00016612890788684183, -0.004578152111019969, 75.20679871476526, -1192.8826559119539;
+		0.0, 3.4224110144048676e-11, -2.6679999044899126e-08, 7.918955545339959e-06, -0.00021789179470789875, 3.608956681247792, -56.06437020956412;
+		0.0, 7.2059781903174e-12, -5.6191835301333265e-09, 1.668374684667866e-06, -4.5835770290416925e-05, 0.765387675237173, -11.643800081956037;
+		0.0, 3.185551670279696e-10, -2.4847942581602645e-07, 7.379854908832526e-05, -0.002024433713647046, 34.07869936128356, -507.63582096900416;
+		0.0, 6.846831373866748e-11, -5.342199853974534e-08, 1.587134434364293e-05, -0.0004347282540778049, 7.3768413099434555, -107.58433679209728;
+		0.0, 2.3484164725437878e-11, -1.832862202021818e-08, 5.447022301222147e-06, -0.00014897452031221694, 2.548077380032047, -36.379731638253524;
+		0.0, 1.0128654365314625e-10, -7.9073411936613e-08, 2.3506913410535374e-05, -0.0006419395999647889, 11.066799816535305, -154.6689082125839;
+		0.0, 1.5390843262502959e-09, -1.2018915758127935e-06, 0.0003574099547661158, -0.009745508630025358, 169.33367185869082, -2316.493144186744;
+		0.0, 6.058351551818422e-11, -4.73240552281186e-08, 1.4077334329223227e-05, -0.0003832550290344237, 6.711593492297992, -89.86715540841038;
+		0.0, 3.355276336037437e-11, -2.621688446635069e-08, 7.801137222852622e-06, -0.00021205162839606028, 3.7425785196421546, -49.04815763373786;
+		0.0, 2.5459159867490697e-09, -1.989863131815021e-06, 0.0005922978134804028, -0.016073979241559358, 285.9178304166034, -3667.48376672253;
+		0.0, 5.577249243985216e-12, -4.360405992652788e-09, 1.2983330856685104e-06, -3.5176196587295836e-05, 0.6306039865314711, -7.917139086948684;
+		0.0, 2.142215097921154e-10, -1.6753259776915927e-07, 4.9900321309952284e-05, -0.0013496523828712287, 24.385166678453576, -299.66920530648616;
+		0.0, 5.155002475615528e-09, -4.032704922177871e-06, 0.0012015677875883114, -0.03244110099964658, 590.752808469931, -7106.564060787906;
+		0.0, 1.3715802241408358e-11, -1.073303070177979e-08, 3.19908257544969e-06, -8.62126440511203e-05, 1.5823496034815459, -18.63546218852537;
+		0.0, 1.1149914904936361e-11, -8.727882274732583e-09, 2.6023582644583703e-06, -6.999659149661574e-05, 1.2949377454263715, -14.9324708074633;
+		0.0, 1.4353883809821869e-11, -1.1239470588353e-08, 3.3524595318764325e-06, -8.999127632120797e-05, 1.6781721608580074, -18.951430242906557;
+		0.0, 6.699034203666249e-12, -5.247239988030249e-09, 1.5657155267086774e-06, -4.1940747218823425e-05, 0.7884320249438657, -8.721417155711977;
+		0.0, 1.3268721013147748e-10, -1.0396654167686463e-07, 3.1034514271739595e-05, -0.0008294892836550191, 15.720377439497122, -170.3791206621001;
+		0.0, 1.374732907556528e-10, -1.0775377443670746e-07, 3.217798998501433e-05, -0.0008580649061893991, 16.39580187514332, -174.16073482162935;
+		0.0, 1.9365214217073246e-10, -1.5184141922876248e-07, 4.536258865549447e-05, -0.0012067136139316142, 23.249698041328006, -242.13328473348366;
+		0.0, 1.3108664792610828e-10, -1.0281535945852198e-07, 3.0726398549323796e-05, -0.0008154861514763969, 15.838981767626283, -161.11699763672033;
+		0.0, 3.354560957926316e-10, -2.6313166757330717e-07, 7.863690396617983e-05, -0.0020839805316986847, 40.75458387835135, -398.71846628948356;
+		0.0, 4.0585073442442893e-10, -3.18368656274728e-07, 9.514057923368707e-05, -0.0025180039400303734, 49.569299008877245, -465.0547277561679;
+		0.0, 4.750577215347177e-10, -3.726780551750875e-07, 0.00011136457070869704, -0.00294366996446763, 58.32657127941249, -523.8224511884564;
+		0.0, 6.39791431591247e-12, -5.019338669947976e-09, 1.4997998382782822e-06, -3.959625904942349e-05, 0.7895889425894791, -6.774950316283159;
+		0.0, 2.4224196817155562e-11, -1.9005331350301894e-08, 5.678477475683933e-06, -0.00014974695159832471, 3.00486102404925, -24.581292735828676;
+		0.0, 3.369014731120915e-11, -2.643288356499304e-08, 7.897090330648927e-06, -0.00020802909658323033, 4.200115739370001, -32.68308554847403;
+		0.0, 3.439798967559913e-11, -2.6989079239681975e-08, 8.06256911942448e-06, -0.00021217097130860998, 4.3096966508013645, -31.82002452820443;
+		0.0, 2.5025271873234313e-10, -1.963564649208139e-07, 5.865302310568273e-05, -0.0015419916479265448, 31.507989736158486, -220.1235952650387;
+		0.0, 4.084219686811021e-11, -3.204682901858068e-08, 9.571663281865455e-06, -0.000251408906535467, 5.1671764727352105, -34.053651083756264;
+		0.0, 1.9050832215686524e-11, -1.494851182611151e-08, 4.464317599936831e-06, -0.00011715781965647013, 2.4217853706424477, -15.004854629429136;
+		0.0, 1.2734635735933813e-10, -9.992569011013295e-08, 2.983918138587173e-05, -0.000782430905038212, 16.265288185672986, -94.38083377175987;
+		0.0, 2.136893679207869e-12, -1.6767916788949767e-09, 5.006564591463508e-07, -1.3117791353578016e-05, 0.27421385263292686, -1.4837699186192836;
+		0.0, 3.9001321173344834e-10, -3.060413412580146e-07, 9.13671898810102e-05, -0.0023921602873656516, 50.280017110834486, -252.4599821555075;
+		0.0, 2.1058445693409466e-10, -1.6524608798839795e-07, 4.9327589959051e-05, -0.0012905811502066482, 27.272971632424532, -126.3574912869359;
+		0.0, 1.4150295781375467e-10, -1.1103857346133592e-07, 3.3142111249324405e-05, -0.0008665333352344761, 18.409511114716967, -78.18488934570371;
+		0.0, 9.357847736809345e-12, -7.343236899376485e-09, 2.1914972524476598e-06, -5.726228359660551e-05, 1.2229409417214665, -4.724238471063854;
+		0.0, 3.5184590061043036e-10, -2.7610062015439316e-07, 8.238873859183099e-05, -0.0021514428391435103, 46.18688945243866, -160.79286867642597;
+		0.0, 2.7002297045300505e-12, -2.1189419372715647e-09, 6.322178203492132e-07, -1.6499569154960018e-05, 0.35603135359836713, -1.1044403302998416;
+		0.0, 1.3534459093969224e-10, -1.0620944358504915e-07, 3.168535115243473e-05, -0.0008264496228202533, 17.92403707736567, -48.84983690796622;
+		0.0, 1.3350910725011166e-12, -1.0477018239006432e-09, 3.125227998023479e-07, -8.147005467407273e-06, 0.17758275369239027, -0.417569379192659;
+		0.0, 5.832993731842469e-10, -4.577452284682466e-07, 0.00013652673220556345, -0.003557108699902675, 77.92293569295919, -154.31256462215984;
+		0.0, 3.315481207556687e-10, -2.601868909540344e-07, 7.759443358321816e-05, -0.0020205789299329144, 44.4830005719901, -71.71705538928536;
+		0.0, 1.6179678540396168e-11, -1.2697457786326458e-08, 3.7863024946371695e-06, -9.854342870146698e-05, 2.180134323723912, -2.7195154064834783;
+		0.0, 4.2952478972828587e-10, -3.370889339422646e-07, 0.00010050746621937562, -0.0026144267791582813, 58.124533081117875, -51.4889242152801;
+		0.0, 2.1570459259513717e-12, -1.6928826693939204e-09, 5.047061404348559e-07, -1.3121390058229931e-05, 0.2931453071082593, -0.15472409796996534;
+		0.0, 8.371406691642139e-11, -6.57020874068216e-08, 1.958627024077501e-05, -0.0005089222476749445, 11.425366230394259, -1.982033246844779;
+		0.0, 1.238157087144541e-11, -9.717891433742571e-09, 2.896735157766965e-06, -7.522468203580467e-05, 1.697043333531927, 0.3003213685601227;
+		0.0, 4.431592782223856e-11, -3.478362179491258e-08, 1.036764324298836e-05, -0.0002690765463165283, 6.099908080465848, 3.1910988214345455;
+		0.0, 3.407823182457897e-11, -2.674930137133789e-08, 7.972398869583715e-06, -0.0002067839673988188, 4.710678129332611, 4.076881864847962;
+		0.0, 1.9391057162218867e-10, -1.5221604252021292e-07, 4.536415645161428e-05, -0.0011758727922216055, 26.91862726596172, 32.391428776156;
+		0.0, 6.70077201358154e-09, -5.260303257953753e-06, 0.001567631697666516, -0.040606632013109066, 934.1687093986569, 1435.319012892315;
+		0.0, 4.147947075942666e-12, -3.2564875218339466e-09, 9.70439276924928e-07, -2.5119428800503857e-05, 0.5807466460533418, 1.0830371050656291;
+		0.0, 7.84889180597159e-11, -6.162520874941465e-08, 1.8364043873393344e-05, -0.0004749842637641595, 11.036225250711649, 24.1518184358569;
+		0.0, 1.2928822655795839e-12, -1.015188852864626e-09, 3.025196511856424e-07, -7.818317506926577e-06, 0.18257349695282865, 0.4576599223861951;
+		0.0, 3.252290731546794e-11, -2.5539898667395963e-08, 7.610774982740862e-06, -0.0001965235004239153, 4.612578195569797, 13.005850084347358;
+		0.0, 6.841917990968911e-10, -5.373457148943614e-07, 0.0001601300051153206, -0.004131035282380026, 97.45805419675325, 304.7598146842581;
+		0.0, 7.725827419718251e-12, -6.068364151203853e-09, 1.8084504545333436e-06, -4.6608622314928544e-05, 1.1053057126265182, 3.789819566799185;
+		0.0, 2.4541041298146644e-11, -1.9278590478379448e-08, 5.745577376438252e-06, -0.00014792372027740334, 3.526484640910996, 13.133961849992541;
+		0.0, 1.4299799865396694e-10, -1.1234995555059081e-07, 3.348591854295011e-05, -0.0008611513052815883, 20.639796885808366, 82.84466988684507;
+		0.0, 7.175945538721239e-11, -5.6388155997700456e-08, 1.6807994438475732e-05, -0.00043173043634498663, 10.403923819937445, 44.70486967262913;
+		0.0, 3.497637658513081e-11, -2.7488752538332073e-08, 8.194644833297103e-06, -0.00021021858826843632, 5.093940533739997, 23.296357399314918;
+		0.0, 4.078849428628888e-10, -3.2062333113742827e-07, 9.559298762086645e-05, -0.0024489153098928907, 59.67569257165782, 289.0031379048137;
+		0.0, 8.502735645507617e-11, -6.684966329306705e-08, 1.9934021856604338e-05, -0.0005099290434170507, 12.497411546396352, 63.80398845305815;
+		0.0, 1.0697437032723479e-10, -8.412206359229841e-08, 2.5088803781072334e-05, -0.0006407968874049575, 15.796683480691772, 84.6780854168164;
+		0.0, 3.163714890861916e-11, -2.488419545400917e-08, 7.422972311578358e-06, -0.00018927809230092087, 4.693886379137744, 26.32348153740676;
+		0.0, 6.488704639611737e-12, -5.104898762558064e-09, 1.5231258919785355e-06, -3.87699118808064e-05, 0.9673154123498588, 5.656621317429192;
+		0.0, 1.628244283952542e-11, -1.2813229450777439e-08, 3.82395117987958e-06, -9.715392050714026e-05, 2.4391129636562074, 14.828336902236076;
+		0.0, 2.543209361576953e-11, -2.001881716114506e-08, 5.975968655191456e-06, -0.00015152905334878984, 3.82847477072842, 24.12970007976746;
+		0.0, 2.8306126128203377e-10, -2.2287513938706197e-07, 6.65517070690444e-05, -0.001683973119695894, 42.823887412380785, 279.0992896874526;
+		0.0, 6.531755230358405e-12, -5.14445223960504e-09, 1.5366278769190421e-06, -3.8796803893634094e-05, 0.993126635004646, 6.682935950151424;
+		0.0, 8.128385158549505e-10, -6.40178252264998e-07, 0.00019117718254875224, -0.004821415003278315, 123.99171343507653, 882.8763138392326;
+		0.0, 1.103663501559938e-11, -8.690619318715321e-09, 2.5940520709752537e-06, -6.538454818082565e-05, 1.687541031388577, 12.82561564834911;
+		0.0, 6.46179240126584e-11, -5.087250202100321e-08, 1.5177537900964266e-05, -0.0003823604768433222, 9.903280093708881, 80.03059532905512;
+		0.0, 3.335952869603574e-11, -2.6258188189858554e-08, 7.830163091747067e-06, -0.00019716708533791728, 5.124292293500245, 43.8819085768586;
+		0.0, 3.0627775368343007e-11, -2.4103156571639783e-08, 7.18398791703265e-06, -0.00018081624298987687, 4.715173635073155, 42.65783140540246;
+		0.0, 5.333141436013264e-12, -4.196181404091053e-09, 1.2500564545220782e-06, -3.1450361382531287e-05, 0.8228389874415689, 7.84276988638885;
+		0.0, 6.757120628490759e-11, -5.3155063688952034e-08, 1.5827121390175716e-05, -0.0003980498095797863, 10.44779696282848, 104.6525734005161;
+		0.0, 1.5741480144730035e-10, -1.238054278902918e-07, 3.6844904965897854e-05, -0.0009263334449815666, 24.390615361516943, 256.1708800467302;
+		0.0, 1.7240820055713504e-10, -1.3556971891658163e-07, 4.032548640059988e-05, -0.0010135337085267165, 26.769037808712998, 294.1829981559876;
+		0.0, 4.3210836391011044e-11, -3.397095365318186e-08, 1.0099569089233524e-05, -0.00025377212540722533, 6.722792248669884, 77.15775869721426;
+		0.0, 2.734901613885422e-11, -2.1496454100546012e-08, 6.3876234657467785e-06, -0.00016046340230715578, 4.263498387038558, 51.0120962852686;
+		0.0, 5.3994492830415814e-11, -4.243113280437922e-08, 1.2601841199908262e-05, -0.00031650377561471074, 8.433883580375145, 105.02654915343973;
+		0.0, 7.435989584137373e-12, -5.84230225417882e-09, 1.7342430084499956e-06, -4.3548666671981614e-05, 1.1637443229293598, 15.060242244851246;
+		0.0, 1.7768226362135985e-10, -1.3957245800339072e-07, 4.1409714545559945e-05, -0.0010396769654555421, 27.860684068471553, 374.1541511900497;
+		0.0, 4.8034094901640625e-12, -3.772385299777417e-09, 1.1186528266407732e-06, -2.8082336969035357e-05, 0.7545970538416983, 10.502204040682901;
+		0.0, 4.795267108198565e-10, -3.7652219148678543e-07, 0.00011159559979274286, -0.0028011504773768348, 75.47201880568396, 1087.2156994083302;
+		0.0, 2.166936445738197e-11, -1.7011239340515797e-08, 5.0393015183445255e-06, -0.00012647949097864514, 3.416786024158263, 50.88641781565334;
+		0.0, 2.5002748875286294e-10, -1.962413298765395e-07, 5.81037004914214e-05, -0.0014582172284927206, 39.49570746203939, 607.4440476708902;
+		0.0, 1.2566582440456213e-11, -9.861292474125513e-09, 2.918282064689744e-06, -7.323550471046475e-05, 1.9886695686594718, 31.552711543309705;
+		0.0, 0.0, -4.327898397138889e-07, 0.00026568409984013174, -0.009038165619811057, 293.81041685798175, -6047.321109292874;
+		0.0, 3.7043235625568155e-11, -2.9057427639405135e-08, 8.590442879984557e-06, -0.00021556626851034692, 5.88306807463712, 99.04678366027713;
+		0.0, 7.644288644543727e-12, -5.9951937496687884e-09, 1.7715235704719827e-06, -4.445342622212675e-05, 1.2161864132233708, 21.063156438465192;
+		0.0, 5.14623212594425e-11, -4.0352937273062287e-08, 1.1918084859811066e-05, -0.00029906236992273844, 8.201962546582044, 146.00103861707746;
+		0.0, 9.853592624225911e-12, -7.72505782195833e-09, 2.280463568996273e-06, -5.722402300173846e-05, 1.5732085852430302, 28.75971160992225;
+		0.0, 2.9593754511515826e-10, -2.3196935829135925e-07, 6.844551422421376e-05, -0.0017175222324736406, 47.331974805526826, 887.9165706437884;
+		0.0, 2.9178425886924483e-10, -2.286744991825433e-07, 6.744161249369725e-05, -0.0016923429751466805, 46.749730110296895, 899.2719953639473;
+		0.0, 1.5792154699658018e-10, -1.2374422468769995e-07, 3.64782801727685e-05, -0.000915372907802673, 25.346790639549695, 499.59246683416757;
+		0.0, 1.211030676936244e-11, -9.48787137020235e-09, 2.7956384834089517e-06, -7.015314713633346e-05, 1.9471694616137423, 39.29850581765707;
+		0.0, 2.320030195298577e-10, -1.817355488794833e-07, 5.352524814217631e-05, -0.0013431526480100914, 37.36911395598943, 771.7464118032997;
+		0.0, 2.9440023549201034e-11, -2.3057900717925702e-08, 6.788116768885882e-06, -0.00017033885331604756, 4.750430298676001, 100.32370331677058;
+		0.0, 1.9404719921335902e-11, -1.5195926783820148e-08, 4.471691171842029e-06, -0.00011220959565652043, 3.13677785860534, 67.70060694422568;
+		0.0, 2.41341486588067e-10, -1.889700573486899e-07, 5.558495820385239e-05, -0.0013947755164238922, 39.083830101886, 861.5528416346419;
+		0.0, 1.0776545790831936e-11, -8.436939398680505e-09, 2.480697254342131e-06, -6.22448745744524e-05, 1.7484039884733447, 39.341286605803546;
+		0.0, 9.788426999835312e-11, -7.662420280250202e-08, 2.2520840318102372e-05, -0.0005650543702576748, 15.910434730928584, 365.2273561520086;
+		0.0, 4.762879844811568e-10, -3.7279820636007435e-07, 0.00010952861206371518, -0.002747899318032703, 77.56330284818613, 1815.4011783683616;
+		0.0, 3.650547228509833e-10, -2.857043995397884e-07, 8.390958752845345e-05, -0.002104957006405727, 59.562694496409975, 1420.6649953093156;
+		0.0, 1.0305272984263133e-08, -8.064490930682833e-06, 0.0023676550530409755, -0.059387919661226266, 1684.6849235580728, 40926.970960787876;
+		0.0, 1.3382718352249092e-11, -1.047187013880898e-08, 3.0733980976559163e-06, -7.707883914929577e-05, 2.192103224024938, 54.21291851496788;
+		0.0, 9.255026458927751e-10, -7.241425691363321e-07, 0.00021246051906099341, -0.005327441558038711, 151.90339749421196, 3822.4604282980113;
+		0.0, 2.3214675329116656e-09, -1.8162673374784394e-06, 0.0005327216361711366, -0.013355227542097942, 381.80595734599217, 9771.000511733617;
+		0.0, 1.7047198085319334e-10, -1.3336604297581147e-07, 3.910562821137915e-05, -0.0009801350954862051, 28.095810404095047, 730.887443871302;
+		0.0, 4.967225387318795e-11, -3.885847422164531e-08, 1.1390964899364909e-05, -0.00028542172040482244, 8.204090245960277, 216.8440841875061;
+		0.0, 7.022118294180824e-11, -5.4931866225417036e-08, 1.6098579208048413e-05, -0.0004032523761316321, 11.623413777725826, 312.0024147283521;
+		0.0, 3.908436364696808e-10, -3.0573726800917503e-07, 8.957933622757141e-05, -0.002243065360678819, 64.83948550325026, 1766.74481370885;
+		0.0, 1.2467496486569513e-08, -9.752563162185179e-06, 0.0028568191677209266, -0.07150598337216103, 2073.0531534793945, 57313.87124296232;
+		0.0, 1.561102023586692e-11, -1.2211530505359142e-08, 3.5764076428667804e-06, -8.947707481281634e-05, 2.60184703559369, 72.95495017387016;
+		0.0, 4.5016770149167205e-11, -3.5214196244167626e-08, 1.0311371025447575e-05, -0.0002578486469811702, 7.52090847531876, 213.78521166362074;
+		0.0, 3.450820798124684e-11, -2.6994539654030812e-08, 7.903241733862398e-06, -0.00019752166260441395, 5.779511643249165, 166.4739720069434;
+		0.0, 7.295077407211433e-12, -5.7068856735605905e-09, 1.6705851597540582e-06, -4.172683655309312e-05, 1.2248993251805478, 35.737006685331515;
+		0.0, 6.3706158359851e-10, -4.983933558495748e-07, 0.0001458785350046179, -0.003641252110402279, 107.24664404680549, 3167.971751104248;
+		0.0, 3.1039684202686814e-11, -2.428486351051769e-08, 7.1074609950168655e-06, -0.00017728029219354015, 5.239417371817709, 156.63138221955998;
+		0.0, 6.55906671572359e-11, -5.132087780269343e-08, 1.501905965192278e-05, -0.0003743245052202724, 11.10206736011098, 335.7516412810829;
+		0.0, 2.5221905624392092e-11, -1.9736487925392146e-08, 5.775623747510971e-06, -0.00014382546751219187, 4.281243698205111, 130.92547624427996;
+		0.0, 4.993080583316584e-10, -3.9075723620736983e-07, 0.00011434765941305775, -0.002844896019689157, 85.00150197222433, 2627.5000964196806;
+		0.0, 2.9514359115594147e-10, -2.310068890410382e-07, 6.760013024169917e-05, -0.0016801906374180004, 50.39578659660679, 1573.966816201615;
+		0.0, 3.9304652109433623e-10, -3.0767734230907444e-07, 9.003926685412495e-05, -0.0022355456572254622, 67.3203107479723, 2123.5195943038375;
+		0.0, 7.209895693694569e-14, -4.5442964406247235e-11, 8.344870038765587e-09, -2.656138165921362e-09, 0.0, 1;
+		0.0, 8.559758113112745e-11, -6.702769816406909e-08, 1.961797005799827e-05, -0.0004859466085713343, 14.755938152918468, 474.2066503821961;
+		0.0, 2.5680280711961203e-10, -2.0112878470971468e-07, 5.887408066079844e-05, -0.001456461109955733, 44.41910504137592, 1439.9680260104612;
+		0.0, 4.96245951200845e-12, -3.887413920761591e-09, 1.1380824214547957e-06, -2.811598882931276e-05, 0.8613427920076082, 28.155632207767567;
+		0.0, 1.286657411603246e-12, -1.008146808695054e-09, 2.9519751512909156e-07, -7.282167263134401e-06, 0.22412788565918418, 7.38442263789252;
+		0.0, 1.5713862918533039e-09, -1.2315412380688863e-06, 0.0003606844517421817, -0.008883955329512151, 274.7368915526801, 9119.948057503387;
+		0.0, 2.9777789708717624e-11, -2.3343812859167158e-08, 6.838385064905987e-06, -0.0001681609187798337, 5.2260741599288085, 174.71469031411542;
+		0.0, 6.760395906611382e-12, -5.301189620852035e-09, 1.5533620006262424e-06, -3.813270477772047e-05, 1.1911168304818005, 40.087469516874464;
+		0.0, 9.687095321028306e-11, -7.598455193760989e-08, 2.2271872384736218e-05, -0.0005457514436104518, 17.136649715631016, 580.3667199334062;
+		0.0, 8.672574200701532e-12, -6.804154971399427e-09, 1.994676913271803e-06, -4.8798677321521104e-05, 1.5394987180864304, 52.5604610543449;
+		0.0, 2.385577513535722e-10, -1.8711730210257718e-07, 5.4817890039643326e-05, -0.0013406222553686564, 42.360624494409564, 1472.1844709887528;
+		0.0, 6.002463539929022e-11, -4.706722995915542e-08, 1.3778151023052505e-05, -0.0003369017310572852, 10.657377057488015, 377.39623353665485;
+		0.0, 6.480602289078724e-12, -5.080104670198858e-09, 1.4859609006358965e-06, -3.632939521954972e-05, 1.1504604490933237, 41.50139865072768;
+		0.0, 1.4959631490057457e-11, -1.1723195198869664e-08, 3.4264299810457687e-06, -8.376089040401977e-05, 2.6551989702499577, 97.55062029601886;
+		0.0, 2.494147201247277e-11, -1.9539555981518815e-08, 5.7065094596538985e-06, -0.00013948532900109802, 4.425912925765122, 165.56860719356914;
+		0.0, 1.728499625113069e-12, -1.3537210353226496e-09, 3.950426661971687e-07, -9.655399905187522e-06, 0.30664786779137365, 11.677755249375311;
+		0.0, 1.6221954236289801e-12, -1.270077517057669e-09, 3.7034221165619785e-07, -9.051222927519674e-06, 0.2877064927691339, 11.15108322346966;
+		0.0, 9.76564750439302e-11, -7.643552874546892e-08, 2.227028558535734e-05, -0.0005442731354304872, 17.31450041136722, 682.8583151835686;
+		0.0, 2.4738015044220967e-11, -1.9356477489285152e-08, 5.6352589904745415e-06, -0.00013772129398104783, 4.384533182045605, 175.91548148845266;
+		0.0, 4.225546729273468e-11, -3.3053070774664385e-08, 9.615151025404075e-06, -0.00023498936574228976, 7.486500333024432, 305.5116783867762;
+		0.0, 9.375467972197988e-12, -7.3314450419038275e-09, 2.1310346685016726e-06, -5.2083004587694214e-05, 1.660408208411925, 68.90354686356952;
+		0.0, 1.3092753997499744e-12, -1.0235185328178709e-09, 2.9727151138560385e-07, -7.265749667437625e-06, 0.2317757217805003, 9.778750482683078;
+		0.0, 7.185581256715118e-11, -5.6155870918641624e-08, 1.6297073960448073e-05, -0.0003983514021312458, 12.714630246421878, 545.2803504082236;
+		0.0, 1.51788630526307e-11, -1.185882399711338e-08, 3.4388510630847442e-06, -8.406346359587955e-05, 2.6845805833899323, 117.00554630101963;
+		0.0, 3.4225568550869597e-11, -2.6731468410104206e-08, 7.745552292982672e-06, -0.00018936112127933397, 6.050265051716053, 267.9369127750362;
+		0.0, 2.8342549604471332e-11, -2.2130008118514312e-08, 6.407221253370642e-06, -0.00015666054703489696, 5.007731925383328, 225.2903610056877;
+		0.0, 6.665130867827437e-12, -5.202627433037882e-09, 1.5051174208509124e-06, -3.6805983824254795e-05, 1.1770148689688724, 53.78275136268982;
+		0.0, 2.1796995453579618e-11, -1.7009165484090592e-08, 4.916899291398968e-06, -0.00012025519361628938, 3.8471091107484447, 178.51382171772352;
+		0.0, 3.029598203673434e-10, -2.3634407998532318e-07, 6.826764032353924e-05, -0.0016699280307697904, 53.44183886441632, 2517.7535599720663;
+		0.0, 1.2011548560518156e-10, -9.367709972209278e-08, 2.7037540215084043e-05, -0.0006614941826082115, 21.176276948182927, 1012.7303195983636;
+		0.0, 9.728306810117587e-10, -7.584853114884894e-07, 0.00021874883319374742, -0.0053528575598946115, 171.4101395923742, 8319.802488851796;
+		0.0, 1.0726379769343406e-10, -8.360650951401987e-08, 2.409380932724949e-05, -0.0005897002130206741, 18.88852446956346, 930.3076130736825;
+		0.0, 4.606691491218511e-10, -3.5896696736861836e-07, 0.0001033686137754454, -0.0025304907989106822, 81.07313193392733, 4051.146208389303;
+		0.0, 4.30208503761083e-12, -3.351384964594094e-09, 9.643386927644402e-07, -2.361238861205962e-05, 0.7566726496571046, 38.35325246793204;
+		0.0, 1.1183674001399934e-09, -8.709863057292498e-07, 0.00025043207862899164, -0.006133353884844236, 196.58637513169936, 10105.611730392437;
+		0.0, 5.871171520907774e-12, -4.571248559730388e-09, 1.3133771242215364e-06, -3.2173507602837345e-05, 1.0314153011933278, 53.762492002548484;
+		0.0, 3.661866126486205e-12, -2.850345651791449e-09, 8.183344414034683e-07, -2.0051337025741735e-05, 0.6429122424894345, 33.97477122972789;
+		0.0, 3.9581571757347876e-11, -3.080171998299767e-08, 8.836695189840744e-06, -0.00021657489954982322, 6.945190793476017, 372.0238293176191;
+		0.0, 6.153771140607746e-11, -4.7875363256753484e-08, 1.3724978704794753e-05, -0.00033646307483278434, 10.791373213453586, 585.8251897761787;
+		0.0, 9.243248996553288e-11, -7.189293679008244e-08, 2.0595567706845453e-05, -0.0005050196087157968, 16.19971648861571, 891.1007921476779;
+		0.0, 3.705179264731897e-11, -2.8811362319248715e-08, 8.247888602502426e-06, -0.00020229578758497623, 6.489984633551561, 361.67163764660955;
+		0.0, 1.196084402076544e-10, -9.298472699866538e-08, 2.660025017894272e-05, -0.0006525888961347284, 20.938861106735782, 1181.9491589959855;
+		0.0, 4.0174385709413025e-12, -3.122457370000002e-09, 8.926258944172132e-07, -2.1904487980003626e-05, 0.7029152736622315, 40.18350505337268;
+		0.0, 6.6899324396235796e-12, -5.198391087935097e-09, 1.48506302846989e-06, -3.645168385154731e-05, 1.1698905801838977, 67.71932025706;
+		0.0, 1.201071184302892e-10, -9.330787874044719e-08, 2.663798181899777e-05, -0.0006540061655565554, 20.99275978211055, 1230.2229622057102;
+		0.0, 3.097837058458995e-11, -2.4060968389974382e-08, 6.864479351338471e-06, -0.0001685754374576624, 5.411848822507372, 321.01892915394177;
+		0.0, 1.0740543257512977e-10, -8.34042891113534e-08, 2.3779292750070015e-05, -0.0005841032082592721, 18.754668040666232, 1125.8720883993235;
+		0.0, 3.8402173012781123e-10, -2.9814550062160486e-07, 8.494925341272798e-05, -0.002087139245384759, 67.0263596126261, 4071.402934702962;
+		0.0, 1.300143004244267e-10, -1.0091988576103905e-07, 2.873649348503331e-05, -0.000706193307024436, 22.68294905964775, 1393.9284866592534;
+		0.0, 9.037239372705681e-12, -7.013543021380234e-09, 1.99583795309209e-06, -4.905793222806175e-05, 1.5760695132736995, 97.96767161092646;
+		0.0, 1.1538344255787916e-10, -8.952910187092819e-08, 2.5461743114473892e-05, -0.000625982086721263, 20.115371965838005, 1264.5194065179685;
+		0.0, 1.7528512289933031e-12, -1.3598403333174477e-09, 3.8650345600656045e-07, -9.504123613956454e-06, 0.3054846401982031, 19.41781223433041;
+		0.0, 0.0, -4.117704810906944e-07, 0.0002580370019762819, -0.008313134893003223, 393.66234678468896, -365.48211978520453;
+		0.0, 2.1191258870439857e-10, -1.643438278258269e-07, 4.665724502827992e-05, -0.0011477064119319773, 36.91211118973245, 2397.5978272883335;
+		0.0, 2.289522736632321e-11, -1.7753070335976068e-08, 5.037305240175056e-06, -0.00012393015740176078, 3.987194868993345, 261.73224806559307;
+		0.0, 0.0, -6.18077949241359e-05, 0.038743711207895076, -1.2472173661449466, 59620.671312581544, -12870.378221256222;
+		0.0, 7.866541552311727e-11, -6.097984504752169e-08, 1.728414836051451e-05, -0.0004253425295265645, 13.695709453408286, 917.7121278744445;
+		0.0, 8.23506582478142e-11, -6.382809367037189e-08, 1.808222112700271e-05, -0.00044502728111631346, 14.336332602763106, 970.3060062299775;
+		0.0, 5.244264529160234e-08, -4.0642024821369306e-05, 0.011508008664376384, -0.28325021436442155, 9129.518486884981, 624006.078565626;
+		0.0, 5.201345201702286e-11, -4.030474353953969e-08, 1.1407039756820199e-05, -0.00028078179160025493, 9.055131452796434, 624.9231735261271;
+		0.0, 1.0362589236527357e-09, -8.029015592285639e-07, 0.00022713189637240115, -0.005591007555256924, 180.42111972278656, 12569.870966841674;
+		0.0, 8.754226553241797e-11, -6.782179024441e-08, 1.91774755971638e-05, -0.00047207271577528873, 15.244122209037968, 1071.9569466484706;
+		0.0, 1.6652992698907895e-10, -1.290046039021579e-07, 3.646206570266402e-05, -0.0008975386516382696, 29.004748564065505, 2058.235143985182;
+		0.0, 2.82831652096666e-12, -2.190818690405954e-09, 6.189620540003977e-07, -1.5235570604172233e-05, 0.4927477150205689, 35.27934382018478;
+		0.0, 7.706454550898053e-10, -5.969016057762479e-07, 0.0001685736831289268, -0.0041491115246608205, 134.30742408185912, 9700.27694116765;
+		0.0, 4.9101796570815084e-11, -3.802939910237501e-08, 1.0736037310759525e-05, -0.0002642209413582342, 8.560943441736692, 623.6079940969146;
+		0.0, 1.794387879368407e-11, -1.3896861182751285e-08, 3.921814690152841e-06, -9.650612231066904e-05, 3.1300456540559862, 229.91309266629426;
+		0.0, 2.8911348520467918e-12, -2.238986344744772e-09, 6.316492740182273e-07, -1.5540838117882723e-05, 0.5045973342462728, 37.367811354535455;
+		0.0, 1.2028370547271556e-10, -9.31487657501187e-08, 2.6270268172908753e-05, -0.0006462181026555046, 21.006762807845462, 1568.0768314772786;
+		0.0, 1.3111497645352472e-11, -1.0153469102063672e-08, 2.862685074029084e-06, -7.040270734384599e-05, 2.2914752097219555, 172.38276742940712;
+		0.0, 2.9081380079917573e-11, -2.2520277792679222e-08, 6.347660496923169e-06, -0.000156068455983683, 5.086564053516498, 385.55620139062484;
+		0.0, 5.448223886117931e-12, -4.2190536297506965e-09, 1.188899253419822e-06, -2.9222408922277413e-05, 0.95377983569197, 72.82984740216452;
+		0.0, 4.6504784604211626e-11, -3.601338951145452e-08, 1.0145968740648462e-05, -0.0002492971398322513, 8.149159330917682, 626.7364122183478;
+		0.0, 1.1831077457132599e-11, -9.16224445888367e-09, 2.580717859108019e-06, -6.338695200840866e-05, 2.0753952305340553, 160.72958276349507;
+		0.0, 2.090298057140924e-12, -1.6188331909425775e-09, 4.5588966463833656e-07, -1.1192751594907724e-05, 0.36710203822655835, 28.62304017667241;
+		0.0, 6.32421152437137e-11, -4.898033765840277e-08, 1.3791404981971856e-05, -0.00033844267341459714, 11.120621646615827, 872.7744368077631;
+		0.0, 6.220698115557808e-09, -4.818160994659457e-06, 0.0013564613470737218, -0.03327090769271101, 1095.340348886317, 86511.78723848834;
+		0.0, 0.0, -1.0029382265240983e-07, 6.305763816924403e-05, -0.0020130808869180676, 103.18170531646055, 437.6442924718449;
+		0.0, 4.675964492135862e-10, -3.6222905049020653e-07, 0.00010195767164165185, -0.002497927218491387, 82.5829399845029, 6601.561725311705;
+		0.0, 7.605641592255583e-11, -5.892386260534419e-08, 1.6584385160196972e-05, -0.0004060506065880154, 13.454860557226885, 1081.7097327139923;
+		0.0, 8.488073554431061e-11, -6.576782946819407e-08, 1.850991428293877e-05, -0.0004528821705407796, 15.04267140080935, 1216.0090162049457;
+		0.0, 2.9328575318493457e-11, -2.27274209408092e-08, 6.3963928359543205e-06, -0.00015638478558288897, 5.207490525797193, 423.1799273732367;
+		0.0, 2.139769009757369e-12, -1.6583909071547793e-09, 4.6674284825533143e-07, -1.1402333742501844e-05, 0.3806949431423892, 31.09289550015071;
+		0.0, 1.5002340182361753e-11, -1.1629093270667713e-08, 3.2730616533510936e-06, -7.98922215784007e-05, 2.674813542195742, 219.51663203116843;
+		0.0, 4.2232813298660056e-11, -3.2742354905451384e-08, 9.216116620437538e-06, -0.000224755156578457, 7.546788353475995, 622.195152891992;
+		0.0, 7.999678620612434e-11, -6.203143163985349e-08, 1.7461916795718624e-05, -0.0004254432855933099, 14.329030065308052, 1186.5101630090137;
+		0.0, 9.342848535984578e-11, -7.246101399346527e-08, 2.0400424614879483e-05, -0.0004965388700410951, 16.776892041303036, 1394.9375033843985;
+		0.0, 6.9460413625528504e-12, -5.38833868864856e-09, 1.5172503325382061e-06, -3.6890229725945455e-05, 1.2505889198538762, 104.38630903726086;
+		0.0, 7.101550769279627e-11, -5.510231174600614e-08, 1.5518609027764275e-05, -0.0003768966575473563, 12.821342957480425, 1074.099137567215;
+		0.0, 1.6893732047977544e-11, -1.3111374476283643e-08, 3.6933905227232685e-06, -8.959526877756375e-05, 3.0589244739669614, 257.13191129927714;
+		0.0, 3.6963112967561364e-11, -2.8694863156614366e-08, 8.085164200303067e-06, -0.00019589058718491261, 6.713289049134491, 566.098887378002;
+		0.0, 4.242341373318987e-12, -3.2942864052754398e-09, 9.284694246755877e-07, -2.2466289024048643e-05, 0.7729618938527487, 65.3697466186708;
+		0.0, 2.3467896117167566e-11, -1.8228771065182365e-08, 5.13924694762679e-06, -0.00012418698656982316, 4.2901845214320575, 363.78661305277586;
+		0.0, 2.0128505812100756e-12, -1.563974751268655e-09, 4.410848848834685e-07, -1.0643515364091065e-05, 0.36925586955923023, 31.386237824450518;
+		0.0, 1.952294539311215e-11, -1.5174115667354764e-08, 4.2810898533696e-06, -0.00010315332129635632, 3.594329223886165, 306.2173098116003;
+		0.0, 6.700424058326168e-10, -5.207938060280781e-07, 0.00014687497716933513, -0.003536400615348718, 123.47438250141583, 10630.568049304306;
+		0.0, 5.5271866823311816e-11, -4.295287986418329e-08, 1.2103483859943973e-05, -0.00029134349246616876, 10.17789846030586, 889.7111828876567;
+		0.0, 9.04670782886692e-11, -7.029105087754137e-08, 1.979006968963262e-05, -0.00047624854510964473, 16.644109270887597, 1477.263268326241;
+		0.0, 5.260358174673736e-11, -4.0864192320940204e-08, 1.1495099318767206e-05, -0.00027656725873689885, 9.66804228319684, 871.235732668475;
+		0.0, 6.387483655271904e-10, -4.961036309035279e-07, 0.00013943065038304181, -0.0033539637028983755, 117.25834263288246, 10728.346143515751;
+		0.0, 0.0, -2.5450081064399543e-07, 0.00016079070393180955, -0.005047011838848607, 282.58127389827746, 2463.2988591042204;
+		0.0, 4.1556800896295733e-10, -3.2263080841778893e-07, 9.051185396244949e-05, -0.0021765131315764265, 76.07692308797314, 7174.555003183852;
+		0.0, 1.3145794468890067e-11, -1.0203680988500764e-08, 2.8599254707144572e-06, -6.876292570999364e-05, 2.402730319221424, 230.04085928968814;
+		0.0, 9.315972308415375e-09, -7.229392058635395e-06, 0.002024381333301629, -0.04866831881081036, 1699.7835976164424, 165210.37587718255;
+		0.0, 2.7848526109618884e-12, -2.1606121752162216e-09, 6.044424878293033e-07, -1.4530285754297838e-05, 0.5071731413818804, 50.041121367081985;
+		0.0, 3.5968536552443486e-12, -2.7899465150835235e-09, 7.797524510714487e-07, -1.874354526823258e-05, 0.653743157970015, 65.47674942053172;
+		0.0, 1.5877539193532468e-11, -1.2312677606719728e-08, 3.4378869910597464e-06, -8.263673747415855e-05, 2.879659867065484, 292.7588375859616;
+		0.0, 1.0744799596556858e-10, -8.330318116602052e-08, 2.3236708733276852e-05, -0.0005585388669035004, 19.443473435748817, 2006.3641501707314;
+		0.0, 5.276772448633627e-11, -4.0900019582044624e-08, 1.1397421390177346e-05, -0.000273963855546229, 9.5259177787359, 997.6672651301451;
+		0.0, 5.457187320961206e-11, -4.228768705581759e-08, 1.1772359150984955e-05, -0.00028298837765839134, 9.826904847683155, 1044.5101863131392;
+		0.0, 4.2933731743585904e-13, -3.3260734480671717e-10, 9.25006313775063e-08, -2.2237130234955934e-06, 0.07710880664575154, 8.317421113105642;
+		0.0, 3.8159494190695297e-11, -2.9554405598675963e-08, 8.210989206050488e-06, -0.0001974098507630273, 6.834623584419125, 748.0970637153313;
+		0.0, 2.0097562200671547e-11, -1.556137238430149e-08, 4.318958655905265e-06, -0.00010384891065921988, 3.5893261382482256, 398.6413620063908;
+		0.0, 1.054702938526235e-11, -8.164285331517061e-09, 2.2636281922310854e-06, -5.4436181251197135e-05, 1.8780610279283172, 211.626701936502;
+		0.0, 1.3055142169676203e-10, -1.0103036462644793e-07, 2.798291222489976e-05, -0.0006730465477847519, 23.175308596772787, 2649.3557619018634;
+		0.0, 7.672381532939598e-12, -5.9358325198129226e-09, 1.6423860003158905e-06, -3.950997265666373e-05, 1.35766930114144, 157.44312021895988;
+		0.0, 1.4418177313497121e-12, -1.1151723784331568e-09, 3.082387520501083e-07, -7.416646391758958e-06, 0.2543032252995314, 29.91262485064476;
+		0.0, 2.2621285626505995e-11, -1.7491553223303642e-08, 4.829751093382125e-06, -0.00011623670481313195, 3.9764592662838893, 474.38112547901983;
+		0.0, 2.9475632547691344e-11, -2.2785209147068427e-08, 6.284928357988921e-06, -0.000151295528517215, 5.163471317010768, 624.6748207504686;
+		0.0, 5.039662716090837e-11, -3.894660409987879e-08, 1.0731686736872815e-05, -0.0002584102197586096, 8.797169468495978, 1079.1637374233458;
+		0.0, 7.45522987076773e-12, -5.7597956317250956e-09, 1.585466968742107e-06, -3.818768324471766e-05, 1.2966759521452147, 161.2707977313256;
+		0.0, 0.0, -4.480692809144708e-06, 0.0028297206800046433, -0.08819490384606239, 5328.264699395643, 93194.66168652673;
+		0.0, 3.2956784501829683e-13, -2.5447574003467575e-10, 6.990426692784035e-08, -1.6847787751510318e-06, 0.056895887788241395, 7.2710454507207185;
+		0.0, 0.0, -6.364559011972679e-07, 0.00040186076089275926, -0.012522243194445273, 760.4814138056131, 13914.373396583733;
+		0.0, 1.4339090661166442e-10, -1.1065702723456929e-07, 3.0335473113070585e-05, -0.0007316320786230426, 24.564868365575162, 3223.897463643925;
+		0.0, 2.990649033633559e-11, -2.3072855606250863e-08, 6.318795233194638e-06, -0.00015245368681027793, 5.1033188726968435, 678.5733592612999;
+		0.0, 1.8807418144561153e-10, -1.4505881620932548e-07, 3.96863638460096e-05, -0.0009578839767304759, 31.966221717631118, 4305.700607243645;
+		0.0, 2.1159936551159492e-11, -1.631582601419991e-08, 4.459375344884501e-06, -0.00010767613110921855, 3.582074587048611, 488.67885535554234;
+		0.0, 2.318759845461007e-12, -1.7874383537099918e-09, 4.880538607535785e-07, -1.1789418866290413e-05, 0.3909489909313964, 54.00953989294245;
+		0.0, 7.914431772086745e-11, -6.099252835541499e-08, 1.6637550915649492e-05, -0.00040206683469365086, 13.28975336034691, 1858.877192898135;
+		0.0, 3.8254728110219354e-11, -2.9473027733295117e-08, 8.031901384313979e-06, -0.00019418511487313364, 6.397448274862139, 905.82197039222;
+		0.0, 1.9323239140414525e-10, -1.48834482597521e-07, 4.052128332719211e-05, -0.0009801069968620878, 32.18255385095202, 4611.845381099026;
+		0.0, 1.689264246784653e-10, -1.300788309002272e-07, 3.538162912191948e-05, -0.000856178619714085, 28.01911523441374, 4062.9324614599655;
+		0.0, 4.020836130589908e-11, -3.095368561948722e-08, 8.411648788323453e-06, -0.00020364182847649765, 6.6418631315595205, 974.3512732722284;
+		0.0, 4.6926566710583445e-11, -3.611631135460354e-08, 9.805642337359778e-06, -0.00023750005520264302, 7.719911056927068, 1145.4732198602335;
+		0.0, 1.869506293113512e-11, -1.4384738723118263e-08, 3.901982505810557e-06, -9.455333245375922e-05, 3.0629999056127892, 459.58912515233914;
+		0.0, 7.648184909336513e-12, -5.8833638877598386e-09, 1.5945080948972847e-06, -3.8656584990831374e-05, 1.2479978127939424, 189.31604638217945;
+		0.0, 1.5219117888362084e-11, -1.1704455193161238e-08, 3.1694031541829184e-06, -7.687418157979953e-05, 2.4733935634177757, 379.2400943234139;
+		0.0, 0.0, -4.348778760129746e-05, 0.027403140461743067, -0.8541323698100408, 53399.299776518405, 1269823.9523887057;
+		0.0, 1.1361094101545492e-11, -8.733276401362343e-09, 2.3609015052724985e-06, -5.7318407069977304e-05, 1.8317656068283257, 286.72424970023104;
+		0.0, 0.0, -3.217245264506976e-07, 0.00020267138138783993, -0.0063184391693218, 396.07414583784583, 9666.673995984616;
+		0.0, 5.304705584394632e-10, -4.075896467581768e-07, 0.00011001004472266004, -0.002673370638841646, 84.86789201584509, 13547.592471588572;
+		0.0, 8.496521012946213e-12, -6.526933491522906e-09, 1.7602982392535237e-06, -4.279726660254869e-05, 1.35418900108912, 218.21471692667106;
+		0.0, 7.383819472237701e-11, -5.670978720434367e-08, 1.528313761744042e-05, -0.00037174319436429675, 11.724818949707128, 1906.6685046001512;
+		0.0, 1.0908165712442706e-11, -8.376071253866618e-09, 2.255704359441339e-06, -5.4892203060936646e-05, 1.7258283399165018, 283.14324934980175;
+		0.0, 1.569329670828538e-10, -1.2048065788869578e-07, 3.242324854277326e-05, -0.0007893682110511204, 24.74099601424183, 4093.9089118175525;
+		0.0, 4.865186605138015e-11, -3.73439385011054e-08, 1.0043085214797384e-05, -0.0002446138843975577, 7.6436240805835345, 1275.269956935651;
+		0.0, 1.3723707223552458e-10, -1.0532041792973962e-07, 2.8305977448378232e-05, -0.0006897292792833258, 21.488721945468328, 3613.7811738054306;
+		0.0, 4.2831776782474816e-11, -3.2864786086168306e-08, 8.827259083295411e-06, -0.00021518308494986694, 6.684817429940279, 1132.8004522271638;
+		0.0, 1.3635841889439711e-10, -1.0461006366573949e-07, 2.808078668790418e-05, -0.000684806724136165, 21.214746544325244, 3621.3905426926326;
+		0.0, 6.6210815126067e-10, -5.078675760564054e-07, 0.00013625062445591358, -0.0033240534949470616, 102.699380144151, 17653.777190720517;
+		0.0, 2.1261116613698058e-10, -1.6305757449972606e-07, 4.3721283752156995e-05, -0.0010670554217722449, 32.88222001140648, 5690.091854925507;
+		0.0, 3.095610437524106e-11, -2.3737662475925435e-08, 6.361590686688406e-06, -0.00015531655774325364, 4.774338681628639, 831.4061972545621;
+		0.0, 1.3780590792210663e-10, -1.0565733315922808e-07, 2.8301885718509924e-05, -0.000691223219242413, 21.197495831591645, 3713.451884337235;
+		0.0, 1.8164403153047917e-11, -1.3925044929849865e-08, 3.7283153654889655e-06, -9.108756116967875e-05, 2.787071357565358, 491.00218208791097;
+		0.0, 1.4076513119855047e-10, -1.0789908777373539e-07, 2.8876638576517947e-05, -0.0007057140163269541, 21.547397447887846, 3816.0939086151393;
+		0.0, 2.1646165845498217e-11, -1.6590308307370655e-08, 4.438220024442257e-06, -0.00010849717526929544, 3.3061155851339006, 588.4044931944185;
+		0.0, 9.84278998203766e-10, -7.543034962189067e-07, 0.00020171530657876773, -0.004932503989394514, 150.02344987085672, 26822.154325789368;
+		0.0, 1.0325225483794884e-11, -7.911986775871223e-09, 2.115093926005855e-06, -5.173308953451968e-05, 1.5707705992925425, 282.01023098511865;
+		0.0, 1.4881648176668922e-10, -1.1402467629403294e-07, 3.047245561715423e-05, -0.0007454993230497441, 22.599902097957788, 4073.012069658937;
+		0.0, 5.248650002264151e-13, -4.021249573984071e-10, 1.0743541567561655e-07, -2.6289297226395645e-06, 0.07958247156626969, 14.391999770567727;
+		0.0, 2.5022634828444023e-10, -1.916972082675185e-07, 5.120276156523732e-05, -0.0012531612040553818, 37.886972825419946, 6872.661198330625;
+		0.0, 1.3478883682910596e-10, -1.03254691889293e-07, 2.75735063233103e-05, -0.0006749595087450327, 20.383183776990943, 3707.4367923605273;
+		0.0, 9.941230564157286e-12, -7.615054042426222e-09, 2.0331686657380643e-06, -4.9776149846029525e-05, 1.501741400415227, 273.77733120282784;
+		0.0, 1.570997914031611e-11, -1.2033425706830941e-08, 3.2123405044028363e-06, -7.865411734336575e-05, 2.371067991926065, 433.09189690524437;
+		0.0, 1.294873776971434e-10, -9.918037522579895e-08, 2.6473023342437408e-05, -0.000648253735614436, 19.52927293699301, 3572.6345117210863;
+		0.0, 7.921871758112306e-10, -6.067568185898894e-07, 0.00016193911600940477, -0.003965741753380914, 119.41387292462424, 21870.32880178545;
+		0.0, 3.892037907768297e-12, -2.9809613765130457e-09, 7.955482782050986e-07, -1.9483180365381243e-05, 0.5864766332393297, 107.4930929740863;
+		0.0, 1.4089979244487525e-11, -1.079160290141928e-08, 2.8799373886184245e-06, -7.053203418588726e-05, 2.122801119578791, 389.2238955793074;
+		0.0, 1.2569854660351133e-10, -9.627334147367077e-08, 2.5692350602085562e-05, -0.0006292259846076144, 18.937962553734465, 3472.279217801984;
+		0.0, 3.2211860214050405e-11, -2.4671509303774496e-08, 6.5842772450451665e-06, -0.00016125002399236996, 4.854024825672061, 889.6211732336368;
+		0.0, 7.550634209062265e-11, -5.783241114062598e-08, 1.5435190685493742e-05, -0.00037799137855690283, 11.382323559386267, 2084.4299748265967;
+		0.0, 3.0660273084802214e-12, -2.348419841184901e-09, 6.268426860225623e-07, -1.534956799301397e-05, 0.4624483805447778, 84.58709750348962;
+		0.0, 1.420760597837479e-12, -1.0882693250017627e-09, 2.9051940444507044e-07, -7.113282668911883e-06, 0.21444999102975407, 39.16362079883607;
+		0.0, 2.6534343411909634e-11, -2.0325601887358708e-08, 5.4268990504034835e-06, -0.0001328598062038231, 4.008742831856127, 730.6572830707562;
+		0.0, 8.51229316702734e-12, -6.5208631164727695e-09, 1.7413923804284192e-06, -4.262607034847497e-05, 1.28741201793239, 234.1019280292156;
+		0.0, 9.964818243508785e-11, -7.634052699660532e-08, 2.0391233132382362e-05, -0.000499055576282247, 15.089915952209862, 2736.4682502288942;
+		0.0, 4.9476289096318995e-11, -3.790652347463297e-08, 1.012774009144384e-05, -0.0002478191796423698, 7.5030049842131525, 1356.4079485864374;
+		0.0, 3.170318446194336e-11, -2.429151124638943e-08, 6.49197303107407e-06, -0.0001588204399497839, 4.815422519066765, 867.5165476026061;
+		0.0, 9.127382486493123e-12, -6.994174332509894e-09, 1.8698013555102923e-06, -4.5732308435908936e-05, 1.38880951242472, 249.23688288530604;
+		0.0, 6.153698486243778e-11, -4.715944201030698e-08, 1.2611814690251474e-05, -0.00030838559702440766, 9.381388730736704, 1676.4975702267463;
+		0.0, 3.2627853539649524e-12, -2.5007309656559277e-09, 6.690198616463886e-07, -1.635444055510535e-05, 0.4984518722579917, 88.6676766289731;
+		0.0, 3.677229377426301e-12, -2.8186994483466753e-09, 7.543912368204806e-07, -1.8435925890864245e-05, 0.5630214922483002, 99.65911424525481;
+		0.0, 3.939772331686615e-10, -3.020315528235521e-07, 8.087022157997858e-05, -0.001975697328371326, 60.46569725055768, 10646.240666790618;
+		0.0, 3.012893687753501e-11, -2.3100518121701073e-08, 6.1881247384989615e-06, -0.000151128572580757, 4.635729296773475, 811.6095743608139;
+		0.0, 1.1921619664828777e-11, -9.141834915374874e-09, 2.4501012519713952e-06, -5.981634675143475e-05, 1.8391869890225423, 320.07084920326923;
+		0.0, 3.5364477627252735e-14, -2.4008171567846117e-11, 4.990861420957533e-09, -8.679238578991742e-08, 0.0, 1;
+		0.0, 1.595848096980474e-10, -1.2241094981246333e-07, 3.2842306702463057e-05, -0.0008012085747245949, 24.76085959806708, 4253.291866733399;
+		0.0, 4.343887055207821e-12, -3.332556407986887e-09, 8.94622552557675e-07, -2.1816263367267284e-05, 0.6760438297391563, 115.31541330991546;
+		0.0, 8.065071988465604e-12, -6.1884345773046275e-09, 1.6622778704371375e-06, -4.051978323890453e-05, 1.259150068481024, 213.20702125453263;
+		0.0, 0.0, -2.414139688940684e-06, 0.0015193727976104696, -0.04740850615228464, 2993.7584450867416, 78769.61433975762;
+		0.0, 8.718697562597489e-10, -6.692382052470983e-07, 0.0001799939118547427, -0.004383812896256142, 137.0271755140367, 22842.37146842353;
+		0.0, 2.9717711822131425e-10, -2.2815359552259999e-07, 6.140414201569048e-05, -0.0014948603155144418, 46.868153737765894, 7748.485037900853;
+		0.0, 1.7087648778505255e-11, -1.3121396116985682e-08, 3.5338985971213426e-06, -8.599278384936715e-05, 2.704528798995259, 443.3071556827606;
+		0.0, 0.0, -1.696697971714059e-08, 1.0684059361369578e-05, -0.0003331990944716428, 20.95825842546105, 529.3359702005383;
+		0.0, 3.577755378492085e-11, -2.7484532767540123e-08, 7.413096974575945e-06, -0.00018022221711876536, 5.704520704283723, 918.3378021121391;
+		0.0, 2.1426997242648278e-11, -1.646391482729882e-08, 4.44403570601346e-06, -0.00010798987230038953, 3.429389676923733, 546.8920242805052;
+		0.0, 5.070348154614738e-11, -3.896782730869993e-08, 1.0526714569010158e-05, -0.00025567806732017576, 8.14643220190818, 1286.5766833062416;
+		0.0, 2.2795679276008633e-11, -1.752346775726628e-08, 4.737593781370002e-06, -0.00011501447137746157, 3.6768920558387053, 574.9330404758101;
+		0.0, 5.354461631465381e-11, -4.117037089028231e-08, 1.1139921749164191e-05, -0.0002703150487397192, 8.670896661181917, 1342.0127665235943;
+		0.0, 1.2342515803698928e-10, -9.492407607096959e-08, 2.5706414880969993e-05, -0.0006234806369945482, 20.067351649910172, 3073.476898682491;
+		0.0, 1.9229408777609447e-09, -1.4792598411365913e-06, 0.00040094533396958424, -0.009719869763782831, 313.9103025782565, 47564.94802068285;
+		0.0, 5.556063230573058e-12, -4.27517193503521e-09, 1.1597844663875634e-06, -2.8102658317821588e-05, 0.9106934056800872, 136.48740565155995;
+		0.0, 7.609205443373094e-11, -5.8564638317321424e-08, 1.5901906954611438e-05, -0.0003851373754498433, 12.523294416087735, 1856.0026098137525;
+		0.0, 1.097381381003409e-10, -8.448221994862656e-08, 2.2960210062221023e-05, -0.0005558284175557864, 18.134994942461123, 2657.1768295044176;
+		0.0, 9.217695124282098e-11, -7.098119434414106e-08, 1.93088743432875e-05, -0.0004672215423272135, 15.29557477211115, 2215.229007605676
+	];
+
+end DeSchipjesOneZoneOpt;

@@ -1,0 +1,47 @@
+optimization TestTank(objectiveIntegrand=objInv, startTime=0, finalTime=startTime+1, timeStep=60, intervalLengths="240*1", tolerance=1e-1, truncationDelta=1e-2)
+	extends IOCSmod.Optimization.TestTank(tank.VTan=TankSize);
+
+	// Optimisation variables
+	// Already included in the models
+
+
+	
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+
+	output Real Resistance = tank.RTan;
+	output Real tank_U = tank.vol.U;	
+	output Real tank_Temp = tank.vol.T - 273.15;
+	output Real tank_volume = tank.vol.V;
+	output Real tank_m = tank.vol.m;
+	output Real Qhea = hea.Q_flow;	
+	output Real tank_hOut_internal = tank.vol.hOut_internal;
+	output Real tank_hOut = tank.vol.dynBal.hOut;
+	output Real tank_T_medium = tank.vol.dynBal.medium.T -273.15;
+	output Real tank_u_medium = tank.vol.dynBal.medium.u;
+	output Real tank_d_medium = tank.vol.dynBal.medium.d;
+	output Real tank_h_medium = tank.vol.dynBal.medium.h;
+	output Real tank_p_medium = tank.vol.dynBal.medium.p;
+	output Real check_Tstart_dynBal = tank.vol.dynBal.T_start-273.15;
+
+	/// Investment cost ///
+
+	parameter input Real TankSize(free=true, min=3, max=10, start=10);
+	//parameter Real TankSize=10;
+	parameter Real Tank_inv = 500; // euro per m2_flow
+	output Real Tank_inv_cost = Tank_inv * TankSize;
+	
+	parameter input Real PVSize(free=true, min=1, max=500);
+	parameter Real PV_inv = 210; // euro per m2_flow
+	parameter Real PV_inv_cost = PV_inv * PVSize;
+
+	output Real lifetime=20;
+	output Real Total_investment = Tank_inv_cost;
+	output Real inv_cost_per_second = Total_investment/lifetime/(8760*3600); // euro per second
+	output Real inv_scaler = 36000000;
+	output Real objInv = inv_scaler*inv_cost_per_second;
+
+
+end TestTank;

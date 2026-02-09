@@ -1,0 +1,87 @@
+optimization VerificationStc(objectiveIntegrand=ObjInt, startTime=15638400, finalTime=startTime+1, timeStep=3600, intervalLengths="168*1", tolerance=1e-4, truncationDelta=1e-2)
+	extends IOCSmod.ComponentModels.Verification.VerificationStc(addDummyEquation=false,
+											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//BEL_VLG_Uccle.064470_TMYx.2007-2021.mos"),
+											stc.totalArea=200,
+                                            stc.panels.vol.dynBal.medium.preferredMediumStates=true);
+
+	//////////////////////////////////
+	// Energy Hub Output variables	//
+	//////////////////////////////////
+
+	// STC panels
+
+	output Real A_STC = stc.panels.totalArea;
+	output Real QStc = stc.panels.QTot;
+
+	output Real QStcHex = stc.hex.Q2_flow;
+
+	output Real TStcIn = stc.senTPanelsIn.T - 273.15; //°C
+	output Real TStcOut = stc.senTPanelsOut.T - 273.15; //°C
+	output Real TStcRegIn = stc.senTRegIn.T - 273.15; //°C
+	output Real TStcRegOut = stc.senTRegOut.T - 273.15; //°C
+	output Real TStcHeaIn = stc.senTHeaIn.T - 273.15; //°C
+	output Real TStcHeaOut = stc.senTHeaOut.T - 273.15; //°C
+	output Real TStcHexIn = stc.senTHexIn.T -273.15; //°C
+	output Real TStcHexOut = stc.senTHexOut.T -273.15; //°C
+
+	output Real mFlowStc = stc.pumPanels.m_flow;
+	output Real mFlowStcHex = stc.hex.m2_flow;
+	output Real mFlowStcHeaIn = stc.valSupHea.m_flow;
+	output Real mFlowStcHeaOut = stc.valRetHea.m_flow;
+	output Real mFlowStcRegIn = stc.valSupReg.m_flow;
+	output Real mFlowStcRegOut = stc.valRetReg.m_flow;
+
+	output Real nPanels_internal_stc = stc.panels.nPanels_internal;
+	output Real ATot_internal_stc = stc.panels.ATot_internal;
+	
+	output Real Qgai1 = stc.panels.QGai[1].Q_flow;
+	output Real Qgai2 = stc.panels.QGai[2].Q_flow;
+	output Real Qgai3 = stc.panels.QGai[3].Q_flow;
+
+	output Real QLos1 = stc.panels.QLos[1].Q_flow;
+	output Real QLos2 = stc.panels.QLos[2].Q_flow;
+	output Real QLos3 = stc.panels.QLos[3].Q_flow;
+	
+	
+	///////////////////////////////////
+	////////  INVESTMENT COSTS ////////
+	///////////////////////////////////
+	
+	IOCSmod.ComponentModels.BaseClasses.Investment inv(inv_cost=400)
+		annotation (Placement(transformation(extent={{80,110},{100,130}})));
+
+	// General values for cost calculations:
+	output Real interest_rate = 0.05;
+	parameter Real r = interest_rate;
+	parameter Integer observation_time = 40; // Years
+
+
+	// Values for scaling investment cost:
+	output Real lifetime=20;
+	output Real cost_to_per_second_scaler = 1/lifetime/(8760*3600);
+	output Real inv_scaler = 36000000;
+
+	parameter input Real StcSize(free=true, min=25, max=250, start=25, nominal=0.035);
+	//parameter Real Stc_inv(fixed=false, start=0); // euro per m2
+	output Real Stc_rel_inv_cost = inv.annInvCost "Relative annual investement cost of STC";
+	output Real Stc_inv_cost_ann = Stc_rel_inv_cost * 200 "Annualized investment cost of STC";
+
+	output Real Total_annualized_investment = Stc_inv_cost_ann;
+	output Real inv_cost_per_second = Total_annualized_investment/(8760*3600); // euro per second
+
+
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+
+	/// Investment ///
+	output Real ObjInv = inv_scaler*inv_cost_per_second;
+
+
+	/// Overall objective ///
+	output Real ObjInt = - QStc;
+
+
+
+end VerificationStc;
