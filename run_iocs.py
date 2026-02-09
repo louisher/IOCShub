@@ -1,7 +1,71 @@
+"""
+IOCS (Integrated Optimal Control and Sizing) Runner Script
+This script performs iterative optimization of component sizes and operational control
+for energy systems using TACO and Gurobi.
+Author: Louis Hermans
+Contact: Please contact Louis Hermans if you have any questions about this script.
+Description:
+    The script performs integrated optimal component sizing by iterating between:
+    1. Operational optimization (OCP - Optimal Control Problem) using TACO
+    2. Size optimization of system components using Gurobi
+    The process continues until convergence (relative difference < 1%) or maximum
+    iterations (4) are reached.
+Main Features:
+    - Reads base model mop file
+    - Creates iteration-specific directories
+    - Manages TACO server connection for operational optimization
+    - Performs size optimization for energy system components
+    - Calculates CAPEX, OPEX, and maintenance costs
+    - Tracks computational performance metrics
+    - Exports results to Excel overview file
+    - Supports custom run identifiers for parallel execution
+Command Line Arguments:
+    base_model_name (str): Name of the base MOP model file (required, no flag)
+    --run_identifier (str): Optional identifier to distinguish different runs (default: "")
+Key Variables:
+    - devices_info: Dictionary containing device specifications, sizes, and costs
+    - operational_variables: Dictionary of operational metrics (electricity offtake/injection, heating/cooling)
+    - computational_times: Dictionary tracking execution times for each optimization phase
+    - TACO_server: Configuration dictionary for remote TACO server connection
+Required Files:
+    - {base_model_name}.mop: Base model definition file
+    - IterationOverviewTemplate.xlsx: Excel template for results
+    - input_data/: Directory containing:
+        * weather_params.json: Weather data configuration
+        * economic_params.json: Economic parameters (interest rate, prices, etc.)
+        * devices.json: Device specifications and feasibility
+Output:
+    Creates a model directory containing:
+    - IterationOverview.xlsx: Consolidated results across iterations
+    - Iteration{n}/ subdirectories with iteration-specific files
+    - devices_info.json: Device configurations for each iteration
+    - MOP files and optimization results
+Notes:
+    - DO NOT MODIFY CODE BELOW SETUP SECTION UNLESS YOU KNOW WHAT YOU ARE DOING
+    - Requires SSH access to TACO server with proper credentials
+    - Uses NPV (Net Present Value) calculations for economic analysis
+"""
+
 import os
 import sys
+from pathlib import Path
+import json
 
-path_iocs = "/home/u0148284/WorkDir/iocs"  # Specify the path to the iocs folder to load it to system path
+# Load runtime configuration from external file (make this file user-specific)
+# config files live in ./config_input_data next to run_iocs.py
+config_dir = Path(__file__).parent / "config_input_data"
+config_path = config_dir / "cosine_config.json"
+if not config_path.exists():
+    raise FileNotFoundError(
+        f"Missing configuration file: {config_path}. Create it with at least the key 'path_iocs'."
+    )
+with config_path.open("r", encoding="utf-8") as _f:
+    _cfg = json.load(_f)
+
+path_iocs = _cfg.get("path_iocs")
+if not path_iocs:
+    raise KeyError(f"'path_iocs' not defined in {config_path}")
+path_iocs = str(Path(path_iocs).expanduser())
 if path_iocs not in sys.path:
     sys.path.append(path_iocs)
 import shutil
@@ -11,7 +75,6 @@ import optim_model
 import TACO_functions as tf
 from matplotlib import pyplot as plt
 from time import perf_counter
-import json
 
 import argparse
 from openpyxl import load_workbook
@@ -28,6 +91,19 @@ base_model_name = args.base_model_name
 run_identifier = args.run_identifier
 model_name = base_model_name + run_identifier
 
+### Load TACO server configuration
+path_taco_config = config_dir / "taco_server.json"  # Load from config_input_data
+TACO_server = hf.load_json_file_as_dict(path_taco_config)
+# Format the path with user and model name
+TACO_server["path_ocp_on_server"] = TACO_server["path_ocp_on_server"].format(
+    user=TACO_server["user"],
+    model_name=model_name
+)
+
+
+########################################################################################################
+# DO NOT CHANGE ANYTHING IN THE CODE BELOW THIS POINT UNLESS YOU KNOW WHAT YOU ARE DOING !!!!!!!
+########################################################################################################
 
 print(
     "############################################################################################################"
@@ -36,16 +112,6 @@ print(f"Running IOCS for {model_name} using model {base_model_name}")
 print(
     "############################################################################################################"
 )
-
-
-TACO_server = {
-    "user": "louis",
-    "hostname": "mathadon.synology.me",
-    "port": 223,
-    "private_ssh_key_path": "/home/u0148284/.ssh/id_rsa",
-    "path_ocp_on_server": f"/homenvme/louis/SizeOpt/{model_name}",
-    "taco_command": "taco",
-}
 
 # Sizing variables, Here the intial values as the names in the MOP file and the excel row should be filled in
 # If an X is placed in the excel_row, it means that the variable is not written in excel, but only in the MOP file.
