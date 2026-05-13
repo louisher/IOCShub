@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IOCS — Parameter Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1e2530;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --accent3: #f78166;
+    --accent4: #d2a8ff;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --yellow: #e3b341;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    min-height: 100vh;
+  }
+  /* Header */
+  header {
+    padding: 24px 40px 0;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+  }
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  header span {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  /* Tab bar */
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 40px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--muted);
+    padding: 14px 24px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  /* Main layout */
+  main { padding: 32px 40px; max-width: 1200px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  /* Section header */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .download-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 8px 20px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .download-btn:hover { opacity: 0.85; }
+  .download-btn:active { transform: scale(0.97); }
+  /* Param cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--accent4);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-weight: 400;
+  }
+  .params-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .param-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .param-label {
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Syne', sans-serif;
+  }
+  .param-varname {
+    color: var(--muted);
+    font-size: 9px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.5px;
+    margin-top: -2px;
+  }
+  .param-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    padding: 7px 10px;
+    width: 100%;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .param-input:focus { border-color: var(--accent); }
+  .param-input[type="checkbox"] {
+    width: auto;
+    accent-color: var(--accent);
+    transform: scale(1.2);
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  select.param-input {
+    cursor: pointer;
+  }
+  /* Feasibility toggle */
+  .feasible-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .toggle-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .toggle-wrap { position: relative; width: 36px; height: 20px; }
+  .toggle-wrap input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; transition: background 0.2s;
+  }
+  .slider::before {
+    content: ''; position: absolute; height: 12px; width: 12px;
+    left: 3px; top: 3px; background: var(--muted);
+    border-radius: 50%; transition: transform 0.2s, background 0.2s;
+  }
+  .toggle-wrap input:checked + .slider { background: var(--accent2); border-color: var(--accent2); }
+  .toggle-wrap input:checked + .slider::before { transform: translateX(16px); background: white; }
+  .feasible-on { color: var(--accent2); font-size: 11px; font-weight: 700; }
+  .feasible-off { color: var(--accent3); font-size: 11px; font-weight: 700; }
+  /* Economic panel simple */
+  .simple-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .big-param {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .big-param-label { color: var(--text); font-size: 12px; font-weight: 600; font-family: 'Syne', sans-serif; }
+  .big-param-varname { color: var(--muted); font-size: 9px; font-family: 'Space Mono', monospace; margin-top: -4px; }
+  .big-param-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--accent);
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    padding: 8px 12px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .big-param-input:focus { border-color: var(--accent); }
+  .big-param-unit { color: var(--muted); font-size: 11px; }
+  /* Pill tags for device cards */
+  .pill-active { background: #1a3a1a; border-color: var(--accent2); }
+  .pill-inactive { background: #3a1a1a; border-color: var(--accent3); }
+  /* Weather */
+  .weather-map-hint {
+    font-size: 11px; color: var(--muted); margin-top: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  /* Borefield textarea */
+  .param-input.mono-area {
+    font-size: 10px;
+    resize: vertical;
+    min-height: 48px;
+    line-height: 1.5;
+  }
+  /* Success toast */
+  #toast {
+    position: fixed; bottom: 30px; right: 30px;
+    background: var(--accent2); color: #000;
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 13px; padding: 12px 24px;
+    border-radius: 6px; opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 100;
+  }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>IOCS</h1>
+  <span>Parameter Dashboard</span>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('devices')">⚙ Devices</button>
+  <button class="tab-btn" onclick="showTab('borefield')">🌡 Borefield</button>
+  <button class="tab-btn" onclick="showTab('economic')">💶 Economic</button>
+  <button class="tab-btn" onclick="showTab('weather')">🌦 Weather</button>
+</div>
+
+<main>
+  <!-- DEVICES TAB -->
+  <div class="tab-panel active" id="tab-devices">
+    <div class="section-header">
+      <div class="section-title">Device Parameters</div>
+      <button class="download-btn" onclick="downloadDevices()">↓ Download devices.json</button>
+    </div>
+    <div id="devices-container"></div>
+  </div>
+
+  <!-- BOREFIELD TAB -->
+  <div class="tab-panel" id="tab-borefield">
+    <div class="section-header">
+      <div class="section-title">Borefield Parameters</div>
+      <button class="download-btn" onclick="downloadJSON(getBorData(), 'bor_params.json')">↓ Download bor_params.json</button>
+    </div>
+    <div id="borefield-container"></div>
+  </div>
+
+  <!-- ECONOMIC TAB -->
+  <div class="tab-panel" id="tab-economic">
+    <div class="section-header">
+      <div class="section-title">Economic Parameters</div>
+      <button class="download-btn" onclick="downloadJSON(getEcoData(), 'economic_params.json')">↓ Download economic_params.json</button>
+    </div>
+    <div id="economic-container"></div>
+  </div>
+
+  <!-- WEATHER TAB -->
+  <div class="tab-panel" id="tab-weather">
+    <div class="section-header">
+      <div class="section-title">Weather Parameters</div>
+      <button class="download-btn" onclick="downloadJSON(getWeatherData(), 'weather_params.json')">↓ Download weather_params.json</button>
+    </div>
+    <div id="weather-container"></div>
+  </div>
+</main>
+
+<div id="toast">✓ File downloaded!</div>
+
+<script>
+// ─── TAB LOGIC ───────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ─── DATA ────────────────────────────────────────────────
+const devicesData = {
+  "GSHP": {"feasible":true,"size_parameters":{"Size":{"value":44.0,"name_in_mop":"enerHub.Size_GsHp=","excel_row":4},"Size_nominal":{"value":44.0,"name_in_mop":"","excel_row":"X"}},"inv_cost":250,"life_time":20,"cost_om":0.03,"min_cap":0,"max_cap":10000,"COP":"PLACEHOLDER"},
+  "Borefield": {"feasible":true,"size_parameters":{"Size":{"value":1250,"name_in_mop":"XXXXX","excel_row":5},"depth":{"value":125,"name_in_mop":"enerHub.borFieDat.conDat.hBor=","excel_row":6},"nBor":{"value":10,"name_in_mop":"enerHub.borFieDat.conDat.nBor=","excel_row":7},"TBorMin":{"value":273.15,"name_in_mop":"enerHub.TBorMin=","excel_row":"X"},"rCel":{"value":"{1.0, 2.0, 4.0}","name_in_mop":"enerHub.groTemResDat.rCel.rCel=","excel_row":"X"},"kappa":{"value":"{5.8172630391817344e-05}","name_in_mop":"enerHub.groTemResDat.kappa.kappa=","excel_row":"X"}},"inv_cost":40,"life_time":40,"cost_om":0.01,"min_depth":25,"max_depth":300,"fixed_T_model":false,"regeneration_cap":10000,"intialize_length":true},
+  "ASHP": {"feasible":true,"size_parameters":{"Size":{"value":28.0,"name_in_mop":"enerHub.Size_AsHp=","excel_row":3},"Size_nominal":{"value":28.0,"name_in_mop":"","excel_row":"X"}},"inv_cost":900,"life_time":20,"cost_om":0.03,"min_cap":0,"max_cap":10000,"COP":"PLACEHOLDER"},
+  "ASCHI": {"feasible":true,"size_parameters":{"Size":{"value":0.1,"name_in_mop":"enerHub.Size_AsChi=","excel_row":8},"Size_nominal":{"value":0.1,"name_in_mop":"","excel_row":"X"}},"inv_cost":900,"life_time":20,"cost_om":0.03,"min_cap":0,"max_cap":10000,"EER":"PLACEHOLDER"},
+  "PV": {"feasible":true,"size_parameters":{"Size":{"value":0.01,"name_in_mop":"enerHub.Size_PV=","excel_row":10}},"life_time":20,"inv_cost":200,"cost_om":0.02,"max_area":100,"min_area":0,"norm_power":"PLACEHOLDER"},
+  "STC": {"feasible":true,"size_parameters":{"Size":{"value":17.6,"name_in_mop":"enerHub.Size_STC=","excel_row":11},"Size_nominal":{"value":17.6,"name_in_mop":"","excel_row":"X"}},"inv_cost":400,"life_time":20,"cost_om":0.02,"max_area":100,"min_area":0,"specific_heat":"PLACEHOLDER"},
+  "PVT": {"feasible":true,"size_parameters":{"Size":{"value":0.01,"name_in_mop":"enerHub.Size_PVT=","excel_row":12},"Size_nominal":{"value":0.01,"name_in_mop":"","excel_row":"X"}},"inv_cost":500,"life_time":20,"cost_om":0.02,"max_area":100,"min_area":0,"norm_power":"PLACEHOLDER","specific_heat":"PLACEHOLDER"},
+  "TES": {"feasible":true,"size_parameters":{"Size":{"value":1.9,"name_in_mop":"enerHub.Size_Tank=","excel_row":9}},"inv_cost":1000,"sto_loss":0.01,"life_time":20,"cost_om":0.01,"min_vol":0,"max_vol":3,"delta_T":25,"soc_init":0.5},
+  "BAT": {"feasible":true,"size_parameters":{"Size":{"value":0.1,"name_in_mop":"enerHub.Size_Bat=","excel_row":13},"hasBat":{"value":"false","name_in_mop":"enerHub.hasBat=","excel_row":"X"},"PCha_max":{"value":0.01,"name_in_mop":"enerHub.P_max_bat_kW=","excel_row":"X"}},"inv_cost":500,"life_time":10,"cost_om":0.01,"min_cap":0,"max_cap":10000,"sto_loss":0,"soc_init":0.5},
+  "CTES": {"feasible":false,"size_parameters":{"Size":{"value":1.62,"name_in_mop":"enerHub.Size_CTank=","excel_row":"X"}},"inv_cost":500,"sto_loss":0.005,"life_time":20,"cost_om":0.01,"min_vol":0,"max_vol":100,"delta_T":10,"soc_init":0.5},
+  "BOI": {"feasible":false,"size_parameters":{"Size":{"value":0.01,"name_in_mop":"enerHub.Size_Boi=","excel_row":14}},"inv_cost":150,"eta_th":0.95,"life_time":20,"cost_om":0.01,"min_cap":0,"max_cap":10000},
+  "EB": {"feasible":false,"size_parameters":{"Size":{"value":0.01,"name_in_mop":"enerHub.Size_EBoi=","excel_row":"X"}},"inv_cost":80,"eta_th":0.98,"life_time":20,"cost_om":0.01,"min_cap":0,"max_cap":10000}
+};
+
+const borData = {
+  "config_from_file":false,"conf_file_path":"C:/Workdir/Develop/HybridSystemIntegrationSEEDS/HySIMo/Resources/Borefields/Borefield_configuration_9n.txt",
+  "N_1":2,"N_2":2,"B":6,"D":0.8,"r_b":0.066,"T_cte":10,"Tf_min":0,"Tf_max":17,
+  "cp_ground":1400,"rho_ground":900,"k_ground":1.9,"peak_duration_ext":1,"peak_duration_inj":1
+};
+
+const ecoData = {"INTEREST_RATE":0.05,"OBSERVATION_TIME":40,"ELEC_PRICE_OFFTAKE":300,"ELEC_PRICE_INJECTION":35};
+
+const weatherData = {"latitude":50.8,"longitude":4.4,"timezone":1.0,"altitude":100,"weather_file_name":"Brussels-City_XMY2021-2040_ssp245_MAR-BCC_SWDbased.mos"};
+
+// Skip keys that are internal/complex
+const SKIP_DEV_KEYS = new Set(['name_in_mop','excel_row','rCel','kappa']);
+const PLACEHOLDER_FIELDS = new Set(['COP','EER','norm_power','specific_heat']);
+
+// ─── HUMAN-READABLE LABELS ───────────────────────────────
+const LABELS = {
+  // Device top-level keys
+  inv_cost:         'Investment Cost (€/kW or €/m)',
+  life_time:        'Lifetime',
+  cost_om:          'O&M Cost (fraction of CAPEX/yr)',
+  min_cap:          'Minimum Capacity',
+  max_cap:          'Maximum Capacity',
+  min_vol:          'Minimum Volume',
+  max_vol:          'Maximum Volume',
+  min_area:         'Minimum Area',
+  max_area:         'Maximum Area',
+  min_depth:        'Minimum Borehole Depth',
+  max_depth:        'Maximum Borehole Depth',
+  delta_T:          'Temperature Difference',
+  soc_init:         'Initial State of Charge',
+  sto_loss:         'Storage Loss Rate',
+  eta_th:           'Thermal Efficiency',
+  regeneration_cap: 'Regeneration Capacity',
+  fixed_T_model:    'Fixed Temperature Model',
+  intialize_length: 'Initialize Length',
+  // Size sub-keys
+  Size:             'Initial Size',
+  Size_nominal:     'Nominal Size',
+  depth:            'Borehole Depth',
+  nBor:             'Number of Boreholes',
+  TBorMin:          'Min. Borehole Temperature (K)',
+  hasBat:           'Has Battery',
+  PCha_max:         'Max. Charging Power',
+  // Borefield
+  config_from_file: 'Load Config from File',
+  conf_file_path:   'Config File Path',
+  N_1:              'Grid Rows (N₁)',
+  N_2:              'Grid Columns (N₂)',
+  B:                'Borehole Spacing (m)',
+  D:                'Buried Pipe Depth (m)',
+  r_b:              'Borehole Radius (m)',
+  T_cte:            'Undisturbed Ground Temperature (°C)',
+  Tf_min:           'Min. Fluid Temperature (°C)',
+  Tf_max:           'Max. Fluid Temperature (°C)',
+  cp_ground:        'Ground Specific Heat (J/kg·K)',
+  rho_ground:       'Ground Density (kg/m³)',
+  k_ground:         'Ground Thermal Conductivity (W/m·K)',
+  peak_duration_ext: 'Peak Duration — Extraction (h)',
+  peak_duration_inj: 'Peak Duration — Injection (h)',
+  // Economic
+  INTEREST_RATE:      'Interest Rate',
+  OBSERVATION_TIME:   'Observation Period',
+  ELEC_PRICE_OFFTAKE: 'Electricity Offtake Price',
+  ELEC_PRICE_INJECTION:'Electricity Injection Price',
+  // Weather
+  latitude:           'Latitude',
+  longitude:          'Longitude',
+  timezone:           'Timezone (UTC offset)',
+  altitude:           'Altitude (m)',
+  weather_file_name:  'Weather File Name',
+};
+
+function labelHTML(key) {
+  const human = LABELS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  return `<span class="param-label">${human}</span><span class="param-varname">${key}</span>`;
+}
+
+// ─── DEVICES RENDER ──────────────────────────────────────
+const deviceColors = {
+  GSHP:'#58a6ff', ASHP:'#79c0ff', ASCHI:'#56d364', PV:'#e3b341', STC:'#f78166',
+  PVT:'#f0883e', TES:'#d2a8ff', BAT:'#3fb950', Borefield:'#58a6ff',
+  CTES:'#8b949e', BOI:'#8b949e', EB:'#8b949e'
+};
+
+const deviceFullNames = {
+  GSHP:      'Ground-Source Heat Pump',
+  Borefield: 'Borefield',
+  ASHP:      'Air-Source Heat Pump',
+  ASCHI:     'Air-Source Chiller',
+  PV:        'Photovoltaic Panels',
+  STC:       'Solar Thermal Collector',
+  PVT:       'Photovoltaic-Thermal Panels',
+  TES:       'Thermal Energy Storage',
+  BAT:       'Battery Storage',
+  CTES:      'Cold Thermal Energy Storage',
+  BOI:       'Gas Boiler',
+  EB:        'Electric Boiler',
+};
+
+function buildDevicesUI() {
+  const container = document.getElementById('devices-container');
+  for (const [devName, dev] of Object.entries(devicesData)) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.device = devName;
+    const color = deviceColors[devName] || '#8b949e';
+    const fullName = deviceFullNames[devName] || devName;
+
+    let html = `<div class="card-title" style="color:${color}">
+      <span>${fullName} <span style="font-weight:400;font-size:12px;opacity:0.65">(${devName})</span></span>
+      <span class="badge">${dev.feasible ? 'FEASIBLE' : 'DISABLED'}</span>
+    </div>`;
+
+    // Feasible toggle
+    html += `<div class="feasible-toggle">
+      <span class="toggle-label">Feasible</span>
+      <label class="toggle-wrap">
+        <input type="checkbox" ${dev.feasible ? 'checked' : ''} onchange="toggleFeasible('${devName}', this)">
+        <span class="slider"></span>
+      </label>
+      <span id="feas-label-${devName}" class="${dev.feasible ? 'feasible-on' : 'feasible-off'}">${dev.feasible ? 'ON' : 'OFF'}</span>
+    </div>`;
+
+    // Params grid
+    html += '<div class="params-grid">';
+
+    // Size parameters - show initial values
+    if (dev.size_parameters) {
+      for (const [spKey, sp] of Object.entries(dev.size_parameters)) {
+        if (SKIP_DEV_KEYS.has(spKey)) continue;
+        // Hide Size for Borefield — calculated automatically
+        if (devName === 'Borefield' && spKey === 'Size') continue;
+        if (sp.value === 'true' || sp.value === 'false') {
+          html += `<div class="param-row">
+            ${labelHTML(spKey)}
+            <select class="param-input" data-dev="${devName}" data-key="size_parameters.${spKey}.value">
+              <option value="true" ${sp.value==='true'?'selected':''}>true</option>
+              <option value="false" ${sp.value==='false'?'selected':''}>false</option>
+            </select></div>`;
+        } else {
+          html += `<div class="param-row">${labelHTML(spKey)}
+            <input class="param-input" type="number" step="any" value="${sp.value}"
+              data-dev="${devName}" data-key="size_parameters.${spKey}.value"></div>`;
+        }
+      }
+    }
+
+    // Top-level numeric params
+    const numericKeys = ['inv_cost','life_time','cost_om','min_cap','max_cap','min_vol','max_vol',
+      'delta_T','soc_init','sto_loss','eta_th','min_depth','max_depth','regeneration_cap','min_area','max_area'];
+    const boolKeys = ['fixed_T_model','intialize_length'];
+
+    for (const k of numericKeys) {
+      if (k in dev) {
+        html += `<div class="param-row">${labelHTML(k)}
+          <input class="param-input" type="number" step="any" value="${dev[k]}"
+            data-dev="${devName}" data-key="${k}"></div>`;
+      }
+    }
+    for (const k of boolKeys) {
+      if (k in dev) {
+        html += `<div class="param-row">${labelHTML(k)}
+          <select class="param-input" data-dev="${devName}" data-key="${k}">
+            <option value="true" ${dev[k]===true?'selected':''}>true</option>
+            <option value="false" ${dev[k]===false?'selected':''}>false</option>
+          </select></div>`;
+      }
+    }
+
+    html += '</div>';
+    card.innerHTML = html;
+    container.appendChild(card);
+  }
+
+  // Live update on input changes
+  container.addEventListener('input', e => {
+    const el = e.target;
+    const dev = el.dataset.dev;
+    const key = el.dataset.key;
+    if (!dev || !key) return;
+    const parts = key.split('.');
+    let obj = devicesData[dev];
+    for (let i = 0; i < parts.length - 1; i++) obj = obj[parts[i]];
+    const last = parts[parts.length - 1];
+    const val = el.type === 'number' ? parseFloat(el.value) : el.value;
+    obj[last] = isNaN(val) && el.type === 'number' ? el.value : val;
+  });
+}
+
+function toggleFeasible(devName, checkbox) {
+  devicesData[devName].feasible = checkbox.checked;
+  const label = document.getElementById('feas-label-' + devName);
+  const badge = document.querySelector(`[data-device="${devName}"] .badge`);
+  label.textContent = checkbox.checked ? 'ON' : 'OFF';
+  label.className = checkbox.checked ? 'feasible-on' : 'feasible-off';
+  if (badge) badge.textContent = checkbox.checked ? 'FEASIBLE' : 'DISABLED';
+}
+
+function downloadDevices() {
+  // Auto-calculate Borefield Size = depth × nBor
+  const bf = devicesData['Borefield'];
+  if (bf && bf.size_parameters) {
+    const depth = bf.size_parameters.depth ? bf.size_parameters.depth.value : 0;
+    const nBor  = bf.size_parameters.nBor  ? bf.size_parameters.nBor.value  : 0;
+    bf.size_parameters.Size.value = depth * nBor;
+  }
+  downloadJSON(devicesData, 'devices.json');
+}
+
+// ─── BOREFIELD RENDER ────────────────────────────────────
+function buildBorUI() {
+  const container = document.getElementById('borefield-container');
+  const card = document.createElement('div');
+  card.className = 'card';
+  let html = '<div class="params-grid">';
+
+  for (const [k, v] of Object.entries(borData)) {
+    if (typeof v === 'boolean') {
+      html += `<div class="param-row">${labelHTML(k)}
+        <select class="param-input" id="bor-${k}">
+          <option value="true" ${v===true?'selected':''}>true</option>
+          <option value="false" ${v===false?'selected':''}>false</option>
+        </select></div>`;
+    } else if (typeof v === 'string') {
+      html += `<div class="param-row" style="grid-column: span 2">${labelHTML(k)}
+        <input class="param-input" type="text" id="bor-${k}" value="${v}"></div>`;
+    } else {
+      html += `<div class="param-row">${labelHTML(k)}
+        <input class="param-input" type="number" step="any" id="bor-${k}" value="${v}"></div>`;
+    }
+  }
+
+  html += '</div>';
+  card.innerHTML = html;
+  container.appendChild(card);
+}
+
+function getBorData() {
+  const out = {};
+  for (const [k, v] of Object.entries(borData)) {
+    const el = document.getElementById('bor-' + k);
+    if (!el) { out[k] = v; continue; }
+    if (typeof v === 'boolean') out[k] = el.value === 'true';
+    else if (typeof v === 'number') out[k] = parseFloat(el.value);
+    else out[k] = el.value;
+  }
+  return out;
+}
+
+// ─── ECONOMIC RENDER ─────────────────────────────────────
+const ecoUnits = {INTEREST_RATE:'', OBSERVATION_TIME:'years', ELEC_PRICE_OFFTAKE:'€/MWh', ELEC_PRICE_INJECTION:'€/MWh'};
+
+function buildEcoUI() {
+  const container = document.getElementById('economic-container');
+  const grid = document.createElement('div');
+  grid.className = 'simple-grid';
+  for (const [k, v] of Object.entries(ecoData)) {
+    const el = document.createElement('div');
+    el.className = 'big-param';
+    const human = LABELS[k] || k.replace(/_/g,' ');
+    el.innerHTML = `<span class="big-param-label">${human}</span>
+      <span class="big-param-varname">${k}</span>
+      <input class="big-param-input" type="number" step="any" id="eco-${k}" value="${v}">
+      <span class="big-param-unit">${ecoUnits[k]||''}</span>`;
+    grid.appendChild(el);
+  }
+  container.appendChild(grid);
+}
+
+function getEcoData() {
+  const out = {};
+  for (const k of Object.keys(ecoData)) {
+    const el = document.getElementById('eco-' + k);
+    out[k] = el ? parseFloat(el.value) : ecoData[k];
+  }
+  return out;
+}
+
+// ─── WEATHER RENDER ──────────────────────────────────────
+function buildWeatherUI() {
+  const container = document.getElementById('weather-container');
+  const card = document.createElement('div');
+  card.className = 'card';
+  let html = '<div class="params-grid">';
+  for (const [k, v] of Object.entries(weatherData)) {
+    if (typeof v === 'string') {
+      html += `<div class="param-row" style="grid-column: span 2">${labelHTML(k)}
+        <input class="param-input" type="text" id="wea-${k}" value="${v}"></div>`;
+    } else {
+      html += `<div class="param-row">${labelHTML(k)}
+        <input class="param-input" type="number" step="any" id="wea-${k}" value="${v}"></div>`;
+    }
+  }
+  html += '</div>';
+  card.innerHTML = html;
+  container.appendChild(card);
+}
+
+function getWeatherData() {
+  const out = {};
+  for (const [k, v] of Object.entries(weatherData)) {
+    const el = document.getElementById('wea-' + k);
+    if (!el) { out[k] = v; continue; }
+    out[k] = typeof v === 'number' ? parseFloat(el.value) : el.value;
+  }
+  return out;
+}
+
+// ─── DOWNLOAD HELPER ─────────────────────────────────────
+function downloadJSON(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 4)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  const toast = document.getElementById('toast');
+  toast.textContent = `✓ ${filename} downloaded!`;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ─── INIT ─────────────────────────────────────────────────
+buildDevicesUI();
+buildBorUI();
+buildEcoUI();
+buildWeatherUI();
+</script>
+</body>
+</html>
