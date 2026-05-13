@@ -4,7 +4,7 @@ model Lanssens
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
         coordinateSystem(preserveAspectRatio=false)));
 
-  IOCSmod.Demand.BuildingModels.StijnStreuvel Houses(addDummyEquation=
+  IOCSmod.Demand.BuildingModels.Lanssens Houses(addDummyEquation=
         addDummyEquation)
     annotation (Placement(transformation(extent={{8,14},{-12,34}})));
 equation
