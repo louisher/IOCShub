@@ -1,5 +1,5 @@
 optimization Lanssens(objectiveIntegrand = objInt*18000000.0, objective=obj*18000000.0, timeStep=900, tolerance=0.01, startTime=0, finalTime=2.0, truncationDelta=1e-4, intervalLengths="1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4")
- extends ArtesMod.BuildingEnvelopes.Lanssens(addDummyEquation=false, sim(openSystemConservationOfEnergy=true,
+ extends ArtesMod.BuildingEnvelopes.project(addDummyEquation=false, sim(openSystemConservationOfEnergy=true,
     computeConservationOfEnergy=true,
     lineariseJModelica=true));
 	input Real u(free=true, min=0, max=0) "Dummy optimization variable";
