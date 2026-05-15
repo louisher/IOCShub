@@ -26,7 +26,7 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 
 	// input data:
 
-	output Real QDem = Q_flow_collector_collector_central;
+	output Real QDem = Q_flow_collector_central;
 	output Real PDem = P_Net_Houses;
 	output Real QBor = enerHub.GsHp.QBorefield;
 
