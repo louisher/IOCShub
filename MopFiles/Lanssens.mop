@@ -2,7 +2,7 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
     extends ArtesMod.BuildingEnvelopes.project(
                                                 addDummyEquation=false,
                                                 sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata/Brussels-City_XMY2021-2040_ssp245_MAR-BCC_SWDbased.mos"),
-                                                priceSim.path_economic_params_json="/homenvme/louis/software/iocs/input_data/economic_params.json",
+                                                priceSim.path_economic_params_json="/homenvme/louis/software/iocs/input_data/economic_params.json"
                                                 );
 
 
