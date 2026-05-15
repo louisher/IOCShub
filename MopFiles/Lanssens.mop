@@ -6,5 +6,4 @@ optimization Lanssens(objectiveIntegrand = objInt*18000000.0, objective=obj*1800
  
   constant Real null = -51485483487138.0 "Unique key for sending null";
 
-	output Real objInt=0;
 end Lanssens;
