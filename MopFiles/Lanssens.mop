@@ -18,7 +18,7 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
                                                 enerHub.borFieDat.conDat.nBor=169,
                                                 enerHub.groTemResDat.rCel.rCel={1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0, 2048.0, 4096.0, 8192.0, 16384.0, 32768.0, 65536.0, 131072.0, 88257.0},
                                                 enerHub.groTemResDat.kappa.kappa={2.9670546203941707e-06, 1.301365313898155e-06, 1.1714977157588399e-06, 1.1469588551128406e-06, 1.1491727221787094e-06, 1.1564631274669545e-06, 1.1617624111854974e-06, 1.166277593310128e-06, 1.2236906138917169e-06, 1.670945902569785e-06, 3.0109719489022908e-06, 5.655815222951366e-06, 1.0308447541584948e-05, 1.770427589644899e-05, 2.7682539825208647e-05, 3.779049848422334e-05, 4.309318483149614e-05, 3.934020493380261e-05, 1.3387923824395494e-05},
-                                                enerHub.borFieDat.conDat.cooBor=[0,0; 0,6]);
+                                                enerHub.borFieDat.conDat.cooBor=[0,0]);
 
 ///////////////////////////////////
 	// IOCS definitions //
@@ -38,8 +38,8 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 
 	// overall result data:
 
-	output Real DiscmfHea = DiscmfHea_zone_A_0_Creative1 + DiscmfHea_zone_A_1_App1 + DiscmfHea_zone_A_1_App2 + DiscmfHea_zone_A_2_App1 + DiscmfHea_zone_A_2_App2 + DiscmfHea_zone_A_3_App1 + DiscmfHea_zone_A_3_App2 + DiscmfHea_zone_A_4_App1 + DiscmfHea_zone_A_4_App2 + DiscmfHea_zone_A_5_App1 + DiscmfHea_zone_A_5_App2 + DiscmfHea_zone_A_6_App1 + DiscmfHea_zone_A_6_App2 + DiscmfHea_zone_A_7_App1 + DiscmfHea_zone_A_7_App2 + DiscmfHea_zone_B_0_App1 + DiscmfHea_zone_B_0_App2 + DiscmfHea_zone_B_1_App1 + DiscmfHea_zone_B_1_App2 + DiscmfHea_zone_B_1_App3 + DiscmfHea_zone_B_2_App1 + DiscmfHea_zone_B_2_App2 + DiscmfHea_zone_B_2_App3 + DiscmfHea_zone_B_3_App1 + DiscmfHea_zone_B_3_App2 + DiscmfHea_zone_B_3_App3 + DiscmfHea_zone_B_4_App1 + DiscmfHea_zone_CD_0_Creative1 + DiscmfHea_zone_CD_1_App1 + DiscmfHea_zone_CD_1_App2 + DiscmfHea_zone_CD_2_App1 + DiscmfHea_zone_CD_2_App2 + DiscmfHea_zone_CD_3_App1 + DiscmfHea_zone_CD_3_App2 + DiscmfHea_zone_CD_4_App1 + DiscmfHea_zone_CD_4_App2 + DiscmfHea_zone_CD_5_App1 + DiscmfHea_zone_CD_6_App1 + DiscmfHea_zone_CD_7_App1 + DiscmfHea_zone_E_0_Creative1 + DiscmfHea_zone_E_1_Creative1 + DiscmfHea_zone_E_2_App1 + DiscmfHea_zone_E_2_App2 + DiscmfHea_zone_E_3_App1 + DiscmfHea_zone_E_3_App2 + DiscmfHea_zone_E_4_App1 + DiscmfHea_zone_E_4_App2 + DiscmfHea_zone_E_5_App1 + DiscmfHea_zone_F_0_Creative1 + DiscmfHea_zone_F_0_Creative2 + DiscmfHea_zone_F_1_App1 + DiscmfHea_zone_F_1_App2 + DiscmfHea_zone_F_2_App1 + DiscmfHea_zone_F_2_App2 + DiscmfHea_zone_F_3_App1 + DiscmfHea_zone_F_3_App2 + DiscmfHea_zone_F_4_App1 + DiscmfHea_zone_F_4_App2 + DiscmfHea_zone_F_5_App1 + DiscmfHea_zone_F_5_App2 + DiscmfHea_zone_F_6_App1 + DiscmfHea_zone_F_6_App2 + DiscmfHea_zone_F_7_App1 + DiscmfHea_zone_F_7_App2 + DiscmfHea_zone_G_0_Creative1 + DiscmfHea_zone_G_1_Creative1 + DiscmfHea_zone_G_2_App1 + DiscmfHea_zone_G_2_App2 + DiscmfHea_zone_G_3_App1 + DiscmfHea_zone_G_3_App2 + DiscmfHea_zone_G_4_App1 + DiscmfHea_zone_G_4_App2 + DiscmfHea_zone_G_5_App1 + DiscmfHea_zone_G_5_App2 + DiscmfHea_zone_G_6_App1 + DiscmfHea_zone_G_6_App2 + DiscmfHea_zone_G_7_App1 + DiscmfHea_zone_G_7_App2;
-	output Real DiscmfCoo = DiscmfCoo_zone_A_0_Creative1 + DiscmfCoo_zone_A_1_App1 + DiscmfCoo_zone_A_1_App2 + DiscmfCoo_zone_A_2_App1 + DiscmfCoo_zone_A_2_App2 + DiscmfCoo_zone_A_3_App1 + DiscmfCoo_zone_A_3_App2 + DiscmfCoo_zone_A_4_App1 + DiscmfCoo_zone_A_4_App2 + DiscmfCoo_zone_A_5_App1 + DiscmfCoo_zone_A_5_App2 + DiscmfCoo_zone_A_6_App1 + DiscmfCoo_zone_A_6_App2 + DiscmfCoo_zone_A_7_App1 + DiscmfCoo_zone_A_7_App2 + DiscmfCoo_zone_B_0_App1 + DiscmfCoo_zone_B_0_App2 + DiscmfCoo_zone_B_1_App1 + DiscmfCoo_zone_B_1_App2 + DiscmfCoo_zone_B_1_App3 + DiscmfCoo_zone_B_2_App1 + DiscmfCoo_zone_B_2_App2 + DiscmfCoo_zone_B_2_App3 + DiscmfCoo_zone_B_3_App1 + DiscmfCoo_zone_B_3_App2 + DiscmfCoo_zone_B_3_App3 + DiscmfCoo_zone_B_4_App1 + DiscmfCoo_zone_CD_0_Creative1 + DiscmfCoo_zone_CD_1_App1 + DiscmfCoo_zone_CD_1_App2 + DiscmfCoo_zone_CD_2_App1 + DiscmfCoo_zone_CD_2_App2 + DiscmfCoo_zone_CD_3_App1 + DiscmfCoo_zone_CD_3_App2 + DiscmfCoo_zone_CD_4_App1 + DiscmfCoo_zone_CD_4_App2 + DiscmfCoo_zone_CD_5_App1 + DiscmfCoo_zone_CD_6_App1 + DiscmfCoo_zone_CD_7_App1 + DiscmfCoo_zone_E_0_Creative1 + DiscmfCoo_zone_E_1_Creative1 + DiscmfCoo_zone_E_2_App1 + DiscmfCoo_zone_E_2_App2 + DiscmfCoo_zone_E_3_App1 + DiscmfCoo_zone_E_3_App2 + DiscmfCoo_zone_E_4_App1 + DiscmfCoo_zone_E_4_App2 + DiscmfCoo_zone_E_5_App1 + DiscmfCoo_zone_F_0_Creative1 + DiscmfCoo_zone_F_0_Creative2 + DiscmfCoo_zone_F_1_App1 + DiscmfCoo_zone_F_1_App2 + DiscmfCoo_zone_F_2_App1 + DiscmfCoo_zone_F_2_App2 + DiscmfCoo_zone_F_3_App1 + DiscmfCoo_zone_F_3_App2 + DiscmfCoo_zone_F_4_App1 + DiscmfCoo_zone_F_4_App2 + DiscmfCoo_zone_F_5_App1 + DiscmfCoo_zone_F_5_App2 + DiscmfCoo_zone_F_6_App1 + DiscmfCoo_zone_F_6_App2 + DiscmfCoo_zone_F_7_App1 + DiscmfCoo_zone_F_7_App2 + DiscmfCoo_zone_G_0_Creative1 + DiscmfCoo_zone_G_1_Creative1 + DiscmfCoo_zone_G_2_App1 + DiscmfCoo_zone_G_2_App2 + DiscmfCoo_zone_G_3_App1 + DiscmfCoo_zone_G_3_App2 + DiscmfCoo_zone_G_4_App1 + DiscmfCoo_zone_G_4_App2 + DiscmfCoo_zone_G_5_App1 + DiscmfCoo_zone_G_5_App2 + DiscmfCoo_zone_G_6_App1 + DiscmfCoo_zone_G_6_App2 + DiscmfCoo_zone_G_7_App1 + DiscmfCoo_zone_G_7_App2;
+	output Real DiscmfHea = DiscmfHea_A + DiscmfHea_B + DiscmfHea_CD + DiscmfHea_E + DiscmfHea_F + DiscmfHea_G;
+	output Real DiscmfCoo = DiscmfCoo_A + DiscmfCoo_B + DiscmfCoo_CD + DiscmfCoo_E + DiscmfCoo_F + DiscmfCoo_G;
 	output Real ElecUse = TotalPower;
 
 ///////////////////////////////////
@@ -59,7 +59,7 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 
 	output Real ObjIntElecCost = TotalPower*smoothPrice;
 
-	// Battery //
+	// Battery
 	output Real weight_bat = 100000;
 	output Real ObjBatMax = weight_bat*max(0, Bat_soc - Bat_SOCmax)^2;
 	output Real ObjBatMin = weight_bat*max(0, Bat_SOCmin - Bat_soc)^2;
@@ -83,165 +83,106 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real TSetCoo = 26;
 	output Real weight_hea = 10000;
 	output Real weight_coo = 10000;
-	output Real ObjIntComfSHea = weight_hea*(
-				DiscmfHea_zone_A_0_Creative1^2
-				+ DiscmfHea_zone_A_1_App1^2
-				+ DiscmfHea_zone_A_1_App2^2
-				+ DiscmfHea_zone_A_2_App1^2
-				+ DiscmfHea_zone_A_2_App2^2
-				+ DiscmfHea_zone_A_3_App1^2
-				+ DiscmfHea_zone_A_3_App2^2
-				+ DiscmfHea_zone_A_4_App1^2
-				+ DiscmfHea_zone_A_4_App2^2
-				+ DiscmfHea_zone_A_5_App1^2
-				+ DiscmfHea_zone_A_5_App2^2
-				+ DiscmfHea_zone_A_6_App1^2
-				+ DiscmfHea_zone_A_6_App2^2
-				+ DiscmfHea_zone_A_7_App1^2
-				+ DiscmfHea_zone_A_7_App2^2
-				+ DiscmfHea_zone_B_0_App1^2
-				+ DiscmfHea_zone_B_0_App2^2
-				+ DiscmfHea_zone_B_1_App1^2
-				+ DiscmfHea_zone_B_1_App2^2
-				+ DiscmfHea_zone_B_1_App3^2
-				+ DiscmfHea_zone_B_2_App1^2
-				+ DiscmfHea_zone_B_2_App2^2
-				+ DiscmfHea_zone_B_2_App3^2
-				+ DiscmfHea_zone_B_3_App1^2
-				+ DiscmfHea_zone_B_3_App2^2
-				+ DiscmfHea_zone_B_3_App3^2
-				+ DiscmfHea_zone_B_4_App1^2
-				+ DiscmfHea_zone_CD_0_Creative1^2
-				+ DiscmfHea_zone_CD_1_App1^2
-				+ DiscmfHea_zone_CD_1_App2^2
-				+ DiscmfHea_zone_CD_2_App1^2
-				+ DiscmfHea_zone_CD_2_App2^2
-				+ DiscmfHea_zone_CD_3_App1^2
-				+ DiscmfHea_zone_CD_3_App2^2
-				+ DiscmfHea_zone_CD_4_App1^2
-				+ DiscmfHea_zone_CD_4_App2^2
-				+ DiscmfHea_zone_CD_5_App1^2
-				+ DiscmfHea_zone_CD_6_App1^2
-				+ DiscmfHea_zone_CD_7_App1^2
-				+ DiscmfHea_zone_E_0_Creative1^2
-				+ DiscmfHea_zone_E_1_Creative1^2
-				+ DiscmfHea_zone_E_2_App1^2
-				+ DiscmfHea_zone_E_2_App2^2
-				+ DiscmfHea_zone_E_3_App1^2
-				+ DiscmfHea_zone_E_3_App2^2
-				+ DiscmfHea_zone_E_4_App1^2
-				+ DiscmfHea_zone_E_4_App2^2
-				+ DiscmfHea_zone_E_5_App1^2
-				+ DiscmfHea_zone_F_0_Creative1^2
-				+ DiscmfHea_zone_F_0_Creative2^2
-				+ DiscmfHea_zone_F_1_App1^2
-				+ DiscmfHea_zone_F_1_App2^2
-				+ DiscmfHea_zone_F_2_App1^2
-				+ DiscmfHea_zone_F_2_App2^2
-				+ DiscmfHea_zone_F_3_App1^2
-				+ DiscmfHea_zone_F_3_App2^2
-				+ DiscmfHea_zone_F_4_App1^2
-				+ DiscmfHea_zone_F_4_App2^2
-				+ DiscmfHea_zone_F_5_App1^2
-				+ DiscmfHea_zone_F_5_App2^2
-				+ DiscmfHea_zone_F_6_App1^2
-				+ DiscmfHea_zone_F_6_App2^2
-				+ DiscmfHea_zone_F_7_App1^2
-				+ DiscmfHea_zone_F_7_App2^2
-				+ DiscmfHea_zone_G_0_Creative1^2
-				+ DiscmfHea_zone_G_1_Creative1^2
-				+ DiscmfHea_zone_G_2_App1^2
-				+ DiscmfHea_zone_G_2_App2^2
-				+ DiscmfHea_zone_G_3_App1^2
-				+ DiscmfHea_zone_G_3_App2^2
-				+ DiscmfHea_zone_G_4_App1^2
-				+ DiscmfHea_zone_G_4_App2^2
-				+ DiscmfHea_zone_G_5_App1^2
-				+ DiscmfHea_zone_G_5_App2^2
-				+ DiscmfHea_zone_G_6_App1^2
-				+ DiscmfHea_zone_G_6_App2^2
-				+ DiscmfHea_zone_G_7_App1^2
-				+ DiscmfHea_zone_G_7_App2^2);
-
-	output Real ObjIntComfSCoo = weight_coo*(
-				DiscmfCoo_zone_A_0_Creative1^2
-				+ DiscmfCoo_zone_A_1_App1^2
-				+ DiscmfCoo_zone_A_1_App2^2
-				+ DiscmfCoo_zone_A_2_App1^2
-				+ DiscmfCoo_zone_A_2_App2^2
-				+ DiscmfCoo_zone_A_3_App1^2
-				+ DiscmfCoo_zone_A_3_App2^2
-				+ DiscmfCoo_zone_A_4_App1^2
-				+ DiscmfCoo_zone_A_4_App2^2
-				+ DiscmfCoo_zone_A_5_App1^2
-				+ DiscmfCoo_zone_A_5_App2^2
-				+ DiscmfCoo_zone_A_6_App1^2
-				+ DiscmfCoo_zone_A_6_App2^2
-				+ DiscmfCoo_zone_A_7_App1^2
-				+ DiscmfCoo_zone_A_7_App2^2
-				+ DiscmfCoo_zone_B_0_App1^2
-				+ DiscmfCoo_zone_B_0_App2^2
-				+ DiscmfCoo_zone_B_1_App1^2
-				+ DiscmfCoo_zone_B_1_App2^2
-				+ DiscmfCoo_zone_B_1_App3^2
-				+ DiscmfCoo_zone_B_2_App1^2
-				+ DiscmfCoo_zone_B_2_App2^2
-				+ DiscmfCoo_zone_B_2_App3^2
-				+ DiscmfCoo_zone_B_3_App1^2
-				+ DiscmfCoo_zone_B_3_App2^2
-				+ DiscmfCoo_zone_B_3_App3^2
-				+ DiscmfCoo_zone_B_4_App1^2
-				+ DiscmfCoo_zone_CD_0_Creative1^2
-				+ DiscmfCoo_zone_CD_1_App1^2
-				+ DiscmfCoo_zone_CD_1_App2^2
-				+ DiscmfCoo_zone_CD_2_App1^2
-				+ DiscmfCoo_zone_CD_2_App2^2
-				+ DiscmfCoo_zone_CD_3_App1^2
-				+ DiscmfCoo_zone_CD_3_App2^2
-				+ DiscmfCoo_zone_CD_4_App1^2
-				+ DiscmfCoo_zone_CD_4_App2^2
-				+ DiscmfCoo_zone_CD_5_App1^2
-				+ DiscmfCoo_zone_CD_6_App1^2
-				+ DiscmfCoo_zone_CD_7_App1^2
-				+ DiscmfCoo_zone_E_0_Creative1^2
-				+ DiscmfCoo_zone_E_1_Creative1^2
-				+ DiscmfCoo_zone_E_2_App1^2
-				+ DiscmfCoo_zone_E_2_App2^2
-				+ DiscmfCoo_zone_E_3_App1^2
-				+ DiscmfCoo_zone_E_3_App2^2
-				+ DiscmfCoo_zone_E_4_App1^2
-				+ DiscmfCoo_zone_E_4_App2^2
-				+ DiscmfCoo_zone_E_5_App1^2
-				+ DiscmfCoo_zone_F_0_Creative1^2
-				+ DiscmfCoo_zone_F_0_Creative2^2
-				+ DiscmfCoo_zone_F_1_App1^2
-				+ DiscmfCoo_zone_F_1_App2^2
-				+ DiscmfCoo_zone_F_2_App1^2
-				+ DiscmfCoo_zone_F_2_App2^2
-				+ DiscmfCoo_zone_F_3_App1^2
-				+ DiscmfCoo_zone_F_3_App2^2
-				+ DiscmfCoo_zone_F_4_App1^2
-				+ DiscmfCoo_zone_F_4_App2^2
-				+ DiscmfCoo_zone_F_5_App1^2
-				+ DiscmfCoo_zone_F_5_App2^2
-				+ DiscmfCoo_zone_F_6_App1^2
-				+ DiscmfCoo_zone_F_6_App2^2
-				+ DiscmfCoo_zone_F_7_App1^2
-				+ DiscmfCoo_zone_F_7_App2^2
-				+ DiscmfCoo_zone_G_0_Creative1^2
-				+ DiscmfCoo_zone_G_1_Creative1^2
-				+ DiscmfCoo_zone_G_2_App1^2
-				+ DiscmfCoo_zone_G_2_App2^2
-				+ DiscmfCoo_zone_G_3_App1^2
-				+ DiscmfCoo_zone_G_3_App2^2
-				+ DiscmfCoo_zone_G_4_App1^2
-				+ DiscmfCoo_zone_G_4_App2^2
-				+ DiscmfCoo_zone_G_5_App1^2
-				+ DiscmfCoo_zone_G_5_App2^2
-				+ DiscmfCoo_zone_G_6_App1^2
-				+ DiscmfCoo_zone_G_6_App2^2
-				+ DiscmfCoo_zone_G_7_App1^2
-				+ DiscmfCoo_zone_G_7_App2^2);
+	output Real ObjIntComfSHea_A_0 = weight_hea*(DiscmfHea_zone_A_0_Creative1^2);
+	output Real ObjIntComfSCoo_A_0 = weight_coo*(DiscmfCoo_zone_A_0_Creative1^2);
+	output Real ObjIntComfSHea_A_1 = weight_hea*(DiscmfHea_zone_A_1_App1^2 + DiscmfHea_zone_A_1_App2^2);
+	output Real ObjIntComfSCoo_A_1 = weight_coo*(DiscmfCoo_zone_A_1_App1^2 + DiscmfCoo_zone_A_1_App2^2);
+	output Real ObjIntComfSHea_A_2 = weight_hea*(DiscmfHea_zone_A_2_App1^2 + DiscmfHea_zone_A_2_App2^2);
+	output Real ObjIntComfSCoo_A_2 = weight_coo*(DiscmfCoo_zone_A_2_App1^2 + DiscmfCoo_zone_A_2_App2^2);
+	output Real ObjIntComfSHea_A_3 = weight_hea*(DiscmfHea_zone_A_3_App1^2 + DiscmfHea_zone_A_3_App2^2);
+	output Real ObjIntComfSCoo_A_3 = weight_coo*(DiscmfCoo_zone_A_3_App1^2 + DiscmfCoo_zone_A_3_App2^2);
+	output Real ObjIntComfSHea_A_4 = weight_hea*(DiscmfHea_zone_A_4_App1^2 + DiscmfHea_zone_A_4_App2^2);
+	output Real ObjIntComfSCoo_A_4 = weight_coo*(DiscmfCoo_zone_A_4_App1^2 + DiscmfCoo_zone_A_4_App2^2);
+	output Real ObjIntComfSHea_A_5 = weight_hea*(DiscmfHea_zone_A_5_App1^2 + DiscmfHea_zone_A_5_App2^2);
+	output Real ObjIntComfSCoo_A_5 = weight_coo*(DiscmfCoo_zone_A_5_App1^2 + DiscmfCoo_zone_A_5_App2^2);
+	output Real ObjIntComfSHea_A_6 = weight_hea*(DiscmfHea_zone_A_6_App1^2 + DiscmfHea_zone_A_6_App2^2);
+	output Real ObjIntComfSCoo_A_6 = weight_coo*(DiscmfCoo_zone_A_6_App1^2 + DiscmfCoo_zone_A_6_App2^2);
+	output Real ObjIntComfSHea_A_7 = weight_hea*(DiscmfHea_zone_A_7_App1^2 + DiscmfHea_zone_A_7_App2^2);
+	output Real ObjIntComfSCoo_A_7 = weight_coo*(DiscmfCoo_zone_A_7_App1^2 + DiscmfCoo_zone_A_7_App2^2);
+	output Real ObjIntComfSHea_B_0 = weight_hea*(DiscmfHea_zone_B_0_App1^2 + DiscmfHea_zone_B_0_App2^2);
+	output Real ObjIntComfSCoo_B_0 = weight_coo*(DiscmfCoo_zone_B_0_App1^2 + DiscmfCoo_zone_B_0_App2^2);
+	output Real ObjIntComfSHea_B_1 = weight_hea*(DiscmfHea_zone_B_1_App1^2 + DiscmfHea_zone_B_1_App2^2 + DiscmfHea_zone_B_1_App3^2);
+	output Real ObjIntComfSCoo_B_1 = weight_coo*(DiscmfCoo_zone_B_1_App1^2 + DiscmfCoo_zone_B_1_App2^2 + DiscmfCoo_zone_B_1_App3^2);
+	output Real ObjIntComfSHea_B_2 = weight_hea*(DiscmfHea_zone_B_2_App1^2 + DiscmfHea_zone_B_2_App2^2 + DiscmfHea_zone_B_2_App3^2);
+	output Real ObjIntComfSCoo_B_2 = weight_coo*(DiscmfCoo_zone_B_2_App1^2 + DiscmfCoo_zone_B_2_App2^2 + DiscmfCoo_zone_B_2_App3^2);
+	output Real ObjIntComfSHea_B_3 = weight_hea*(DiscmfHea_zone_B_3_App1^2 + DiscmfHea_zone_B_3_App2^2 + DiscmfHea_zone_B_3_App3^2);
+	output Real ObjIntComfSCoo_B_3 = weight_coo*(DiscmfCoo_zone_B_3_App1^2 + DiscmfCoo_zone_B_3_App2^2 + DiscmfCoo_zone_B_3_App3^2);
+	output Real ObjIntComfSHea_B_4 = weight_hea*(DiscmfHea_zone_B_4_App1^2);
+	output Real ObjIntComfSCoo_B_4 = weight_coo*(DiscmfCoo_zone_B_4_App1^2);
+	output Real ObjIntComfSHea_CD_0 = weight_hea*(DiscmfHea_zone_CD_0_Creative1^2);
+	output Real ObjIntComfSCoo_CD_0 = weight_coo*(DiscmfCoo_zone_CD_0_Creative1^2);
+	output Real ObjIntComfSHea_CD_1 = weight_hea*(DiscmfHea_zone_CD_1_App1^2 + DiscmfHea_zone_CD_1_App2^2);
+	output Real ObjIntComfSCoo_CD_1 = weight_coo*(DiscmfCoo_zone_CD_1_App1^2 + DiscmfCoo_zone_CD_1_App2^2);
+	output Real ObjIntComfSHea_CD_2 = weight_hea*(DiscmfHea_zone_CD_2_App1^2 + DiscmfHea_zone_CD_2_App2^2);
+	output Real ObjIntComfSCoo_CD_2 = weight_coo*(DiscmfCoo_zone_CD_2_App1^2 + DiscmfCoo_zone_CD_2_App2^2);
+	output Real ObjIntComfSHea_CD_3 = weight_hea*(DiscmfHea_zone_CD_3_App1^2 + DiscmfHea_zone_CD_3_App2^2);
+	output Real ObjIntComfSCoo_CD_3 = weight_coo*(DiscmfCoo_zone_CD_3_App1^2 + DiscmfCoo_zone_CD_3_App2^2);
+	output Real ObjIntComfSHea_CD_4 = weight_hea*(DiscmfHea_zone_CD_4_App1^2 + DiscmfHea_zone_CD_4_App2^2);
+	output Real ObjIntComfSCoo_CD_4 = weight_coo*(DiscmfCoo_zone_CD_4_App1^2 + DiscmfCoo_zone_CD_4_App2^2);
+	output Real ObjIntComfSHea_CD_5 = weight_hea*(DiscmfHea_zone_CD_5_App1^2);
+	output Real ObjIntComfSCoo_CD_5 = weight_coo*(DiscmfCoo_zone_CD_5_App1^2);
+	output Real ObjIntComfSHea_CD_6 = weight_hea*(DiscmfHea_zone_CD_6_App1^2);
+	output Real ObjIntComfSCoo_CD_6 = weight_coo*(DiscmfCoo_zone_CD_6_App1^2);
+	output Real ObjIntComfSHea_CD_7 = weight_hea*(DiscmfHea_zone_CD_7_App1^2);
+	output Real ObjIntComfSCoo_CD_7 = weight_coo*(DiscmfCoo_zone_CD_7_App1^2);
+	output Real ObjIntComfSHea_E_0 = weight_hea*(DiscmfHea_zone_E_0_Creative1^2);
+	output Real ObjIntComfSCoo_E_0 = weight_coo*(DiscmfCoo_zone_E_0_Creative1^2);
+	output Real ObjIntComfSHea_E_1 = weight_hea*(DiscmfHea_zone_E_1_Creative1^2);
+	output Real ObjIntComfSCoo_E_1 = weight_coo*(DiscmfCoo_zone_E_1_Creative1^2);
+	output Real ObjIntComfSHea_E_2 = weight_hea*(DiscmfHea_zone_E_2_App1^2 + DiscmfHea_zone_E_2_App2^2);
+	output Real ObjIntComfSCoo_E_2 = weight_coo*(DiscmfCoo_zone_E_2_App1^2 + DiscmfCoo_zone_E_2_App2^2);
+	output Real ObjIntComfSHea_E_3 = weight_hea*(DiscmfHea_zone_E_3_App1^2 + DiscmfHea_zone_E_3_App2^2);
+	output Real ObjIntComfSCoo_E_3 = weight_coo*(DiscmfCoo_zone_E_3_App1^2 + DiscmfCoo_zone_E_3_App2^2);
+	output Real ObjIntComfSHea_E_4 = weight_hea*(DiscmfHea_zone_E_4_App1^2 + DiscmfHea_zone_E_4_App2^2);
+	output Real ObjIntComfSCoo_E_4 = weight_coo*(DiscmfCoo_zone_E_4_App1^2 + DiscmfCoo_zone_E_4_App2^2);
+	output Real ObjIntComfSHea_E_5 = weight_hea*(DiscmfHea_zone_E_5_App1^2);
+	output Real ObjIntComfSCoo_E_5 = weight_coo*(DiscmfCoo_zone_E_5_App1^2);
+	output Real ObjIntComfSHea_F_0 = weight_hea*(DiscmfHea_zone_F_0_Creative1^2 + DiscmfHea_zone_F_0_Creative2^2);
+	output Real ObjIntComfSCoo_F_0 = weight_coo*(DiscmfCoo_zone_F_0_Creative1^2 + DiscmfCoo_zone_F_0_Creative2^2);
+	output Real ObjIntComfSHea_F_1 = weight_hea*(DiscmfHea_zone_F_1_App1^2 + DiscmfHea_zone_F_1_App2^2);
+	output Real ObjIntComfSCoo_F_1 = weight_coo*(DiscmfCoo_zone_F_1_App1^2 + DiscmfCoo_zone_F_1_App2^2);
+	output Real ObjIntComfSHea_F_2 = weight_hea*(DiscmfHea_zone_F_2_App1^2 + DiscmfHea_zone_F_2_App2^2);
+	output Real ObjIntComfSCoo_F_2 = weight_coo*(DiscmfCoo_zone_F_2_App1^2 + DiscmfCoo_zone_F_2_App2^2);
+	output Real ObjIntComfSHea_F_3 = weight_hea*(DiscmfHea_zone_F_3_App1^2 + DiscmfHea_zone_F_3_App2^2);
+	output Real ObjIntComfSCoo_F_3 = weight_coo*(DiscmfCoo_zone_F_3_App1^2 + DiscmfCoo_zone_F_3_App2^2);
+	output Real ObjIntComfSHea_F_4 = weight_hea*(DiscmfHea_zone_F_4_App1^2 + DiscmfHea_zone_F_4_App2^2);
+	output Real ObjIntComfSCoo_F_4 = weight_coo*(DiscmfCoo_zone_F_4_App1^2 + DiscmfCoo_zone_F_4_App2^2);
+	output Real ObjIntComfSHea_F_5 = weight_hea*(DiscmfHea_zone_F_5_App1^2 + DiscmfHea_zone_F_5_App2^2);
+	output Real ObjIntComfSCoo_F_5 = weight_coo*(DiscmfCoo_zone_F_5_App1^2 + DiscmfCoo_zone_F_5_App2^2);
+	output Real ObjIntComfSHea_F_6 = weight_hea*(DiscmfHea_zone_F_6_App1^2 + DiscmfHea_zone_F_6_App2^2);
+	output Real ObjIntComfSCoo_F_6 = weight_coo*(DiscmfCoo_zone_F_6_App1^2 + DiscmfCoo_zone_F_6_App2^2);
+	output Real ObjIntComfSHea_F_7 = weight_hea*(DiscmfHea_zone_F_7_App1^2 + DiscmfHea_zone_F_7_App2^2);
+	output Real ObjIntComfSCoo_F_7 = weight_coo*(DiscmfCoo_zone_F_7_App1^2 + DiscmfCoo_zone_F_7_App2^2);
+	output Real ObjIntComfSHea_G_0 = weight_hea*(DiscmfHea_zone_G_0_Creative1^2);
+	output Real ObjIntComfSCoo_G_0 = weight_coo*(DiscmfCoo_zone_G_0_Creative1^2);
+	output Real ObjIntComfSHea_G_1 = weight_hea*(DiscmfHea_zone_G_1_Creative1^2);
+	output Real ObjIntComfSCoo_G_1 = weight_coo*(DiscmfCoo_zone_G_1_Creative1^2);
+	output Real ObjIntComfSHea_G_2 = weight_hea*(DiscmfHea_zone_G_2_App1^2 + DiscmfHea_zone_G_2_App2^2);
+	output Real ObjIntComfSCoo_G_2 = weight_coo*(DiscmfCoo_zone_G_2_App1^2 + DiscmfCoo_zone_G_2_App2^2);
+	output Real ObjIntComfSHea_G_3 = weight_hea*(DiscmfHea_zone_G_3_App1^2 + DiscmfHea_zone_G_3_App2^2);
+	output Real ObjIntComfSCoo_G_3 = weight_coo*(DiscmfCoo_zone_G_3_App1^2 + DiscmfCoo_zone_G_3_App2^2);
+	output Real ObjIntComfSHea_G_4 = weight_hea*(DiscmfHea_zone_G_4_App1^2 + DiscmfHea_zone_G_4_App2^2);
+	output Real ObjIntComfSCoo_G_4 = weight_coo*(DiscmfCoo_zone_G_4_App1^2 + DiscmfCoo_zone_G_4_App2^2);
+	output Real ObjIntComfSHea_G_5 = weight_hea*(DiscmfHea_zone_G_5_App1^2 + DiscmfHea_zone_G_5_App2^2);
+	output Real ObjIntComfSCoo_G_5 = weight_coo*(DiscmfCoo_zone_G_5_App1^2 + DiscmfCoo_zone_G_5_App2^2);
+	output Real ObjIntComfSHea_G_6 = weight_hea*(DiscmfHea_zone_G_6_App1^2 + DiscmfHea_zone_G_6_App2^2);
+	output Real ObjIntComfSCoo_G_6 = weight_coo*(DiscmfCoo_zone_G_6_App1^2 + DiscmfCoo_zone_G_6_App2^2);
+	output Real ObjIntComfSHea_G_7 = weight_hea*(DiscmfHea_zone_G_7_App1^2 + DiscmfHea_zone_G_7_App2^2);
+	output Real ObjIntComfSCoo_G_7 = weight_coo*(DiscmfCoo_zone_G_7_App1^2 + DiscmfCoo_zone_G_7_App2^2);
+	output Real ObjIntComfSHea_A = ObjIntComfSHea_A_0 + ObjIntComfSHea_A_1 + ObjIntComfSHea_A_2 + ObjIntComfSHea_A_3 + ObjIntComfSHea_A_4 + ObjIntComfSHea_A_5 + ObjIntComfSHea_A_6 + ObjIntComfSHea_A_7;
+	output Real ObjIntComfSCoo_A = ObjIntComfSCoo_A_0 + ObjIntComfSCoo_A_1 + ObjIntComfSCoo_A_2 + ObjIntComfSCoo_A_3 + ObjIntComfSCoo_A_4 + ObjIntComfSCoo_A_5 + ObjIntComfSCoo_A_6 + ObjIntComfSCoo_A_7;
+	output Real ObjIntComfSHea_B = ObjIntComfSHea_B_0 + ObjIntComfSHea_B_1 + ObjIntComfSHea_B_2 + ObjIntComfSHea_B_3 + ObjIntComfSHea_B_4;
+	output Real ObjIntComfSCoo_B = ObjIntComfSCoo_B_0 + ObjIntComfSCoo_B_1 + ObjIntComfSCoo_B_2 + ObjIntComfSCoo_B_3 + ObjIntComfSCoo_B_4;
+	output Real ObjIntComfSHea_CD = ObjIntComfSHea_CD_0 + ObjIntComfSHea_CD_1 + ObjIntComfSHea_CD_2 + ObjIntComfSHea_CD_3 + ObjIntComfSHea_CD_4 + ObjIntComfSHea_CD_5 + ObjIntComfSHea_CD_6 + ObjIntComfSHea_CD_7;
+	output Real ObjIntComfSCoo_CD = ObjIntComfSCoo_CD_0 + ObjIntComfSCoo_CD_1 + ObjIntComfSCoo_CD_2 + ObjIntComfSCoo_CD_3 + ObjIntComfSCoo_CD_4 + ObjIntComfSCoo_CD_5 + ObjIntComfSCoo_CD_6 + ObjIntComfSCoo_CD_7;
+	output Real ObjIntComfSHea_E = ObjIntComfSHea_E_0 + ObjIntComfSHea_E_1 + ObjIntComfSHea_E_2 + ObjIntComfSHea_E_3 + ObjIntComfSHea_E_4 + ObjIntComfSHea_E_5;
+	output Real ObjIntComfSCoo_E = ObjIntComfSCoo_E_0 + ObjIntComfSCoo_E_1 + ObjIntComfSCoo_E_2 + ObjIntComfSCoo_E_3 + ObjIntComfSCoo_E_4 + ObjIntComfSCoo_E_5;
+	output Real ObjIntComfSHea_F = ObjIntComfSHea_F_0 + ObjIntComfSHea_F_1 + ObjIntComfSHea_F_2 + ObjIntComfSHea_F_3 + ObjIntComfSHea_F_4 + ObjIntComfSHea_F_5 + ObjIntComfSHea_F_6 + ObjIntComfSHea_F_7;
+	output Real ObjIntComfSCoo_F = ObjIntComfSCoo_F_0 + ObjIntComfSCoo_F_1 + ObjIntComfSCoo_F_2 + ObjIntComfSCoo_F_3 + ObjIntComfSCoo_F_4 + ObjIntComfSCoo_F_5 + ObjIntComfSCoo_F_6 + ObjIntComfSCoo_F_7;
+	output Real ObjIntComfSHea_G = ObjIntComfSHea_G_0 + ObjIntComfSHea_G_1 + ObjIntComfSHea_G_2 + ObjIntComfSHea_G_3 + ObjIntComfSHea_G_4 + ObjIntComfSHea_G_5 + ObjIntComfSHea_G_6 + ObjIntComfSHea_G_7;
+	output Real ObjIntComfSCoo_G = ObjIntComfSCoo_G_0 + ObjIntComfSCoo_G_1 + ObjIntComfSCoo_G_2 + ObjIntComfSCoo_G_3 + ObjIntComfSCoo_G_4 + ObjIntComfSCoo_G_5 + ObjIntComfSCoo_G_6 + ObjIntComfSCoo_G_7;
+	output Real ObjIntComfSHea = ObjIntComfSHea_A + ObjIntComfSHea_B + ObjIntComfSHea_CD + ObjIntComfSHea_E + ObjIntComfSHea_F + ObjIntComfSHea_G;
+	output Real ObjIntComfSCoo = ObjIntComfSCoo_A + ObjIntComfSCoo_B + ObjIntComfSCoo_CD + ObjIntComfSCoo_E + ObjIntComfSCoo_F + ObjIntComfSCoo_G;
 
 	/// Overall objective ///
 	output Real ObjInt = ObjIntElecCost + ObjIntComfSCoo + ObjIntComfSHea + ObjIntBat + ObjIntTSupMax + ObjIntTSupMin + ObjIntTBorMin + ObjIntTBorMax;
@@ -249,31 +190,31 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 // General
 	output Real P_Net_enerHub = enerHub.P;
 	output Real Q_enerHub = enerHub.QEnergyHub;
-	
+
 	// GSHP
 	output Real QNom_GSHP = enerHub.Qnom_GsHp;
 	output Real P_GSHP = enerHub.GsHp.GsHp.PEl;
 	output Real E_GSHP_kWh = enerHub.GsHp.EGsHp_kWh.y;
 	output Real QCon_GSHP = enerHub.GsHp.GsHp.QCon;
-	output Real QEva_GSHP = -enerHub.GsHp.GsHp.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real QEva_GSHP = -enerHub.GsHp.GsHp.Q_eva.y;
 	output Real COP_GSHP = enerHub.GsHp.GsHp.COP;
 
 	output Real P_pumCoo = enerHub.GsHp.pumHexCooEva.P;
 	output Real E_pumCoo_kWh = enerHub.GsHp.EpumCoo_kWh.y;
-	output Real QhexCoo = enerHub.GsHp.hexCoo.Q2_flow; // will be positive if heat is added to the borefield i.e. cooling of buffertank is happening
+	output Real QhexCoo = enerHub.GsHp.hexCoo.Q2_flow;
 
-	output Real TGsHpConIn = enerHub.GsHp.senTGsHpConIn.T - 273.15; //°C
-	output Real TGsHpConOut = enerHub.GsHp.senTGsHpConOut.T - 273.15; //°C
-	output Real TGsHpEvaIn = enerHub.GsHp.senTGsHpEvaIn.T - 273.15; //°C
-	output Real TGsHpEvaOut = enerHub.GsHp.senTGsHpEvaOut.T - 273.15; //°C
+	output Real TGsHpConIn = enerHub.GsHp.senTGsHpConIn.T - 273.15;
+	output Real TGsHpConOut = enerHub.GsHp.senTGsHpConOut.T - 273.15;
+	output Real TGsHpEvaIn = enerHub.GsHp.senTGsHpEvaIn.T - 273.15;
+	output Real TGsHpEvaOut = enerHub.GsHp.senTGsHpEvaOut.T - 273.15;
 
-	output Real TBorIn = enerHub.GsHp.senTBorIn.T - 273.15; //°C
-	output Real TBorOut = enerHub.GsHp.senTBorOut.T - 273.15; //°C
+	output Real TBorIn = enerHub.GsHp.senTBorIn.T - 273.15;
+	output Real TBorOut = enerHub.GsHp.senTBorOut.T - 273.15;
 
-	output Real THexCooConIn = enerHub.GsHp.senTHexCooConIn.T - 273.15; //°C
-	output Real THexCooConOut = enerHub.GsHp.senTHexCooConOut.T - 273.15; //°C
-	output Real THexCooEvaIn = enerHub.GsHp.senTHexCooEvaIn.T - 273.15; //°C
-	output Real THexCooEvaOut = enerHub.GsHp.senTHexCooEvaOut.T - 273.15; //°C
+	output Real THexCooConIn = enerHub.GsHp.senTHexCooConIn.T - 273.15;
+	output Real THexCooConOut = enerHub.GsHp.senTHexCooConOut.T - 273.15;
+	output Real THexCooEvaIn = enerHub.GsHp.senTHexCooEvaIn.T - 273.15;
+	output Real THexCooEvaOut = enerHub.GsHp.senTHexCooEvaOut.T - 273.15;
 
 	output Real mFlowGsHpCon = enerHub.GsHp.GsHp.m2_flow;
 	output Real mFlowGsHpEva = enerHub.GsHp.GsHp.m1_flow;
@@ -292,13 +233,13 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real P_ASHP = enerHub.AsHp.AsHp.PEl;
 	output Real E_ASHP_kWh = enerHub.AsHp.EAsHp_kWh.y;
 	output Real QCon_ASHP = enerHub.AsHp.AsHp.QCon;
-	output Real QEva_ASHP = -enerHub.AsHp.AsHp.HP.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real QEva_ASHP = -enerHub.AsHp.AsHp.HP.Q_eva.y;
 	output Real COP_ASHP = enerHub.AsHp.AsHp.COP;
 
-	output Real TAsHpConIn = enerHub.AsHp.senTAsHpConIn.T - 273.15; //°C
-	output Real TAsHpConOut = enerHub.AsHp.senTAsHpConOut.T - 273.15; //°C
-	output Real TAsHpEvaIn = enerHub.AsHp.AsHp.HP.TEvaIn.T - 273.15; //°C
-	output Real TAsHpEvaOut = enerHub.AsHp.AsHp.HP.TEvaOut.T - 273.15; //°C
+	output Real TAsHpConIn = enerHub.AsHp.senTAsHpConIn.T - 273.15;
+	output Real TAsHpConOut = enerHub.AsHp.senTAsHpConOut.T - 273.15;
+	output Real TAsHpEvaIn = enerHub.AsHp.AsHp.HP.TEvaIn.T - 273.15;
+	output Real TAsHpEvaOut = enerHub.AsHp.AsHp.HP.TEvaOut.T - 273.15;
 
 	output Real mFlowAsHpCon = enerHub.AsHp.AsHp.HP.m2_flow;
 
@@ -307,18 +248,18 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real P_ASCHI = enerHub.AsChi.AsChi.PEl;
 	output Real E_ASCHI_kWh = enerHub.AsChi.EAsChi_kWh.y;
 	output Real QCon_ASCHI = enerHub.AsChi.AsChi.Chi.con.Q_flow;
-	output Real QEva_ASCHI = enerHub.AsChi.AsChi.QEva; // !!! Positive value
+	output Real QEva_ASCHI = enerHub.AsChi.AsChi.QEva;
 	output Real EER_ASHP = enerHub.AsChi.AsChi.EER;
 
-	output Real TAsChiEvaIn = enerHub.AsChi.senTAsChiEvaIn.T - 273.15; //°C
-	output Real TAsChiEvaOut = enerHub.AsChi.senTAsChiEvaOut.T - 273.15; //°C
-	output Real TAsChiConIn = enerHub.AsChi.AsChi.Chi.TConIn.T - 273.15; //°C
-	output Real TAsChiConOut = enerHub.AsChi.AsChi.Chi.TConOut.T - 273.15; //°C
+	output Real TAsChiEvaIn = enerHub.AsChi.senTAsChiEvaIn.T - 273.15;
+	output Real TAsChiEvaOut = enerHub.AsChi.senTAsChiEvaOut.T - 273.15;
+	output Real TAsChiConIn = enerHub.AsChi.AsChi.Chi.TConIn.T - 273.15;
+	output Real TAsChiConOut = enerHub.AsChi.AsChi.Chi.TConOut.T - 273.15;
 
 	output Real mFlowAsChiEva = enerHub.AsChi.AsChi.Chi.m1_flow;
 
 	// Tank
-	output Real Ttank = enerHub.tan.vol.T - 273.15; //°C
+	output Real Ttank = enerHub.tan.vol.T - 273.15;
 	output Real Vtank = enerHub.tan.VTan;
 
 	// PV panels
@@ -326,30 +267,29 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real P_PV_DC = enerHub.pv.solarPower.y;
 	output Real P_PV_AC = enerHub.pv.P;
 
-	// Battery 
-	output Real Bat_cap = enerHub.bat.EBat_max ;
-	output Real Bat_soc = enerHub.bat.SoC ;
-	output Real Bat_eff = enerHub.bat.eff ;
-	output Real Bat_Pcha = enerHub.bat.PCha ;
-	output Real Bat_PDem = enerHub.bat.PDem ;
-	output Real Bat_PGrid = enerHub.bat.PGrid ;
+	// Battery
+	output Real Bat_cap = enerHub.bat.EBat_max;
+	output Real Bat_soc = enerHub.bat.SoC;
+	output Real Bat_eff = enerHub.bat.eff;
+	output Real Bat_Pcha = enerHub.bat.PCha;
+	output Real Bat_PDem = enerHub.bat.PDem;
+	output Real Bat_PGrid = enerHub.bat.PGrid;
 	output Real Bat_SOCmax = enerHub.SoC_max;
 	output Real Bat_SOCmin = enerHub.SoC_min;
 
 	// STC panels
 	output Real A_STC = enerHub.stc.panels.totalArea;
 	output Real QStc = enerHub.stc.panels.QTot;
-
 	output Real QStcHex = enerHub.stc.hex.Q2_flow;
 
-	output Real TStcIn = enerHub.stc.senTPanelsIn.T - 273.15; //°C
-	output Real TStcOut = enerHub.stc.senTPanelsOut.T - 273.15; //°C
-	output Real TStcRegIn = enerHub.stc.senTRegIn.T - 273.15; //°C
-	output Real TStcRegOut = enerHub.stc.senTRegOut.T - 273.15; //°C
-	output Real TStcHeaIn = enerHub.stc.senTHeaIn.T - 273.15; //°C
-	output Real TStcHeaOut = enerHub.stc.senTHeaOut.T - 273.15; //°C
-	output Real TStcHexIn = enerHub.stc.senTHexIn.T -273.15; //°C
-	output Real TStcHexOut = enerHub.stc.senTHexOut.T -273.15; //°C
+	output Real TStcIn = enerHub.stc.senTPanelsIn.T - 273.15;
+	output Real TStcOut = enerHub.stc.senTPanelsOut.T - 273.15;
+	output Real TStcRegIn = enerHub.stc.senTRegIn.T - 273.15;
+	output Real TStcRegOut = enerHub.stc.senTRegOut.T - 273.15;
+	output Real TStcHeaIn = enerHub.stc.senTHeaIn.T - 273.15;
+	output Real TStcHeaOut = enerHub.stc.senTHeaOut.T - 273.15;
+	output Real TStcHexIn = enerHub.stc.senTHexIn.T -273.15;
+	output Real TStcHexOut = enerHub.stc.senTHexOut.T -273.15;
 
 	output Real mFlowStc = enerHub.stc.pumPanels.m_flow;
 	output Real mFlowStcHex = enerHub.stc.hex.m2_flow;
@@ -362,17 +302,16 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real A_PVT = enerHub.pvt.panels.totalArea;
 	output Real QPvt = enerHub.pvt.panels.QTot;
 	output Real PPvt = enerHub.pvt.P;
-	
 	output Real QPvtHex = enerHub.pvt.hex.Q2_flow;
 
-	output Real TPvtIn = enerHub.pvt.senTPanelsIn.T - 273.15; //°C
-	output Real TPvtOut = enerHub.pvt.senTPanelsOut.T - 273.15; //°C
-	output Real TPvtHexIn = enerHub.pvt.senTHexIn.T - 273.15; //°C
-	output Real TPvtHexOut = enerHub.pvt.senTHexOut.T - 273.15; //°C
-	output Real TPvtRegIn = enerHub.pvt.senTRegIn.T - 273.15; //°C
-	output Real TPvtRegOut = enerHub.pvt.senTRegOut.T - 273.15; //°C
-	output Real TPvtHeaIn = enerHub.pvt.senTHeaIn.T - 273.15; //°C
-	output Real TPvtHeaOut = enerHub.pvt.senTHeaOut.T - 273.15; //°C
+	output Real TPvtIn = enerHub.pvt.senTPanelsIn.T - 273.15;
+	output Real TPvtOut = enerHub.pvt.senTPanelsOut.T - 273.15;
+	output Real TPvtHexIn = enerHub.pvt.senTHexIn.T - 273.15;
+	output Real TPvtHexOut = enerHub.pvt.senTHexOut.T - 273.15;
+	output Real TPvtRegIn = enerHub.pvt.senTRegIn.T - 273.15;
+	output Real TPvtRegOut = enerHub.pvt.senTRegOut.T - 273.15;
+	output Real TPvtHeaIn = enerHub.pvt.senTHeaIn.T - 273.15;
+	output Real TPvtHeaOut = enerHub.pvt.senTHeaOut.T - 273.15;
 
 	output Real mFlowPvt = enerHub.pvt.pumPanels.m_flow;
 	output Real mFlowPvtHex = enerHub.pvt.hex.m2_flow;
@@ -384,9 +323,9 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 ////////////////////////////////
     // Demand Output variables    //
     ////////////////////////////////
-    
-    //Overall //
-	output Real P_Net_Houses = buildings.P; // Positive value means net offtake
+
+    // Overall
+	output Real P_Net_Houses = buildings.P;
 
 	output Modelica.Units.SI.Area AConditioned = 27984.094887848307 "Total floor surface area without a space type that indicates it is unconditioned.";
 	output Modelica.Units.NonSI.Temperature_degC TDewPoi = Modelica.Units.Conversions.to_degC(buildings.Houses.sim.TDewPoi) "Dew point temperature";
@@ -1507,6 +1446,7 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real HSha_window__Window_36x85 = buildings.Houses.window__Window_36x85.shaType.HSha "Total solar irradiance through 'window__Window_36x85'";
 	output Real RH = buildings.Houses.sim.XiEnv.phi "Outdoor relative humidity";
 	output Real Xw = buildings.Houses.sim.XiEnv.X[1] "Outdoor absolute humidity";
+	output Real objInt = 0;
 	output Real ppm_zone__A_0_Creative1 = buildings.Houses.zone__A_0_Creative1.ppm "";
 	output Real ppm_zone__A_0_UC_Gang1 = buildings.Houses.zone__A_0_UC_Gang1.ppm "";
 	output Real ppm_zone__A_1_App1 = buildings.Houses.zone__A_1_App1.ppm "";
@@ -2437,7 +2377,56 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.NonSI.Temperature_degC TRet_airHandlingUnit__zone__G_7_App2 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__zone__G_7_App2.TRet) "";
 	output Modelica.Units.NonSI.Temperature_degC TSup_airHandlingUnit__zone__G_7_App2 = Modelica.Units.Conversions.to_degC(buildings.Houses.airHandlingUnit__zone__G_7_App2.TSup) "";
 	output Modelica.Units.SI.Power P_AHU_G_7_App2 = buildings.Houses.airHandlingUnit__zone__G_7_App2.PSup + buildings.Houses.airHandlingUnit__zone__G_7_App2.PRet;
-	output Modelica.Units.SI.Power P_AHUs_total = buildings.Houses.airHandlingUnit__zone__A_0_Creative1.PSup + buildings.Houses.airHandlingUnit__zone__A_0_Creative1.PRet + buildings.Houses.airHandlingUnit__zone__A_1_App1.PSup + buildings.Houses.airHandlingUnit__zone__A_1_App1.PRet + buildings.Houses.airHandlingUnit__zone__A_1_App2.PSup + buildings.Houses.airHandlingUnit__zone__A_1_App2.PRet + buildings.Houses.airHandlingUnit__zone__A_2_App1.PSup + buildings.Houses.airHandlingUnit__zone__A_2_App1.PRet + buildings.Houses.airHandlingUnit__zone__A_2_App2.PSup + buildings.Houses.airHandlingUnit__zone__A_2_App2.PRet + buildings.Houses.airHandlingUnit__zone__A_3_App1.PSup + buildings.Houses.airHandlingUnit__zone__A_3_App1.PRet + buildings.Houses.airHandlingUnit__zone__A_3_App2.PSup + buildings.Houses.airHandlingUnit__zone__A_3_App2.PRet + buildings.Houses.airHandlingUnit__zone__A_4_App1.PSup + buildings.Houses.airHandlingUnit__zone__A_4_App1.PRet + buildings.Houses.airHandlingUnit__zone__A_4_App2.PSup + buildings.Houses.airHandlingUnit__zone__A_4_App2.PRet + buildings.Houses.airHandlingUnit__zone__A_5_App1.PSup + buildings.Houses.airHandlingUnit__zone__A_5_App1.PRet + buildings.Houses.airHandlingUnit__zone__A_5_App2.PSup + buildings.Houses.airHandlingUnit__zone__A_5_App2.PRet + buildings.Houses.airHandlingUnit__zone__A_6_App1.PSup + buildings.Houses.airHandlingUnit__zone__A_6_App1.PRet + buildings.Houses.airHandlingUnit__zone__A_6_App2.PSup + buildings.Houses.airHandlingUnit__zone__A_6_App2.PRet + buildings.Houses.airHandlingUnit__zone__A_7_App1.PSup + buildings.Houses.airHandlingUnit__zone__A_7_App1.PRet + buildings.Houses.airHandlingUnit__zone__A_7_App2.PSup + buildings.Houses.airHandlingUnit__zone__A_7_App2.PRet + buildings.Houses.airHandlingUnit__zone__B_0_App1.PSup + buildings.Houses.airHandlingUnit__zone__B_0_App1.PRet + buildings.Houses.airHandlingUnit__zone__B_0_App2.PSup + buildings.Houses.airHandlingUnit__zone__B_0_App2.PRet + buildings.Houses.airHandlingUnit__zone__B_1_App1.PSup + buildings.Houses.airHandlingUnit__zone__B_1_App1.PRet + buildings.Houses.airHandlingUnit__zone__B_1_App2.PSup + buildings.Houses.airHandlingUnit__zone__B_1_App2.PRet + buildings.Houses.airHandlingUnit__zone__B_1_App3.PSup + buildings.Houses.airHandlingUnit__zone__B_1_App3.PRet + buildings.Houses.airHandlingUnit__zone__B_2_App1.PSup + buildings.Houses.airHandlingUnit__zone__B_2_App1.PRet + buildings.Houses.airHandlingUnit__zone__B_2_App2.PSup + buildings.Houses.airHandlingUnit__zone__B_2_App2.PRet + buildings.Houses.airHandlingUnit__zone__B_2_App3.PSup + buildings.Houses.airHandlingUnit__zone__B_2_App3.PRet + buildings.Houses.airHandlingUnit__zone__B_3_App1.PSup + buildings.Houses.airHandlingUnit__zone__B_3_App1.PRet + buildings.Houses.airHandlingUnit__zone__B_3_App2.PSup + buildings.Houses.airHandlingUnit__zone__B_3_App2.PRet + buildings.Houses.airHandlingUnit__zone__B_3_App3.PSup + buildings.Houses.airHandlingUnit__zone__B_3_App3.PRet + buildings.Houses.airHandlingUnit__zone__B_4_App1.PSup + buildings.Houses.airHandlingUnit__zone__B_4_App1.PRet + buildings.Houses.airHandlingUnit__zone__CD_0_Creative1.PSup + buildings.Houses.airHandlingUnit__zone__CD_0_Creative1.PRet + buildings.Houses.airHandlingUnit__zone__CD_1_App1.PSup + buildings.Houses.airHandlingUnit__zone__CD_1_App1.PRet + buildings.Houses.airHandlingUnit__zone__CD_1_App2.PSup + buildings.Houses.airHandlingUnit__zone__CD_1_App2.PRet + buildings.Houses.airHandlingUnit__zone__CD_2_App1.PSup + buildings.Houses.airHandlingUnit__zone__CD_2_App1.PRet + buildings.Houses.airHandlingUnit__zone__CD_2_App2.PSup + buildings.Houses.airHandlingUnit__zone__CD_2_App2.PRet + buildings.Houses.airHandlingUnit__zone__CD_3_App1.PSup + buildings.Houses.airHandlingUnit__zone__CD_3_App1.PRet + buildings.Houses.airHandlingUnit__zone__CD_3_App2.PSup + buildings.Houses.airHandlingUnit__zone__CD_3_App2.PRet + buildings.Houses.airHandlingUnit__zone__CD_4_App1.PSup + buildings.Houses.airHandlingUnit__zone__CD_4_App1.PRet + buildings.Houses.airHandlingUnit__zone__CD_4_App2.PSup + buildings.Houses.airHandlingUnit__zone__CD_4_App2.PRet + buildings.Houses.airHandlingUnit__zone__CD_5_App1.PSup + buildings.Houses.airHandlingUnit__zone__CD_5_App1.PRet + buildings.Houses.airHandlingUnit__zone__CD_6_App1.PSup + buildings.Houses.airHandlingUnit__zone__CD_6_App1.PRet + buildings.Houses.airHandlingUnit__zone__CD_7_App1.PSup + buildings.Houses.airHandlingUnit__zone__CD_7_App1.PRet + buildings.Houses.airHandlingUnit__zone__E_0_Creative1.PSup + buildings.Houses.airHandlingUnit__zone__E_0_Creative1.PRet + buildings.Houses.airHandlingUnit__zone__E_1_Creative1.PSup + buildings.Houses.airHandlingUnit__zone__E_1_Creative1.PRet + buildings.Houses.airHandlingUnit__zone__E_2_App1.PSup + buildings.Houses.airHandlingUnit__zone__E_2_App1.PRet + buildings.Houses.airHandlingUnit__zone__E_2_App2.PSup + buildings.Houses.airHandlingUnit__zone__E_2_App2.PRet + buildings.Houses.airHandlingUnit__zone__E_3_App1.PSup + buildings.Houses.airHandlingUnit__zone__E_3_App1.PRet + buildings.Houses.airHandlingUnit__zone__E_3_App2.PSup + buildings.Houses.airHandlingUnit__zone__E_3_App2.PRet + buildings.Houses.airHandlingUnit__zone__E_4_App1.PSup + buildings.Houses.airHandlingUnit__zone__E_4_App1.PRet + buildings.Houses.airHandlingUnit__zone__E_4_App2.PSup + buildings.Houses.airHandlingUnit__zone__E_4_App2.PRet + buildings.Houses.airHandlingUnit__zone__E_5_App1.PSup + buildings.Houses.airHandlingUnit__zone__E_5_App1.PRet + buildings.Houses.airHandlingUnit__zone__F_0_Creative1.PSup + buildings.Houses.airHandlingUnit__zone__F_0_Creative1.PRet + buildings.Houses.airHandlingUnit__zone__F_0_Creative2.PSup + buildings.Houses.airHandlingUnit__zone__F_0_Creative2.PRet + buildings.Houses.airHandlingUnit__zone__F_1_App1.PSup + buildings.Houses.airHandlingUnit__zone__F_1_App1.PRet + buildings.Houses.airHandlingUnit__zone__F_1_App2.PSup + buildings.Houses.airHandlingUnit__zone__F_1_App2.PRet + buildings.Houses.airHandlingUnit__zone__F_2_App1.PSup + buildings.Houses.airHandlingUnit__zone__F_2_App1.PRet + buildings.Houses.airHandlingUnit__zone__F_2_App2.PSup + buildings.Houses.airHandlingUnit__zone__F_2_App2.PRet + buildings.Houses.airHandlingUnit__zone__F_3_App1.PSup + buildings.Houses.airHandlingUnit__zone__F_3_App1.PRet + buildings.Houses.airHandlingUnit__zone__F_3_App2.PSup + buildings.Houses.airHandlingUnit__zone__F_3_App2.PRet + buildings.Houses.airHandlingUnit__zone__F_4_App1.PSup + buildings.Houses.airHandlingUnit__zone__F_4_App1.PRet + buildings.Houses.airHandlingUnit__zone__F_4_App2.PSup + buildings.Houses.airHandlingUnit__zone__F_4_App2.PRet + buildings.Houses.airHandlingUnit__zone__F_5_App1.PSup + buildings.Houses.airHandlingUnit__zone__F_5_App1.PRet + buildings.Houses.airHandlingUnit__zone__F_5_App2.PSup + buildings.Houses.airHandlingUnit__zone__F_5_App2.PRet + buildings.Houses.airHandlingUnit__zone__F_6_App1.PSup + buildings.Houses.airHandlingUnit__zone__F_6_App1.PRet + buildings.Houses.airHandlingUnit__zone__F_6_App2.PSup + buildings.Houses.airHandlingUnit__zone__F_6_App2.PRet + buildings.Houses.airHandlingUnit__zone__F_7_App1.PSup + buildings.Houses.airHandlingUnit__zone__F_7_App1.PRet + buildings.Houses.airHandlingUnit__zone__F_7_App2.PSup + buildings.Houses.airHandlingUnit__zone__F_7_App2.PRet + buildings.Houses.airHandlingUnit__zone__G_0_Creative1.PSup + buildings.Houses.airHandlingUnit__zone__G_0_Creative1.PRet + buildings.Houses.airHandlingUnit__zone__G_1_Creative1.PSup + buildings.Houses.airHandlingUnit__zone__G_1_Creative1.PRet + buildings.Houses.airHandlingUnit__zone__G_2_App1.PSup + buildings.Houses.airHandlingUnit__zone__G_2_App1.PRet + buildings.Houses.airHandlingUnit__zone__G_2_App2.PSup + buildings.Houses.airHandlingUnit__zone__G_2_App2.PRet + buildings.Houses.airHandlingUnit__zone__G_3_App1.PSup + buildings.Houses.airHandlingUnit__zone__G_3_App1.PRet + buildings.Houses.airHandlingUnit__zone__G_3_App2.PSup + buildings.Houses.airHandlingUnit__zone__G_3_App2.PRet + buildings.Houses.airHandlingUnit__zone__G_4_App1.PSup + buildings.Houses.airHandlingUnit__zone__G_4_App1.PRet + buildings.Houses.airHandlingUnit__zone__G_4_App2.PSup + buildings.Houses.airHandlingUnit__zone__G_4_App2.PRet + buildings.Houses.airHandlingUnit__zone__G_5_App1.PSup + buildings.Houses.airHandlingUnit__zone__G_5_App1.PRet + buildings.Houses.airHandlingUnit__zone__G_5_App2.PSup + buildings.Houses.airHandlingUnit__zone__G_5_App2.PRet + buildings.Houses.airHandlingUnit__zone__G_6_App1.PSup + buildings.Houses.airHandlingUnit__zone__G_6_App1.PRet + buildings.Houses.airHandlingUnit__zone__G_6_App2.PSup + buildings.Houses.airHandlingUnit__zone__G_6_App2.PRet + buildings.Houses.airHandlingUnit__zone__G_7_App1.PSup + buildings.Houses.airHandlingUnit__zone__G_7_App1.PRet + buildings.Houses.airHandlingUnit__zone__G_7_App2.PSup + buildings.Houses.airHandlingUnit__zone__G_7_App2.PRet;
+	output Modelica.Units.SI.Power P_AHUs_A_0 = P_AHU_A_0_Creative1;
+	output Modelica.Units.SI.Power P_AHUs_A_1 = P_AHU_A_1_App1 + P_AHU_A_1_App2;
+	output Modelica.Units.SI.Power P_AHUs_A_2 = P_AHU_A_2_App1 + P_AHU_A_2_App2;
+	output Modelica.Units.SI.Power P_AHUs_A_3 = P_AHU_A_3_App1 + P_AHU_A_3_App2;
+	output Modelica.Units.SI.Power P_AHUs_A_4 = P_AHU_A_4_App1 + P_AHU_A_4_App2;
+	output Modelica.Units.SI.Power P_AHUs_A_5 = P_AHU_A_5_App1 + P_AHU_A_5_App2;
+	output Modelica.Units.SI.Power P_AHUs_A_6 = P_AHU_A_6_App1 + P_AHU_A_6_App2;
+	output Modelica.Units.SI.Power P_AHUs_A_7 = P_AHU_A_7_App1 + P_AHU_A_7_App2;
+	output Modelica.Units.SI.Power P_AHUs_B_0 = P_AHU_B_0_App1 + P_AHU_B_0_App2;
+	output Modelica.Units.SI.Power P_AHUs_B_1 = P_AHU_B_1_App1 + P_AHU_B_1_App2 + P_AHU_B_1_App3;
+	output Modelica.Units.SI.Power P_AHUs_B_2 = P_AHU_B_2_App1 + P_AHU_B_2_App2 + P_AHU_B_2_App3;
+	output Modelica.Units.SI.Power P_AHUs_B_3 = P_AHU_B_3_App1 + P_AHU_B_3_App2 + P_AHU_B_3_App3;
+	output Modelica.Units.SI.Power P_AHUs_B_4 = P_AHU_B_4_App1;
+	output Modelica.Units.SI.Power P_AHUs_CD_0 = P_AHU_CD_0_Creative1;
+	output Modelica.Units.SI.Power P_AHUs_CD_1 = P_AHU_CD_1_App1 + P_AHU_CD_1_App2;
+	output Modelica.Units.SI.Power P_AHUs_CD_2 = P_AHU_CD_2_App1 + P_AHU_CD_2_App2;
+	output Modelica.Units.SI.Power P_AHUs_CD_3 = P_AHU_CD_3_App1 + P_AHU_CD_3_App2;
+	output Modelica.Units.SI.Power P_AHUs_CD_4 = P_AHU_CD_4_App1 + P_AHU_CD_4_App2;
+	output Modelica.Units.SI.Power P_AHUs_CD_5 = P_AHU_CD_5_App1;
+	output Modelica.Units.SI.Power P_AHUs_CD_6 = P_AHU_CD_6_App1;
+	output Modelica.Units.SI.Power P_AHUs_CD_7 = P_AHU_CD_7_App1;
+	output Modelica.Units.SI.Power P_AHUs_E_0 = P_AHU_E_0_Creative1;
+	output Modelica.Units.SI.Power P_AHUs_E_1 = P_AHU_E_1_Creative1;
+	output Modelica.Units.SI.Power P_AHUs_E_2 = P_AHU_E_2_App1 + P_AHU_E_2_App2;
+	output Modelica.Units.SI.Power P_AHUs_E_3 = P_AHU_E_3_App1 + P_AHU_E_3_App2;
+	output Modelica.Units.SI.Power P_AHUs_E_4 = P_AHU_E_4_App1 + P_AHU_E_4_App2;
+	output Modelica.Units.SI.Power P_AHUs_E_5 = P_AHU_E_5_App1;
+	output Modelica.Units.SI.Power P_AHUs_F_0 = P_AHU_F_0_Creative1 + P_AHU_F_0_Creative2;
+	output Modelica.Units.SI.Power P_AHUs_F_1 = P_AHU_F_1_App1 + P_AHU_F_1_App2;
+	output Modelica.Units.SI.Power P_AHUs_F_2 = P_AHU_F_2_App1 + P_AHU_F_2_App2;
+	output Modelica.Units.SI.Power P_AHUs_F_3 = P_AHU_F_3_App1 + P_AHU_F_3_App2;
+	output Modelica.Units.SI.Power P_AHUs_F_4 = P_AHU_F_4_App1 + P_AHU_F_4_App2;
+	output Modelica.Units.SI.Power P_AHUs_F_5 = P_AHU_F_5_App1 + P_AHU_F_5_App2;
+	output Modelica.Units.SI.Power P_AHUs_F_6 = P_AHU_F_6_App1 + P_AHU_F_6_App2;
+	output Modelica.Units.SI.Power P_AHUs_F_7 = P_AHU_F_7_App1 + P_AHU_F_7_App2;
+	output Modelica.Units.SI.Power P_AHUs_G_0 = P_AHU_G_0_Creative1;
+	output Modelica.Units.SI.Power P_AHUs_G_1 = P_AHU_G_1_Creative1;
+	output Modelica.Units.SI.Power P_AHUs_G_2 = P_AHU_G_2_App1 + P_AHU_G_2_App2;
+	output Modelica.Units.SI.Power P_AHUs_G_3 = P_AHU_G_3_App1 + P_AHU_G_3_App2;
+	output Modelica.Units.SI.Power P_AHUs_G_4 = P_AHU_G_4_App1 + P_AHU_G_4_App2;
+	output Modelica.Units.SI.Power P_AHUs_G_5 = P_AHU_G_5_App1 + P_AHU_G_5_App2;
+	output Modelica.Units.SI.Power P_AHUs_G_6 = P_AHU_G_6_App1 + P_AHU_G_6_App2;
+	output Modelica.Units.SI.Power P_AHUs_G_7 = P_AHU_G_7_App1 + P_AHU_G_7_App2;
+	output Modelica.Units.SI.Power P_AHUs_A = P_AHUs_A_0 + P_AHUs_A_1 + P_AHUs_A_2 + P_AHUs_A_3 + P_AHUs_A_4 + P_AHUs_A_5 + P_AHUs_A_6 + P_AHUs_A_7;
+	output Modelica.Units.SI.Power P_AHUs_B = P_AHUs_B_0 + P_AHUs_B_1 + P_AHUs_B_2 + P_AHUs_B_3 + P_AHUs_B_4;
+	output Modelica.Units.SI.Power P_AHUs_CD = P_AHUs_CD_0 + P_AHUs_CD_1 + P_AHUs_CD_2 + P_AHUs_CD_3 + P_AHUs_CD_4 + P_AHUs_CD_5 + P_AHUs_CD_6 + P_AHUs_CD_7;
+	output Modelica.Units.SI.Power P_AHUs_E = P_AHUs_E_0 + P_AHUs_E_1 + P_AHUs_E_2 + P_AHUs_E_3 + P_AHUs_E_4 + P_AHUs_E_5;
+	output Modelica.Units.SI.Power P_AHUs_F = P_AHUs_F_0 + P_AHUs_F_1 + P_AHUs_F_2 + P_AHUs_F_3 + P_AHUs_F_4 + P_AHUs_F_5 + P_AHUs_F_6 + P_AHUs_F_7;
+	output Modelica.Units.SI.Power P_AHUs_G = P_AHUs_G_0 + P_AHUs_G_1 + P_AHUs_G_2 + P_AHUs_G_3 + P_AHUs_G_4 + P_AHUs_G_5 + P_AHUs_G_6 + P_AHUs_G_7;
+	output Modelica.Units.SI.Power P_AHUs_total = P_AHUs_A + P_AHUs_B + P_AHUs_CD + P_AHUs_E + P_AHUs_F + P_AHUs_G;
 	output Real COP_bhp_A = buildings.Houses.bhp_A.bhp.COP;
 	output Real QCon_bhp_A = buildings.Houses.bhp_A.bhp.QCon;
 	output Real P_bhp_A = buildings.Houses.bhp_A.bhp.PEl;
@@ -2476,7 +2465,7 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.MassFlowRate m_flow_bhpEva_G = buildings.Houses.pum_bhp_G.m_flow;
 	output Modelica.Units.SI.Power P_BHPs_total = P_bhp_A + P_bhp_B + P_bhp_CD + P_bhp_E + P_bhp_F + P_bhp_G;
 
-	//Comfort
+	// Comfort discomfort values
 	output Real DiscmfHea_zone_A_0_Creative1 = max(0, TSetHea - buildings.Houses.T_zone__A_0_Creative1);
 	output Real DiscmfCoo_zone_A_0_Creative1 = max(0, -TSetCoo + buildings.Houses.T_zone__A_0_Creative1);
 	output Real DiscmfHea_zone_A_1_App1 = max(0, TSetHea - buildings.Houses.T_zone__A_1_App1);
@@ -2633,5 +2622,103 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real DiscmfCoo_zone_G_7_App1 = max(0, -TSetCoo + buildings.Houses.T_zone__G_7_App1);
 	output Real DiscmfHea_zone_G_7_App2 = max(0, TSetHea - buildings.Houses.T_zone__G_7_App2);
 	output Real DiscmfCoo_zone_G_7_App2 = max(0, -TSetCoo + buildings.Houses.T_zone__G_7_App2);
+	output Real DiscmfHea_A_0 = DiscmfHea_zone_A_0_Creative1;
+	output Real DiscmfCoo_A_0 = DiscmfCoo_zone_A_0_Creative1;
+	output Real DiscmfHea_A_1 = DiscmfHea_zone_A_1_App1 + DiscmfHea_zone_A_1_App2;
+	output Real DiscmfCoo_A_1 = DiscmfCoo_zone_A_1_App1 + DiscmfCoo_zone_A_1_App2;
+	output Real DiscmfHea_A_2 = DiscmfHea_zone_A_2_App1 + DiscmfHea_zone_A_2_App2;
+	output Real DiscmfCoo_A_2 = DiscmfCoo_zone_A_2_App1 + DiscmfCoo_zone_A_2_App2;
+	output Real DiscmfHea_A_3 = DiscmfHea_zone_A_3_App1 + DiscmfHea_zone_A_3_App2;
+	output Real DiscmfCoo_A_3 = DiscmfCoo_zone_A_3_App1 + DiscmfCoo_zone_A_3_App2;
+	output Real DiscmfHea_A_4 = DiscmfHea_zone_A_4_App1 + DiscmfHea_zone_A_4_App2;
+	output Real DiscmfCoo_A_4 = DiscmfCoo_zone_A_4_App1 + DiscmfCoo_zone_A_4_App2;
+	output Real DiscmfHea_A_5 = DiscmfHea_zone_A_5_App1 + DiscmfHea_zone_A_5_App2;
+	output Real DiscmfCoo_A_5 = DiscmfCoo_zone_A_5_App1 + DiscmfCoo_zone_A_5_App2;
+	output Real DiscmfHea_A_6 = DiscmfHea_zone_A_6_App1 + DiscmfHea_zone_A_6_App2;
+	output Real DiscmfCoo_A_6 = DiscmfCoo_zone_A_6_App1 + DiscmfCoo_zone_A_6_App2;
+	output Real DiscmfHea_A_7 = DiscmfHea_zone_A_7_App1 + DiscmfHea_zone_A_7_App2;
+	output Real DiscmfCoo_A_7 = DiscmfCoo_zone_A_7_App1 + DiscmfCoo_zone_A_7_App2;
+	output Real DiscmfHea_B_0 = DiscmfHea_zone_B_0_App1 + DiscmfHea_zone_B_0_App2;
+	output Real DiscmfCoo_B_0 = DiscmfCoo_zone_B_0_App1 + DiscmfCoo_zone_B_0_App2;
+	output Real DiscmfHea_B_1 = DiscmfHea_zone_B_1_App1 + DiscmfHea_zone_B_1_App2 + DiscmfHea_zone_B_1_App3;
+	output Real DiscmfCoo_B_1 = DiscmfCoo_zone_B_1_App1 + DiscmfCoo_zone_B_1_App2 + DiscmfCoo_zone_B_1_App3;
+	output Real DiscmfHea_B_2 = DiscmfHea_zone_B_2_App1 + DiscmfHea_zone_B_2_App2 + DiscmfHea_zone_B_2_App3;
+	output Real DiscmfCoo_B_2 = DiscmfCoo_zone_B_2_App1 + DiscmfCoo_zone_B_2_App2 + DiscmfCoo_zone_B_2_App3;
+	output Real DiscmfHea_B_3 = DiscmfHea_zone_B_3_App1 + DiscmfHea_zone_B_3_App2 + DiscmfHea_zone_B_3_App3;
+	output Real DiscmfCoo_B_3 = DiscmfCoo_zone_B_3_App1 + DiscmfCoo_zone_B_3_App2 + DiscmfCoo_zone_B_3_App3;
+	output Real DiscmfHea_B_4 = DiscmfHea_zone_B_4_App1;
+	output Real DiscmfCoo_B_4 = DiscmfCoo_zone_B_4_App1;
+	output Real DiscmfHea_CD_0 = DiscmfHea_zone_CD_0_Creative1;
+	output Real DiscmfCoo_CD_0 = DiscmfCoo_zone_CD_0_Creative1;
+	output Real DiscmfHea_CD_1 = DiscmfHea_zone_CD_1_App1 + DiscmfHea_zone_CD_1_App2;
+	output Real DiscmfCoo_CD_1 = DiscmfCoo_zone_CD_1_App1 + DiscmfCoo_zone_CD_1_App2;
+	output Real DiscmfHea_CD_2 = DiscmfHea_zone_CD_2_App1 + DiscmfHea_zone_CD_2_App2;
+	output Real DiscmfCoo_CD_2 = DiscmfCoo_zone_CD_2_App1 + DiscmfCoo_zone_CD_2_App2;
+	output Real DiscmfHea_CD_3 = DiscmfHea_zone_CD_3_App1 + DiscmfHea_zone_CD_3_App2;
+	output Real DiscmfCoo_CD_3 = DiscmfCoo_zone_CD_3_App1 + DiscmfCoo_zone_CD_3_App2;
+	output Real DiscmfHea_CD_4 = DiscmfHea_zone_CD_4_App1 + DiscmfHea_zone_CD_4_App2;
+	output Real DiscmfCoo_CD_4 = DiscmfCoo_zone_CD_4_App1 + DiscmfCoo_zone_CD_4_App2;
+	output Real DiscmfHea_CD_5 = DiscmfHea_zone_CD_5_App1;
+	output Real DiscmfCoo_CD_5 = DiscmfCoo_zone_CD_5_App1;
+	output Real DiscmfHea_CD_6 = DiscmfHea_zone_CD_6_App1;
+	output Real DiscmfCoo_CD_6 = DiscmfCoo_zone_CD_6_App1;
+	output Real DiscmfHea_CD_7 = DiscmfHea_zone_CD_7_App1;
+	output Real DiscmfCoo_CD_7 = DiscmfCoo_zone_CD_7_App1;
+	output Real DiscmfHea_E_0 = DiscmfHea_zone_E_0_Creative1;
+	output Real DiscmfCoo_E_0 = DiscmfCoo_zone_E_0_Creative1;
+	output Real DiscmfHea_E_1 = DiscmfHea_zone_E_1_Creative1;
+	output Real DiscmfCoo_E_1 = DiscmfCoo_zone_E_1_Creative1;
+	output Real DiscmfHea_E_2 = DiscmfHea_zone_E_2_App1 + DiscmfHea_zone_E_2_App2;
+	output Real DiscmfCoo_E_2 = DiscmfCoo_zone_E_2_App1 + DiscmfCoo_zone_E_2_App2;
+	output Real DiscmfHea_E_3 = DiscmfHea_zone_E_3_App1 + DiscmfHea_zone_E_3_App2;
+	output Real DiscmfCoo_E_3 = DiscmfCoo_zone_E_3_App1 + DiscmfCoo_zone_E_3_App2;
+	output Real DiscmfHea_E_4 = DiscmfHea_zone_E_4_App1 + DiscmfHea_zone_E_4_App2;
+	output Real DiscmfCoo_E_4 = DiscmfCoo_zone_E_4_App1 + DiscmfCoo_zone_E_4_App2;
+	output Real DiscmfHea_E_5 = DiscmfHea_zone_E_5_App1;
+	output Real DiscmfCoo_E_5 = DiscmfCoo_zone_E_5_App1;
+	output Real DiscmfHea_F_0 = DiscmfHea_zone_F_0_Creative1 + DiscmfHea_zone_F_0_Creative2;
+	output Real DiscmfCoo_F_0 = DiscmfCoo_zone_F_0_Creative1 + DiscmfCoo_zone_F_0_Creative2;
+	output Real DiscmfHea_F_1 = DiscmfHea_zone_F_1_App1 + DiscmfHea_zone_F_1_App2;
+	output Real DiscmfCoo_F_1 = DiscmfCoo_zone_F_1_App1 + DiscmfCoo_zone_F_1_App2;
+	output Real DiscmfHea_F_2 = DiscmfHea_zone_F_2_App1 + DiscmfHea_zone_F_2_App2;
+	output Real DiscmfCoo_F_2 = DiscmfCoo_zone_F_2_App1 + DiscmfCoo_zone_F_2_App2;
+	output Real DiscmfHea_F_3 = DiscmfHea_zone_F_3_App1 + DiscmfHea_zone_F_3_App2;
+	output Real DiscmfCoo_F_3 = DiscmfCoo_zone_F_3_App1 + DiscmfCoo_zone_F_3_App2;
+	output Real DiscmfHea_F_4 = DiscmfHea_zone_F_4_App1 + DiscmfHea_zone_F_4_App2;
+	output Real DiscmfCoo_F_4 = DiscmfCoo_zone_F_4_App1 + DiscmfCoo_zone_F_4_App2;
+	output Real DiscmfHea_F_5 = DiscmfHea_zone_F_5_App1 + DiscmfHea_zone_F_5_App2;
+	output Real DiscmfCoo_F_5 = DiscmfCoo_zone_F_5_App1 + DiscmfCoo_zone_F_5_App2;
+	output Real DiscmfHea_F_6 = DiscmfHea_zone_F_6_App1 + DiscmfHea_zone_F_6_App2;
+	output Real DiscmfCoo_F_6 = DiscmfCoo_zone_F_6_App1 + DiscmfCoo_zone_F_6_App2;
+	output Real DiscmfHea_F_7 = DiscmfHea_zone_F_7_App1 + DiscmfHea_zone_F_7_App2;
+	output Real DiscmfCoo_F_7 = DiscmfCoo_zone_F_7_App1 + DiscmfCoo_zone_F_7_App2;
+	output Real DiscmfHea_G_0 = DiscmfHea_zone_G_0_Creative1;
+	output Real DiscmfCoo_G_0 = DiscmfCoo_zone_G_0_Creative1;
+	output Real DiscmfHea_G_1 = DiscmfHea_zone_G_1_Creative1;
+	output Real DiscmfCoo_G_1 = DiscmfCoo_zone_G_1_Creative1;
+	output Real DiscmfHea_G_2 = DiscmfHea_zone_G_2_App1 + DiscmfHea_zone_G_2_App2;
+	output Real DiscmfCoo_G_2 = DiscmfCoo_zone_G_2_App1 + DiscmfCoo_zone_G_2_App2;
+	output Real DiscmfHea_G_3 = DiscmfHea_zone_G_3_App1 + DiscmfHea_zone_G_3_App2;
+	output Real DiscmfCoo_G_3 = DiscmfCoo_zone_G_3_App1 + DiscmfCoo_zone_G_3_App2;
+	output Real DiscmfHea_G_4 = DiscmfHea_zone_G_4_App1 + DiscmfHea_zone_G_4_App2;
+	output Real DiscmfCoo_G_4 = DiscmfCoo_zone_G_4_App1 + DiscmfCoo_zone_G_4_App2;
+	output Real DiscmfHea_G_5 = DiscmfHea_zone_G_5_App1 + DiscmfHea_zone_G_5_App2;
+	output Real DiscmfCoo_G_5 = DiscmfCoo_zone_G_5_App1 + DiscmfCoo_zone_G_5_App2;
+	output Real DiscmfHea_G_6 = DiscmfHea_zone_G_6_App1 + DiscmfHea_zone_G_6_App2;
+	output Real DiscmfCoo_G_6 = DiscmfCoo_zone_G_6_App1 + DiscmfCoo_zone_G_6_App2;
+	output Real DiscmfHea_G_7 = DiscmfHea_zone_G_7_App1 + DiscmfHea_zone_G_7_App2;
+	output Real DiscmfCoo_G_7 = DiscmfCoo_zone_G_7_App1 + DiscmfCoo_zone_G_7_App2;
+	output Real DiscmfHea_A = DiscmfHea_A_0 + DiscmfHea_A_1 + DiscmfHea_A_2 + DiscmfHea_A_3 + DiscmfHea_A_4 + DiscmfHea_A_5 + DiscmfHea_A_6 + DiscmfHea_A_7;
+	output Real DiscmfCoo_A = DiscmfCoo_A_0 + DiscmfCoo_A_1 + DiscmfCoo_A_2 + DiscmfCoo_A_3 + DiscmfCoo_A_4 + DiscmfCoo_A_5 + DiscmfCoo_A_6 + DiscmfCoo_A_7;
+	output Real DiscmfHea_B = DiscmfHea_B_0 + DiscmfHea_B_1 + DiscmfHea_B_2 + DiscmfHea_B_3 + DiscmfHea_B_4;
+	output Real DiscmfCoo_B = DiscmfCoo_B_0 + DiscmfCoo_B_1 + DiscmfCoo_B_2 + DiscmfCoo_B_3 + DiscmfCoo_B_4;
+	output Real DiscmfHea_CD = DiscmfHea_CD_0 + DiscmfHea_CD_1 + DiscmfHea_CD_2 + DiscmfHea_CD_3 + DiscmfHea_CD_4 + DiscmfHea_CD_5 + DiscmfHea_CD_6 + DiscmfHea_CD_7;
+	output Real DiscmfCoo_CD = DiscmfCoo_CD_0 + DiscmfCoo_CD_1 + DiscmfCoo_CD_2 + DiscmfCoo_CD_3 + DiscmfCoo_CD_4 + DiscmfCoo_CD_5 + DiscmfCoo_CD_6 + DiscmfCoo_CD_7;
+	output Real DiscmfHea_E = DiscmfHea_E_0 + DiscmfHea_E_1 + DiscmfHea_E_2 + DiscmfHea_E_3 + DiscmfHea_E_4 + DiscmfHea_E_5;
+	output Real DiscmfCoo_E = DiscmfCoo_E_0 + DiscmfCoo_E_1 + DiscmfCoo_E_2 + DiscmfCoo_E_3 + DiscmfCoo_E_4 + DiscmfCoo_E_5;
+	output Real DiscmfHea_F = DiscmfHea_F_0 + DiscmfHea_F_1 + DiscmfHea_F_2 + DiscmfHea_F_3 + DiscmfHea_F_4 + DiscmfHea_F_5 + DiscmfHea_F_6 + DiscmfHea_F_7;
+	output Real DiscmfCoo_F = DiscmfCoo_F_0 + DiscmfCoo_F_1 + DiscmfCoo_F_2 + DiscmfCoo_F_3 + DiscmfCoo_F_4 + DiscmfCoo_F_5 + DiscmfCoo_F_6 + DiscmfCoo_F_7;
+	output Real DiscmfHea_G = DiscmfHea_G_0 + DiscmfHea_G_1 + DiscmfHea_G_2 + DiscmfHea_G_3 + DiscmfHea_G_4 + DiscmfHea_G_5 + DiscmfHea_G_6 + DiscmfHea_G_7;
+	output Real DiscmfCoo_G = DiscmfCoo_G_0 + DiscmfCoo_G_1 + DiscmfCoo_G_2 + DiscmfCoo_G_3 + DiscmfCoo_G_4 + DiscmfCoo_G_5 + DiscmfCoo_G_6 + DiscmfCoo_G_7;
 
 end Lanssens;
