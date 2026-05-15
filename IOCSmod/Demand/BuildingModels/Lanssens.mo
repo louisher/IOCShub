@@ -19,7 +19,7 @@ model Lanssens
     tableOnFile=true,
     tableName="data",
     fileName=IDEAS.BoundaryConditions.WeatherData.BaseClasses.getAbsolutePath(
-        "modelica:/ArtesMod/Resources/ElecProfiles/Elec_use_appliances_normalized.txt"),
+        "modelica://IOCSmod/Resources/OccupancyProfiles/Appliance_power_demand_StijnS_14houses.txt"),
     columns=2:2,
     smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments,
     extrapolation=Modelica.Blocks.Types.Extrapolation.Periodic,
@@ -29,7 +29,7 @@ model Lanssens
   Modelica.Blocks.Sources.RealExpression Expr_P_AHU_BHPs(y=P_AHUs_total +
         P_BHPs_total)
     annotation (Placement(transformation(extent={{-100,30},{-80,50}})));
-  Modelica.Blocks.Math.Sum Pnet(nin=2, k={1,159})
+  Modelica.Blocks.Math.Sum Pnet(nin=2, k={1,159/14})
     annotation (Placement(visible = true, transformation(origin={-30,0},      extent = {{-10, -10}, {10, 10}}, rotation=0)));
 equation
   connect(Expr_P_AHU_BHPs.y, Pnet.u[1]) annotation (Line(points={{-79,40},{-60,
