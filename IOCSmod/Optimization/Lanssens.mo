@@ -1,8 +1,7 @@
 within IOCSmod.Optimization;
 model Lanssens
-  extends IOCSmod.Optimization.Interface(sim(n50=buildings.Houses.n50, incAndAziInBus={{IDEAS.Types.Tilt.Ceiling,0},{IDEAS.Types.Tilt.Wall,downAngle},{IDEAS.Types.Tilt.Wall,leftAngle},{IDEAS.Types.Tilt.Wall,upAngle},{IDEAS.Types.Tilt.Wall,rightAngle}, {IDEAS.Types.Tilt.Floor,0}},
-      interZonalAirFlowType=IDEAS.BoundaryConditions.Types.InterZonalAirFlow.None), openSystemConservationOfEnergy=true,
-    computeConservationOfEnergy=true);
+  extends IOCSmod.Optimization.Interface(sim(n50=buildings.Houses.n50, incAndAziInBus={{IDEAS.Types.Tilt.Ceiling,0},{IDEAS.Types.Tilt.Wall, buildings.Houses.downAngle},{IDEAS.Types.Tilt.Wall,buildings.Houses.leftAngle},{IDEAS.Types.Tilt.Wall,buildings.Houses.upAngle},{IDEAS.Types.Tilt.Wall,buildings.Houses.rightAngle}, {IDEAS.Types.Tilt.Floor,0}},
+      interZonalAirFlowType=IDEAS.BoundaryConditions.Types.InterZonalAirFlow.None));
 
   IOCSmod.Blocks.Demand.Clusters.Lanssens buildings(addDummyEquation=
         addDummyEquation)

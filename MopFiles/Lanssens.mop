@@ -20,7 +20,7 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
                                                 enerHub.groTemResDat.kappa.kappa={2.9670546203941707e-06, 1.301365313898155e-06, 1.1714977157588399e-06, 1.1469588551128406e-06, 1.1491727221787094e-06, 1.1564631274669545e-06, 1.1617624111854974e-06, 1.166277593310128e-06, 1.2236906138917169e-06, 1.670945902569785e-06, 3.0109719489022908e-06, 5.655815222951366e-06, 1.0308447541584948e-05, 1.770427589644899e-05, 2.7682539825208647e-05, 3.779049848422334e-05, 4.309318483149614e-05, 3.934020493380261e-05, 1.3387923824395494e-05},
                                                 enerHub.borFieDat.conDat.cooBor=[0,0; 0,6]);
 
-	///////////////////////////////////
+///////////////////////////////////
 	// IOCS definitions //
 	///////////////////////////////////
 
@@ -246,65 +246,140 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	/// Overall objective ///
 	output Real ObjInt = ObjIntElecCost + ObjIntComfSCoo + ObjIntComfSHea + ObjIntBat + ObjIntTSupMax + ObjIntTSupMin + ObjIntTBorMin + ObjIntTBorMax;
 
-//////////////////////////////////
-    // Energy Hub Output variables  //
-    //////////////////////////////////
+// General
+	output Real P_Net_enerHub = enerHub.P;
+	output Real Q_enerHub = enerHub.QEnergyHub;
+	
+	// GSHP
+	output Real QNom_GSHP = enerHub.Qnom_GsHp;
+	output Real P_GSHP = enerHub.GsHp.GsHp.PEl;
+	output Real E_GSHP_kWh = enerHub.GsHp.EGsHp_kWh.y;
+	output Real QCon_GSHP = enerHub.GsHp.GsHp.QCon;
+	output Real QEva_GSHP = -enerHub.GsHp.GsHp.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_GSHP = enerHub.GsHp.GsHp.COP;
 
-    // General
-    output Real P_Net_enerHub = enerHub.P;
-    output Real Q_enerHub = enerHub.QEnergyHub;
+	output Real P_pumCoo = enerHub.GsHp.pumHexCooEva.P;
+	output Real E_pumCoo_kWh = enerHub.GsHp.EpumCoo_kWh.y;
+	output Real QhexCoo = enerHub.GsHp.hexCoo.Q2_flow; // will be positive if heat is added to the borefield i.e. cooling of buffertank is happening
 
-    // GSHP
-    output Real QNom_GSHP = enerHub.Qnom_GsHp;
-    output Real P_GSHP = enerHub.GsHp.GsHp.PEl;
-    output Real E_GSHP_kWh = enerHub.GsHp.EGsHp_kWh.y;
-    output Real QCon_GSHP = enerHub.GsHp.GsHp.QCon;
-    output Real QEva_GSHP = -enerHub.GsHp.GsHp.Q_eva.y;
-    output Real COP_GSHP = enerHub.GsHp.GsHp.COP;
+	output Real TGsHpConIn = enerHub.GsHp.senTGsHpConIn.T - 273.15; //°C
+	output Real TGsHpConOut = enerHub.GsHp.senTGsHpConOut.T - 273.15; //°C
+	output Real TGsHpEvaIn = enerHub.GsHp.senTGsHpEvaIn.T - 273.15; //°C
+	output Real TGsHpEvaOut = enerHub.GsHp.senTGsHpEvaOut.T - 273.15; //°C
 
-    // ASHP
-    output Real QNom_ASHP = enerHub.Qnom_AsHp;
-    output Real P_ASHP = enerHub.AsHp.AsHp.PEl;
-    output Real E_ASHP_kWh = enerHub.AsHp.EAsHp_kWh.y;
-    output Real QCon_ASHP = enerHub.AsHp.AsHp.QCon;
-    output Real QEva_ASHP = -enerHub.AsHp.AsHp.HP.Q_eva.y;
-    output Real COP_ASHP = enerHub.AsHp.AsHp.COP;
+	output Real TBorIn = enerHub.GsHp.senTBorIn.T - 273.15; //°C
+	output Real TBorOut = enerHub.GsHp.senTBorOut.T - 273.15; //°C
 
-    // ASCHI
-    output Real QNom_ASCHI = enerHub.Qnom_AsChi;
-    output Real P_ASCHI = enerHub.AsChi.AsChi.PEl;
-    output Real E_ASCHI_kWh = enerHub.AsChi.EAsChi_kWh.y;
-    output Real QCon_ASCHI = enerHub.AsChi.AsChi.Chi.con.Q_flow;
-    output Real QEva_ASCHI = enerHub.AsChi.AsChi.QEva;
-    output Real EER_ASHP = enerHub.AsChi.AsChi.EER;
+	output Real THexCooConIn = enerHub.GsHp.senTHexCooConIn.T - 273.15; //°C
+	output Real THexCooConOut = enerHub.GsHp.senTHexCooConOut.T - 273.15; //°C
+	output Real THexCooEvaIn = enerHub.GsHp.senTHexCooEvaIn.T - 273.15; //°C
+	output Real THexCooEvaOut = enerHub.GsHp.senTHexCooEvaOut.T - 273.15; //°C
 
-    // Tank
-    output Real Ttank = enerHub.tan.vol.T - 273.15;
-    output Real Vtank = enerHub.tan.VTan;
+	output Real mFlowGsHpCon = enerHub.GsHp.GsHp.m2_flow;
+	output Real mFlowGsHpEva = enerHub.GsHp.GsHp.m1_flow;
+	output Real mFlowBor = enerHub.GsHp.pumBor.m_flow;
 
-    // PV panels
-    output Real A_PV = enerHub.Size_PV;
-    output Real P_PV_DC = enerHub.pv.solarPower.y;
-    output Real P_PV_AC = enerHub.pv.P;
+	output Real mFlowHexCooCon = enerHub.GsHp.hexCoo.m2_flow;
+	output Real mFlowHexCooEva = enerHub.GsHp.hexCoo.m1_flow;
 
-    // Battery
-    output Real Bat_cap = enerHub.bat.EBat_max;
-    output Real Bat_soc = enerHub.bat.SoC;
-    output Real Bat_eff = enerHub.bat.eff;
-    output Real Bat_Pcha = enerHub.bat.PCha;
-    output Real Bat_PDem = enerHub.bat.PDem;
-    output Real Bat_PGrid = enerHub.bat.PGrid;
-    output Real Bat_SOCmax = enerHub.SoC_max;
-    output Real Bat_SOCmin = enerHub.SoC_min;
+	output Real chBor_delTBor = enerHub.GsHp.borefield.groTemRes.delTBor;
+	output Real chBor_QAggFlow1 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[1];
+	output Real chBor_QAggFlow2 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[2];
+	output Real chBor_QAggFlow3 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[3];
 
-    // STC panels
-    output Real A_STC = enerHub.stc.panels.totalArea;
-    output Real QStc = enerHub.stc.panels.QTot;
+	// ASHP
+	output Real QNom_ASHP = enerHub.Qnom_AsHp;
+	output Real P_ASHP = enerHub.AsHp.AsHp.PEl;
+	output Real E_ASHP_kWh = enerHub.AsHp.EAsHp_kWh.y;
+	output Real QCon_ASHP = enerHub.AsHp.AsHp.QCon;
+	output Real QEva_ASHP = -enerHub.AsHp.AsHp.HP.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_ASHP = enerHub.AsHp.AsHp.COP;
 
-    // PVT
-    output Real A_PVT = enerHub.pvt.panels.totalArea;
-    output Real QPvt = enerHub.pvt.panels.QTot;
-    output Real PPvt = enerHub.pvt.P;
+	output Real TAsHpConIn = enerHub.AsHp.senTAsHpConIn.T - 273.15; //°C
+	output Real TAsHpConOut = enerHub.AsHp.senTAsHpConOut.T - 273.15; //°C
+	output Real TAsHpEvaIn = enerHub.AsHp.AsHp.HP.TEvaIn.T - 273.15; //°C
+	output Real TAsHpEvaOut = enerHub.AsHp.AsHp.HP.TEvaOut.T - 273.15; //°C
+
+	output Real mFlowAsHpCon = enerHub.AsHp.AsHp.HP.m2_flow;
+
+	// ASCHI
+	output Real QNom_ASCHI = enerHub.Qnom_AsChi;
+	output Real P_ASCHI = enerHub.AsChi.AsChi.PEl;
+	output Real E_ASCHI_kWh = enerHub.AsChi.EAsChi_kWh.y;
+	output Real QCon_ASCHI = enerHub.AsChi.AsChi.Chi.con.Q_flow;
+	output Real QEva_ASCHI = enerHub.AsChi.AsChi.QEva; // !!! Positive value
+	output Real EER_ASHP = enerHub.AsChi.AsChi.EER;
+
+	output Real TAsChiEvaIn = enerHub.AsChi.senTAsChiEvaIn.T - 273.15; //°C
+	output Real TAsChiEvaOut = enerHub.AsChi.senTAsChiEvaOut.T - 273.15; //°C
+	output Real TAsChiConIn = enerHub.AsChi.AsChi.Chi.TConIn.T - 273.15; //°C
+	output Real TAsChiConOut = enerHub.AsChi.AsChi.Chi.TConOut.T - 273.15; //°C
+
+	output Real mFlowAsChiEva = enerHub.AsChi.AsChi.Chi.m1_flow;
+
+	// Tank
+	output Real Ttank = enerHub.tan.vol.T - 273.15; //°C
+	output Real Vtank = enerHub.tan.VTan;
+
+	// PV panels
+	output Real A_PV = enerHub.Size_PV;
+	output Real P_PV_DC = enerHub.pv.solarPower.y;
+	output Real P_PV_AC = enerHub.pv.P;
+
+	// Battery 
+	output Real Bat_cap = enerHub.bat.EBat_max ;
+	output Real Bat_soc = enerHub.bat.SoC ;
+	output Real Bat_eff = enerHub.bat.eff ;
+	output Real Bat_Pcha = enerHub.bat.PCha ;
+	output Real Bat_PDem = enerHub.bat.PDem ;
+	output Real Bat_PGrid = enerHub.bat.PGrid ;
+	output Real Bat_SOCmax = enerHub.SoC_max;
+	output Real Bat_SOCmin = enerHub.SoC_min;
+
+	// STC panels
+	output Real A_STC = enerHub.stc.panels.totalArea;
+	output Real QStc = enerHub.stc.panels.QTot;
+
+	output Real QStcHex = enerHub.stc.hex.Q2_flow;
+
+	output Real TStcIn = enerHub.stc.senTPanelsIn.T - 273.15; //°C
+	output Real TStcOut = enerHub.stc.senTPanelsOut.T - 273.15; //°C
+	output Real TStcRegIn = enerHub.stc.senTRegIn.T - 273.15; //°C
+	output Real TStcRegOut = enerHub.stc.senTRegOut.T - 273.15; //°C
+	output Real TStcHeaIn = enerHub.stc.senTHeaIn.T - 273.15; //°C
+	output Real TStcHeaOut = enerHub.stc.senTHeaOut.T - 273.15; //°C
+	output Real TStcHexIn = enerHub.stc.senTHexIn.T -273.15; //°C
+	output Real TStcHexOut = enerHub.stc.senTHexOut.T -273.15; //°C
+
+	output Real mFlowStc = enerHub.stc.pumPanels.m_flow;
+	output Real mFlowStcHex = enerHub.stc.hex.m2_flow;
+	output Real mFlowStcHeaIn = enerHub.stc.valSupHea.m_flow;
+	output Real mFlowStcHeaOut = enerHub.stc.valRetHea.m_flow;
+	output Real mFlowStcRegIn = enerHub.stc.valSupReg.m_flow;
+	output Real mFlowStcRegOut = enerHub.stc.valRetReg.m_flow;
+
+	// PVT
+	output Real A_PVT = enerHub.pvt.panels.totalArea;
+	output Real QPvt = enerHub.pvt.panels.QTot;
+	output Real PPvt = enerHub.pvt.P;
+	
+	output Real QPvtHex = enerHub.pvt.hex.Q2_flow;
+
+	output Real TPvtIn = enerHub.pvt.senTPanelsIn.T - 273.15; //°C
+	output Real TPvtOut = enerHub.pvt.senTPanelsOut.T - 273.15; //°C
+	output Real TPvtHexIn = enerHub.pvt.senTHexIn.T - 273.15; //°C
+	output Real TPvtHexOut = enerHub.pvt.senTHexOut.T - 273.15; //°C
+	output Real TPvtRegIn = enerHub.pvt.senTRegIn.T - 273.15; //°C
+	output Real TPvtRegOut = enerHub.pvt.senTRegOut.T - 273.15; //°C
+	output Real TPvtHeaIn = enerHub.pvt.senTHeaIn.T - 273.15; //°C
+	output Real TPvtHeaOut = enerHub.pvt.senTHeaOut.T - 273.15; //°C
+
+	output Real mFlowPvt = enerHub.pvt.pumPanels.m_flow;
+	output Real mFlowPvtHex = enerHub.pvt.hex.m2_flow;
+	output Real mFlowPvtHeaIn = enerHub.pvt.valSupHea.m_flow;
+	output Real mFlowPvtHeaOut = enerHub.pvt.valRetHea.m_flow;
+	output Real mFlowPvtRegIn = enerHub.pvt.valSupReg.m_flow;
+	output Real mFlowPVtRegOut = enerHub.pvt.valRetReg.m_flow;
 
 ////////////////////////////////
     // Demand Output variables    //
