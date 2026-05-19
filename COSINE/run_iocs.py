@@ -48,8 +48,19 @@ Notes:
 
 import os
 import sys
-from pathlib import Path
 import json
+import shutil
+import argparse
+
+import COSINE.utils.TACO_functions as tf
+import COSINE.utils.helper_functions as hf
+
+from pathlib import Path
+from matplotlib import pyplot as plt
+from time import perf_counter
+
+
+
 
 # Load runtime configuration from external file (make this file user-specific)
 # config files live in ./config_input_data next to run_iocs.py
@@ -68,18 +79,6 @@ if not path_iocs:
 path_iocs = str(Path(path_iocs).expanduser())
 if path_iocs not in sys.path:
     sys.path.append(path_iocs)
-import shutil
-from pathlib import Path
-import load_params
-import optim_model
-import TACO_functions as tf
-from matplotlib import pyplot as plt
-from time import perf_counter
-
-import argparse
-from openpyxl import load_workbook
-from openpyxl.utils import get_column_letter
-import helper_functions as hf
 
 
 # Read first argument without flag
@@ -96,8 +95,7 @@ path_taco_config = config_dir / "taco_server.json"  # Load from config_input_dat
 TACO_server = hf.load_json_file_as_dict(path_taco_config)
 # Format the path with user and model name
 TACO_server["path_ocp_on_server"] = TACO_server["path_ocp_on_server"].format(
-    user=TACO_server["user"],
-    model_name=model_name
+    user=TACO_server["user"], model_name=model_name
 )
 
 

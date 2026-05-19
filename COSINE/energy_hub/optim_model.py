@@ -13,15 +13,17 @@ Contact:        Marco Wirtz
                 marco.wirtz@eonerc.rwth-aachen.de
 
 """
-from pathlib import Path
-import gurobipy as gp
-import numpy as np
+
+import math
 import time
 import os
-from time import perf_counter
-import math
-from borefield_modeling import Borefield
 
+import gurobipy as gp
+import numpy as np
+
+from time import perf_counter
+from pathlib import Path
+from COSINE.borefields.borefield_modeling import Borefield
 
 # from optim_app.help_functions import create_excel_file
 
