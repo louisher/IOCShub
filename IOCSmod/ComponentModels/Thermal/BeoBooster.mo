@@ -57,12 +57,13 @@ model BeoBooster "Model of a BeoBooster that uses warm waste water to regenerate
         extent={{10,10},{-10,-10}},
         rotation=180,
         origin={30,0})));
-  UnitTests.Confidential.FlowControlled_m_flow
+  UnitTests.Components.FlowControlled_m_flow
                                            pumHex(redeclare package Medium =
         IDEAS.Media.Water,
+    energyDynamics=Modelica.Fluid.Types.Dynamics.SteadyState,
     m_flow_nominal=hex.m2_flow_nominal,
     inputType=UnitTests.Confidential.BaseClasses.InputType.Continuous,
-                           dp_nominal=hex.dp2_nominal)
+    use_inputFilter=false, dp_nominal=hex.dp2_nominal)
                            annotation (Placement(transformation(
         extent={{-10,10},{10,-10}},
         rotation=90,
