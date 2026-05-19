@@ -9,6 +9,9 @@ model BeoBooster "Model of a BeoBooster that uses warm waste water to regenerate
 
   parameter Modelica.Units.SI.MassFlowRate m_flow_fix=0 "Fixed mass flow rate added to the profiles (can be used to represent e.g. washing machines)";
 
+  parameter Modelica.Media.Interfaces.Types.Temperature TGrey=303.15
+    "Temperature of the grey water";
+
     Modelica.Blocks.Sources.CombiTimeTable mFlow_profile(
     tableOnFile=true,
     tableName="data",
@@ -21,6 +24,7 @@ model BeoBooster "Model of a BeoBooster that uses warm waste water to regenerate
   IDEAS.Fluid.Sources.MassFlowSource_T boundary(
     redeclare package Medium = Medium,
     use_m_flow_in=true,
+    T=TGrey,
     nPorts=1) annotation (Placement(transformation(extent={{10,10},{-10,-10}},
         rotation=180,
         origin={-60,0})));
@@ -38,7 +42,7 @@ model BeoBooster "Model of a BeoBooster that uses warm waste water to regenerate
   IDEAS.Fluid.Sensors.TemperatureTwoPort senTGreyIn(
     allowFlowReversal=false,
     tau=0,
-    m_flow_nominal=bhp.m1_flow_nominal,
+    m_flow_nominal=hex.m1_flow_nominal,
     redeclare package Medium = Medium) "Inlet temperature of grey water"
                                       annotation (Placement(transformation(
         extent={{10,10},{-10,-10}},
@@ -47,7 +51,7 @@ model BeoBooster "Model of a BeoBooster that uses warm waste water to regenerate
   IDEAS.Fluid.Sensors.TemperatureTwoPort senTGreyOut(
     allowFlowReversal=false,
     tau=0,
-    m_flow_nominal=bhp.m1_flow_nominal,
+    m_flow_nominal=hex.m1_flow_nominal,
     redeclare package Medium = Medium)
     "Inlet temperature of grey water" annotation (Placement(transformation(
         extent={{10,10},{-10,-10}},
@@ -88,6 +92,7 @@ model BeoBooster "Model of a BeoBooster that uses warm waste water to regenerate
   Modelica.Blocks.Sources.RealExpression mFlowHexExpr(y=if BeoBoo_On then
         mFlowGreyExpr.y*2 else 0)
     annotation (Placement(transformation(extent={{100,-52},{80,-32}})));
+
 equation
   connect(boundary.ports[1], senTGreyIn.port_a) annotation (Line(points={{-50,-6.66134e-16},
           {-40,1.72085e-15}}, color={0,127,255}));
