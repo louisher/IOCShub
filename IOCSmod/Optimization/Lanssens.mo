@@ -7,7 +7,8 @@ model Lanssens
         addDummyEquation)
     annotation (Placement(transformation(extent={{40,0},{60,20}})));
 
-  IOCSmod.Blocks.EnergyHub.GeneralHub enerHub(addDummyEquation=addDummyEquation,
+  IOCSmod.Blocks.EnergyHub.GeneralHubBeoBooster
+                                      enerHub(addDummyEquation=addDummyEquation,
       borFieDat(conDat(
         borCon=IDEAS.Fluid.Geothermal.Borefields.Types.BoreholeConfiguration.DoubleUTubeParallel,
         Rb(unit="(m.K)/W"),
