@@ -83,17 +83,16 @@ model BeoBooster "Model of a BeoBooster that uses warm waste water to regenerate
         mFlowGreyExpr.y*2 else 0)
     annotation (Placement(transformation(extent={{100,-52},{80,-32}})));
 
-  UnitTests.Confidential.FlowControlled_m_flow pumHex(
-    inputType=UnitTests.Confidential.BaseClasses.InputType.Continuous,
-    redeclare package Medium = Medium,
+  UnitTests.Components.FlowControlled_m_flow pumHex(
+  redeclare package Medium = Medium,
     energyDynamics=Modelica.Fluid.Types.Dynamics.SteadyState,
     m_flow_nominal=hex.m2_flow_nominal,
     addPowerToMedium=false,
     nominalValuesDefineDefaultPressureCurve=true,
     use_inputFilter=false,
     dp_nominal=hex.dp2_nominal) annotation (Placement(transformation(
-        extent={{10,-10},{-10,10}},
-        rotation=270,
+        extent={{-10,10},{10,-10}},
+        rotation=90,
         origin={60,-60})));
 equation
   connect(boundary.ports[1], senTGreyIn.port_a) annotation (Line(points={{-50,-6.66134e-16},
@@ -112,10 +111,10 @@ equation
           {-60,-100}}, color={0,127,255}));
   connect(mFlowGreyExpr.y, boundary.m_flow_in)
     annotation (Line(points={{-79,20},{-72,20},{-72,8}}, color={0,0,127}));
-  connect(port_a, pumHex.port_a)
-    annotation (Line(points={{60,-100},{60,-70}}, color={0,127,255}));
   connect(pumHex.port_b, senTHexIn.port_a)
     annotation (Line(points={{60,-50},{60,-40},{40,-40}}, color={0,127,255}));
+  connect(pumHex.port_a, port_a)
+    annotation (Line(points={{60,-70},{60,-100}}, color={0,127,255}));
   connect(mFlowHexExpr.y, pumHex.m_flow_in)
     annotation (Line(points={{79,-42},{72,-42},{72,-60}}, color={0,0,127}));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false), graphics={                             Text(
