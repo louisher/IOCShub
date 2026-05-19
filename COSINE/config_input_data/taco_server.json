@@ -1,8 +1,0 @@
-{
-    "user": "louis",
-    "hostname": "mathadon.synology.me", 
-    "port": 223,
-    "private_ssh_key_path": "/home/u0148282/.ssh/id_rsa",
-    "path_ocp_on_server": "/homenvme/{user}/SizeOpt",
-    "taco_command": "taco"
-}
