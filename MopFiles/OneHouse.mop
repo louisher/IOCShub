@@ -1,6 +1,7 @@
 optimization OneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="8760*1", tolerance=1e-1, truncationDelta=1e-2)
 	extends IOCSmod.Optimization.OneHouse(addDummyEquation=false,
 											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//BEL_VLG_Uccle.064470_TMYx.2007-2021.mos"),
+											priceSim.path_economic_params_json="/homenvme/louis/software/iocs/input_data/economic_params.json",	
 											enerHub.Size_AsHp=3,
 											enerHub.Size_GsHp=3,
 											enerHub.Size_AsChi=0.01,
