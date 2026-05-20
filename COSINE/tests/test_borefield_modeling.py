@@ -1,5 +1,5 @@
 """
-Unit tests for COSINE/borefield_modeling.py.
+Unit tests for COSINE/borefields/borefield_modeling.py.
 
 pygfunction (gt) is mocked because it is only required for the
 calculate_g_function() method; all other Borefield methods are pure Python /
@@ -17,7 +17,7 @@ import pytest
 # ---------------------------------------------------------------------------
 sys.modules.setdefault("pygfunction", MagicMock())
 
-from borefield_modeling import Borefield  # noqa: E402
+from COSINE.borefields.borefield_modeling import Borefield  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

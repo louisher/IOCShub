@@ -16,9 +16,9 @@ import pytest
 # Mock k_medoids (and gurobipy which it imports) before loading the module
 # ---------------------------------------------------------------------------
 sys.modules.setdefault("gurobipy", MagicMock())
-sys.modules.setdefault("k_medoids", MagicMock())
+sys.modules.setdefault("COSINE.energy_hub.k_medoids", MagicMock())
 
-from clustering_medoid import _distances  # noqa: E402
+from COSINE.energy_hub.clustering_medoid import _distances  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

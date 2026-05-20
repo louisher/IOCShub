@@ -1,5 +1,5 @@
 """
-Unit tests for COSINE/helper_functions.py.
+Unit tests for COSINE/utils/helper_functions.py.
 
 Heavy third-party dependencies that are not required to test the pure helper
 functions are mocked at sys.modules level *before* importing helper_functions.
@@ -17,12 +17,19 @@ import pandas as pd
 import pytest
 
 # ---------------------------------------------------------------------------
-# Mock optional heavy dependencies so helper_functions can be imported
+# Mock optional heavy dependencies so helper_functions can be imported.
+# Now that COSINE is a proper package these need to be the full module paths.
 # ---------------------------------------------------------------------------
-for _mod in ("load_params", "optim_model", "borefield_params", "eff_tables"):
+for _mod in (
+    "GHEtool",
+    "COSINE.energy_hub.load_params",
+    "COSINE.energy_hub.optim_model",
+    "COSINE.energy_hub.borefield_params",
+    "COSINE.energy_hub.eff_tables",
+):
     sys.modules.setdefault(_mod, MagicMock())
 
-import helper_functions as hf  # noqa: E402  (must come after mocks)
+from COSINE.utils import helper_functions as hf  # noqa: E402  (must come after mocks)
 
 
 # ---------------------------------------------------------------------------

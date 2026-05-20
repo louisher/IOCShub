@@ -35,6 +35,9 @@ jobs:
             pytest \
             pytest-mock
 
+      - name: Install COSINE package
+        run: pip install -e .
+
       - name: Run COSINE unit tests
         run: |
           pytest COSINE/tests/ -v --tb=short

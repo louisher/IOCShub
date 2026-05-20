@@ -1,5 +1,5 @@
 """
-Unit tests for COSINE/TACO_functions.py.
+Unit tests for COSINE/utils/TACO_functions.py.
 
 Functions that require a live SSH connection (run_command_on_Taco_server,
 make_ocp_directory_on_TACO_server, send_file_to_ocp_folder_on_TACO_server,
@@ -19,8 +19,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-# TACO_functions only needs paramiko (available) and pandas.
-import TACO_functions as tf  # noqa: E402 (conftest already added COSINE to sys.path)
+from COSINE.utils import TACO_functions as tf  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

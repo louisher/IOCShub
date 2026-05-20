@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from eff_tables import eff  # noqa: E402 (conftest already added energy_hub to sys.path)
+from COSINE.energy_hub.eff_tables import eff  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
