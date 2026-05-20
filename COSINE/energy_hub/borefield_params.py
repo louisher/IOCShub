@@ -1,6 +1,6 @@
 # fmt: off
 import GHEtool as ghe
-from borefield_modeling import Borefield
+from COSINE.borefields.borefield_modeling import Borefield
 import json
 import numpy as np
 

@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
 
-
-from pathlib import Path
-import numpy as np
 import math
-import clustering_medoid as clustering
 import time
 import os
 import csv
-import solar_modeling
 import json
-from scipy.stats import linregress
+
 import GHEtool as ghe
-from borefield_modeling import Borefield
-from matplotlib import pyplot as plt
-import json
-import borefield_params
 import pandas as pd
+import numpy as np
+import COSINE.energy_hub.borefield_params as borefield_params
+import COSINE.energy_hub.clustering_medoid as clustering
+import COSINE.energy_hub.solar_modeling as solar_modeling
+
+from COSINE.borefields.borefield_modeling import Borefield
+from pathlib import Path
+from matplotlib import pyplot as plt
+from scipy.stats import linregress
 
 
 def load_params():

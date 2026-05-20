@@ -1,6 +1,5 @@
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
-import os
 import math
 import shutil
 import pandas as pd
@@ -10,10 +9,10 @@ from time import perf_counter
 import json
 from tabulate import tabulate
 
-import load_params
-import optim_model
-import borefield_params
-import eff_tables
+import COSINE.energy_hub.load_params as load_params
+import COSINE.energy_hub.optim_model as optim_model
+import COSINE.energy_hub.borefield_params as borefield_params
+import COSINE.energy_hub.eff_tables as eff_tables
 
 
 def copy_file(src: str, dst: str) -> None:
