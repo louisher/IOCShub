@@ -76,11 +76,10 @@ model BeoBooster "Model of a BeoBooster that uses warm waste water to regenerate
         rotation=180,
         origin={-30,-40})));
 
-  Modelica.Blocks.Sources.RealExpression mFlowGreyExpr(y=if BeoBoo_On then
-        mFlow_profile.y[1] + m_flow_fix else 0)
+  Modelica.Blocks.Sources.RealExpression mFlowGreyExprOn(y=mFlow_profile.y[1] +
+        m_flow_fix)
     annotation (Placement(transformation(extent={{-100,10},{-80,30}})));
-  Modelica.Blocks.Sources.RealExpression mFlowHexExpr(y=if BeoBoo_On then
-        mFlowGreyExpr.y*2 else 0)
+  Modelica.Blocks.Sources.RealExpression mFlowHexExprOn(y=2*mFlowGreyExprOn.y)
     annotation (Placement(transformation(extent={{100,-52},{80,-32}})));
 
   UnitTests.Components.FlowControlled_m_flow pumHex(
@@ -94,6 +93,10 @@ model BeoBooster "Model of a BeoBooster that uses warm waste water to regenerate
         extent={{-10,10},{10,-10}},
         rotation=90,
         origin={60,-60})));
+  Modelica.Blocks.Sources.RealExpression mFlowGreyExprOff(y=0.0001)
+    annotation (Placement(transformation(extent={{-100,-20},{-80,0}})));
+  Modelica.Blocks.Sources.RealExpression mFlowHexExprOff(y=2*mFlowGreyExprOff.y)
+    annotation (Placement(transformation(extent={{100,-80},{80,-60}})));
 equation
   connect(boundary.ports[1], senTGreyIn.port_a) annotation (Line(points={{-50,-6.66134e-16},
           {-40,1.72085e-15}}, color={0,127,255}));
@@ -109,14 +112,25 @@ equation
           -40},{-20,-40}}, color={0,127,255}));
   connect(senTHexOut.port_a, port_b) annotation (Line(points={{-40,-40},{-60,-40},
           {-60,-100}}, color={0,127,255}));
-  connect(mFlowGreyExpr.y, boundary.m_flow_in)
-    annotation (Line(points={{-79,20},{-72,20},{-72,8}}, color={0,0,127}));
+
   connect(pumHex.port_b, senTHexIn.port_a)
     annotation (Line(points={{60,-50},{60,-40},{40,-40}}, color={0,127,255}));
   connect(pumHex.port_a, port_a)
     annotation (Line(points={{60,-70},{60,-100}}, color={0,127,255}));
-  connect(mFlowHexExpr.y, pumHex.m_flow_in)
+
+  if BeoBoo_On then
+      connect(mFlowGreyExprOn.y, boundary.m_flow_in)
+    annotation (Line(points={{-79,20},{-72,20},{-72,8}}, color={0,0,127}));
+      connect(mFlowHexExprOn.y, pumHex.m_flow_in)
     annotation (Line(points={{79,-42},{72,-42},{72,-60}}, color={0,0,127}));
+  else
+      connect(mFlowGreyExprOff.y, boundary.m_flow_in)
+    annotation (Line(points={{-79,-10},{-72,-10},{-72,8}}, color={0,0,127}));
+  connect(mFlowHexExprOff.y, pumHex.m_flow_in)
+    annotation (Line(points={{79,-70},{72,-70},{72,-60}}, color={0,0,127}));
+  end if;
+
+
   annotation (Icon(coordinateSystem(preserveAspectRatio=false), graphics={                             Text(
           extent={{-140,62},{148,-112}},
           textColor={238,46,47},
