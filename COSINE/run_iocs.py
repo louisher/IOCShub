@@ -82,7 +82,9 @@ model_name = base_model_name + run_identifier
 
 ### Load TACO server configuration
 TACO_server = load_taco_config()
-TACO_server["path_ocp_on_server"] = TACO_server["path_ocps_on_server"] / model_name
+TACO_server["path_ocp_on_server"] = (
+    TACO_server["path_ocps_on_server"] + "/" + model_name
+)
 
 
 ########################################################################################################
