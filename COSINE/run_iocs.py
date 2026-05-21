@@ -65,19 +65,13 @@ parser = argparse.ArgumentParser(description="Script for iocs ")
 parser.add_argument("base_model_name", help="Name of the base mop (no flag needed)")
 parser.add_argument("--run_identifier", help="Run identifier (optional)", default="")
 parser.add_argument(
-    "--dmpc",
-    type=int,
-    help=(
-        "Use DMPC for operational optimization. "
-        "Value = number of parallel horizons. "
-        "If 0, DMPC is disabled."
-    ),
-    default=0,
+    "--dmpc", action="store_true", help="Enable DMPC operational optimization"
 )
+
 args = parser.parse_args()
 base_model_name = args.base_model_name
 run_identifier = args.run_identifier
-dmpc = {"On": args.dmpc > 0, "parallelHorizon": args.dmpc}
+
 model_name = base_model_name + run_identifier
 
 ### Load TACO server configuration
@@ -145,6 +139,14 @@ shutil.copy(path_base_mop_file, path_mop_file)
 hf.change_model_name_in_mop(
     path_mop_file=path_mop_file, old_name=base_model_name, new_name=model_name
 )  # Replace the base model name in the MOP file
+
+### If dmpc is enabled, check the time horizon of the optimization and determine parallelHorizon.
+if args.dmpc:
+    parallel_horizon = hf.calculate_parallelHorizon_for_dmpc(path_mop_file)
+    dmpc = {"On": args.dmpc, "parallelHorizon": parallel_horizon}
+else:
+    dmpc = {"On": False, "parallelHorizon": None}
+
 
 ###  Add overview excel file and input_data folder to the model directory ###
 shutil.copy(
