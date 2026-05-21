@@ -1,13 +1,18 @@
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
+from pathlib import Path
 import math
 import shutil
 import pandas as pd
 import datetime
+import ast
+import operator as op
+
 import numpy as np
 from time import perf_counter
 import json
 from tabulate import tabulate
+
 
 import COSINE.energy_hub.load_params as load_params
 import COSINE.energy_hub.optim_model as optim_model
@@ -76,6 +81,231 @@ def change_model_name_in_mop(path_mop_file, old_name, new_name):
         raise PermissionError(f"Permission denied when writing to: {path_mop_file}")
     except IOError as e:
         raise IOError(f"Error writing to file {path_mop_file}: {e}")
+
+
+def read_optimization_settings_in_mop(mop_file):
+    """
+    Reads the optimization(...) settings from a .mop file and calculates
+    the total optimization time horizon based on timeStep and intervalLengths.
+
+    Returns a dictionary with:
+    - model_name
+    - all optimization variables
+    - timeStep
+    - intervalLengths
+    - total_horizon_seconds
+    - total_horizon_hours
+    - total_horizon_days
+    """
+
+    text = Path(mop_file).read_text(encoding="utf-8", errors="ignore")
+
+    start = text.find("optimization")
+    if start == -1:
+        raise ValueError("No optimization declaration found.")
+
+    # Find model name
+    i = start + len("optimization")
+    while i < len(text) and text[i].isspace():
+        i += 1
+
+    name_start = i
+    while i < len(text) and (text[i].isalnum() or text[i] in "_."):
+        i += 1
+
+    model_name = text[name_start:i]
+
+    # Find opening bracket
+    while i < len(text) and text[i].isspace():
+        i += 1
+
+    if i >= len(text) or text[i] != "(":
+        raise ValueError("No opening bracket found after optimization model name.")
+
+    # Extract everything inside optimization(...)
+    bracket_start = i
+    depth = 0
+    in_string = False
+    string_char = None
+
+    for j in range(bracket_start, len(text)):
+        ch = text[j]
+
+        if in_string:
+            if ch == string_char and text[j - 1] != "\\":
+                in_string = False
+        else:
+            if ch in ('"', "'"):
+                in_string = True
+                string_char = ch
+            elif ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth == 0:
+                    bracket_end = j
+                    break
+    else:
+        raise ValueError("Could not find matching closing bracket.")
+
+    content = text[bracket_start + 1 : bracket_end]
+
+    variables = _parse_mop_arguments(content)
+
+    if "timeStep" not in variables:
+        raise ValueError("timeStep not found in optimization settings.")
+
+    if "intervalLengths" not in variables:
+        raise ValueError("intervalLengths not found in optimization settings.")
+
+    time_step = float(
+        _safe_evaluation_mop_param_expressions(str(variables["timeStep"]))
+    )
+
+    interval_raw = str(variables["intervalLengths"]).strip()
+
+    # Remove quotes if present
+    if (
+        len(interval_raw) >= 2
+        and interval_raw[0] in ('"', "'")
+        and interval_raw[-1] == interval_raw[0]
+    ):
+        interval_raw = interval_raw[1:-1]
+
+    interval_values = [
+        _safe_evaluation_mop_param_expressions(part.strip())
+        for part in interval_raw.split(",")
+        if part.strip()
+    ]
+
+    total_horizon_seconds = time_step * sum(interval_values)
+
+    return {
+        "model_name": model_name,
+        "optimization_variables": variables,
+        "timeStep": time_step,
+        "intervalLengths": interval_raw,
+        "interval_values": interval_values,
+        "total_horizon_seconds": total_horizon_seconds,
+        "total_horizon_hours": total_horizon_seconds / 3600,
+        "total_horizon_days": total_horizon_seconds / (3600 * 24),
+    }
+
+
+def _parse_mop_arguments(content):
+    """
+    Splits optimization arguments at top-level commas only.
+    This avoids splitting inside strings, brackets, function calls, etc.
+    """
+    args = []
+    current = []
+    depth = 0
+    in_string = False
+    string_char = None
+
+    for i, ch in enumerate(content):
+        if in_string:
+            current.append(ch)
+            if ch == string_char and content[i - 1] != "\\":
+                in_string = False
+        else:
+            if ch in ('"', "'"):
+                in_string = True
+                string_char = ch
+                current.append(ch)
+            elif ch in "({[":
+                depth += 1
+                current.append(ch)
+            elif ch in ")}]":
+                depth -= 1
+                current.append(ch)
+            elif ch == "," and depth == 0:
+                args.append("".join(current).strip())
+                current = []
+            else:
+                current.append(ch)
+
+    if current:
+        args.append("".join(current).strip())
+
+    variables = {}
+
+    for arg in args:
+        if "=" in arg:
+            key, value = arg.split("=", 1)
+            variables[key.strip()] = value.strip()
+
+    return variables
+
+
+def _safe_evaluation_mop_param_expressions(expr):
+    """
+    Safely evaluates simple arithmetic expressions like:
+    438*1
+    8760*1
+    4
+    2+3
+    """
+    allowed_operators = {
+        ast.Add: op.add,
+        ast.Sub: op.sub,
+        ast.Mult: op.mul,
+        ast.Div: op.truediv,
+        ast.Pow: op.pow,
+        ast.USub: op.neg,
+        ast.UAdd: op.pos,
+    }
+
+    def eval_node(node):
+        if isinstance(node, ast.Constant):
+            if isinstance(node.value, (int, float)):
+                return node.value
+            raise ValueError(f"Invalid value in expression: {expr}")
+
+        if isinstance(node, ast.BinOp):
+            return allowed_operators[type(node.op)](
+                eval_node(node.left), eval_node(node.right)
+            )
+
+        if isinstance(node, ast.UnaryOp):
+            return allowed_operators[type(node.op)](eval_node(node.operand))
+
+        raise ValueError(f"Unsupported expression: {expr}")
+
+    tree = ast.parse(expr, mode="eval")
+    return eval_node(tree.body)
+
+
+def calculate_parallelHorizon_for_dmpc(mop_file):
+    """
+    Calculates how many optimizations are needed to cover exactly one year.
+
+    Assumes one non-leap year:
+    365 days = 8760 hours = 31,536,000 seconds
+
+    Throws an error if one year cannot be divided exactly by
+    the horizon of a single optimization.
+    """
+
+    one_year_seconds = 365 * 24 * 3600
+
+    settings = read_optimization_settings_in_mop(mop_file)
+    single_horizon_seconds = settings["total_horizon_seconds"]
+
+    if single_horizon_seconds <= 0:
+        raise ValueError("single_horizon_seconds must be larger than zero.")
+
+    ratio = one_year_seconds / single_horizon_seconds
+
+    if not ratio.is_integer():
+        raise ValueError(
+            f"Impossible to cover exactly one year. "
+            f"One year is {one_year_seconds} seconds, but one optimization "
+            f"horizon is {single_horizon_seconds} seconds. "
+            f"This gives {ratio} optimizations, which is not an integer."
+        )
+
+    return int(ratio)
 
 
 def load_json_file_as_dict(path):
@@ -802,6 +1032,7 @@ def write_input_profiles(path_results, path_input_data):
         QBor = df["QBor"].to_numpy()
         inj = np.where(QBor > 0, QBor, 0) / 1e3
         ext = np.where(QBor < 0, -QBor, 0) / 1e3
+        QBeoBoo = df["QBeoBoo"].to_numpy() / 1e3
 
         # Calculate COPs
         TSup = df["T_COP_Sup"].to_numpy()
@@ -840,6 +1071,7 @@ def write_input_profiles(path_results, path_input_data):
         np.savetxt(path_input_profiles / "EER_ASCHI.txt", EER_CHI, fmt="%.1f")
         np.savetxt(path_input_profiles / "initial_borefield_ext.txt", ext, fmt="%.1f")
         np.savetxt(path_input_profiles / "initial_borefield_inj.txt", inj, fmt="%.1f")
+        np.savetxt(path_input_profiles / "beo_booster.txt", QBeoBoo, fmt="%.1f")
 
         end = perf_counter()
         write_inputs_time = end - start
