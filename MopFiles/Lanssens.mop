@@ -33,11 +33,12 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real QDem = Q_flow_collector_central;
 	output Real PDem = P_Net_Houses;
 	output Real QBor = enerHub.GsHp.QBorefield;
+	output Real QBeoBoo = if enerHub.BeoBoo_On then enerHub.beoBooster.hex.Q2_flow else 0;
 
 	// temperature data for COP calculation
 
 	output Real T_COP_Sup = Ttank;
-	output Real T_COP_Bor = TBorOut;
+	output Real T_COP_Bor = TGsHpEvaIn;
 	output Real T_COP_Air = TAsHpEvaIn;
 
 	// overall result data:
@@ -332,7 +333,6 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 
 	output Real mFlowBeoBooGrey = enerHub.beoBooster.hex.m1_flow;
 	output Real mFlowBeoBooHex = enerHub.beoBooster.hex.m2_flow;
-	output Real QBeoBoo = enerHub.beoBooster.hex.Q2_flow;
 
 ////////////////////////////////
     // Demand Output variables    //
