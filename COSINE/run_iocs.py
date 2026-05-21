@@ -64,9 +64,20 @@ from time import perf_counter
 parser = argparse.ArgumentParser(description="Script for iocs ")
 parser.add_argument("base_model_name", help="Name of the base mop (no flag needed)")
 parser.add_argument("--run_identifier", help="Run identifier (optional)", default="")
+parser.add_argument(
+    "--dmpc",
+    type=int,
+    help=(
+        "Use DMPC for operational optimization. "
+        "Value = number of parallel horizons. "
+        "If 0, DMPC is disabled."
+    ),
+    default=0,
+)
 args = parser.parse_args()
 base_model_name = args.base_model_name
 run_identifier = args.run_identifier
+dmpc = {"On": args.dmpc > 0, "parallelHorizon": args.dmpc}
 model_name = base_model_name + run_identifier
 
 ### Load TACO server configuration
@@ -192,7 +203,7 @@ hf.set_size_parameters_in_mop(path_iteration_mop, devices_info)
 capex, devices_info = hf.calculate_capex(devices_info, INTEREST_RATE, OBSERVATION_TIME)
 # Run the OCP
 ocp_compilation_time, ocp_optimization_time = tf.run_operational_optimization(
-    iteration_directory, path_iteration_mop, model_name, TACO_server
+    iteration_directory, path_iteration_mop, model_name, TACO_server, dmpc
 )
 
 # Read the OCP results and write value in operational_variables dictionary
@@ -284,7 +295,7 @@ while iteration < 4 and rel_dif > 0.01:
     hf.set_size_parameters_in_mop(path_iteration_mop, devices_info)
     # Run the OCP
     ocp_compilation_time, ocp_optimization_time = tf.run_operational_optimization(
-        iteration_directory, path_iteration_mop, model_name, TACO_server
+        iteration_directory, path_iteration_mop, model_name, TACO_server, dmpc
     )
     # Read the OCP results and write value in operational_variables dictionary
     operational_variables = hf.read_oper_variables_from_results(
