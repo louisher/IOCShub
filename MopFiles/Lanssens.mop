@@ -1,4 +1,4 @@
-optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="24*1", tolerance=1e-1, truncationDelta=1e-2)
+optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="292*1", tolerance=1e-1, truncationDelta=1e-2)
     extends IOCSmod.Optimization.Lanssens(
                                                 addDummyEquation=false,
                                                 sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata/Leuven-City_XMY2021-2040_ssp585_MAR-BCC_SWDbased.mos"),
@@ -341,7 +341,7 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
     // Overall
 	output Real P_Net_Houses = buildings.P;
 
-	output Modelica.Units.SI.Area AConditioned = 21431.737849119447 "Total floor surface area without a space type that indicates it is unconditioned.";
+	output Modelica.Units.SI.Area AConditioned = 21457.812849119447 "Total floor surface area without a space type that indicates it is unconditioned.";
 	output Modelica.Units.NonSI.Temperature_degC TDewPoi = Modelica.Units.Conversions.to_degC(buildings.Houses.sim.TDewPoi) "Dew point temperature";
 	output Modelica.Units.NonSI.Temperature_degC TRad_zone__A_0_Creative1 = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__A_0_Creative1.TRad) "";
 	output Modelica.Units.NonSI.Temperature_degC TRad_zone__A_0_UC_Gang1 = Modelica.Units.Conversions.to_degC(buildings.Houses.zone__A_0_UC_Gang1.TRad) "";
@@ -488,8 +488,6 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x130__2 = -buildings.Houses.window__Window_25x130__2.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x130__2.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x130__3 = -buildings.Houses.window__Window_25x130__3.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x130__3.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x130__4 = -buildings.Houses.window__Window_25x130__4.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x130__4.gain.iSolDif.port_b.Q_flow "";
-	output Modelica.Units.SI.Power Q_flow_window__Window_25x130__5 = -buildings.Houses.window__Window_25x130__5.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x130__5.gain.iSolDif.port_b.Q_flow "";
-	output Modelica.Units.SI.Power Q_flow_window__Window_25x130__6 = -buildings.Houses.window__Window_25x130__6.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x130__6.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x140 = -buildings.Houses.window__Window_25x140.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x140.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x140__2 = -buildings.Houses.window__Window_25x140__2.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x140__2.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x15 = -buildings.Houses.window__Window_25x15.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x15.gain.iSolDif.port_b.Q_flow "";
@@ -541,7 +539,11 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x20__26 = -buildings.Houses.window__Window_25x20__26.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x20__26.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x20__27 = -buildings.Houses.window__Window_25x20__27.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x20__27.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x20__28 = -buildings.Houses.window__Window_25x20__28.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x20__28.gain.iSolDif.port_b.Q_flow "";
+	output Modelica.Units.SI.Power Q_flow_window__Window_25x20__29 = -buildings.Houses.window__Window_25x20__29.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x20__29.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x20__3 = -buildings.Houses.window__Window_25x20__3.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x20__3.gain.iSolDif.port_b.Q_flow "";
+	output Modelica.Units.SI.Power Q_flow_window__Window_25x20__30 = -buildings.Houses.window__Window_25x20__30.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x20__30.gain.iSolDif.port_b.Q_flow "";
+	output Modelica.Units.SI.Power Q_flow_window__Window_25x20__31 = -buildings.Houses.window__Window_25x20__31.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x20__31.gain.iSolDif.port_b.Q_flow "";
+	output Modelica.Units.SI.Power Q_flow_window__Window_25x20__32 = -buildings.Houses.window__Window_25x20__32.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x20__32.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x20__4 = -buildings.Houses.window__Window_25x20__4.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x20__4.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x20__5 = -buildings.Houses.window__Window_25x20__5.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x20__5.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x20__6 = -buildings.Houses.window__Window_25x20__6.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x20__6.gain.iSolDif.port_b.Q_flow "";
@@ -612,6 +614,10 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x30__21 = -buildings.Houses.window__Window_25x30__21.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x30__21.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x30__22 = -buildings.Houses.window__Window_25x30__22.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x30__22.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x30__23 = -buildings.Houses.window__Window_25x30__23.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x30__23.gain.iSolDif.port_b.Q_flow "";
+	output Modelica.Units.SI.Power Q_flow_window__Window_25x30__24 = -buildings.Houses.window__Window_25x30__24.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x30__24.gain.iSolDif.port_b.Q_flow "";
+	output Modelica.Units.SI.Power Q_flow_window__Window_25x30__25 = -buildings.Houses.window__Window_25x30__25.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x30__25.gain.iSolDif.port_b.Q_flow "";
+	output Modelica.Units.SI.Power Q_flow_window__Window_25x30__26 = -buildings.Houses.window__Window_25x30__26.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x30__26.gain.iSolDif.port_b.Q_flow "";
+	output Modelica.Units.SI.Power Q_flow_window__Window_25x30__27 = -buildings.Houses.window__Window_25x30__27.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x30__27.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x30__3 = -buildings.Houses.window__Window_25x30__3.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x30__3.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x30__4 = -buildings.Houses.window__Window_25x30__4.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x30__4.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x30__5 = -buildings.Houses.window__Window_25x30__5.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x30__5.gain.iSolDif.port_b.Q_flow "";
@@ -625,6 +631,7 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x325__4 = -buildings.Houses.window__Window_25x325__4.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x325__4.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x325__5 = -buildings.Houses.window__Window_25x325__5.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x325__5.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x325__6 = -buildings.Houses.window__Window_25x325__6.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x325__6.gain.iSolDif.port_b.Q_flow "";
+	output Modelica.Units.SI.Power Q_flow_window__Window_25x325__7 = -buildings.Houses.window__Window_25x325__7.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x325__7.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x35 = -buildings.Houses.window__Window_25x35.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x35.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x35__10 = -buildings.Houses.window__Window_25x35__10.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x35__10.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x35__11 = -buildings.Houses.window__Window_25x35__11.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x35__11.gain.iSolDif.port_b.Q_flow "";
@@ -677,6 +684,8 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x40__33 = -buildings.Houses.window__Window_25x40__33.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x40__33.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x40__34 = -buildings.Houses.window__Window_25x40__34.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x40__34.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x40__35 = -buildings.Houses.window__Window_25x40__35.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x40__35.gain.iSolDif.port_b.Q_flow "";
+	output Modelica.Units.SI.Power Q_flow_window__Window_25x40__36 = -buildings.Houses.window__Window_25x40__36.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x40__36.gain.iSolDif.port_b.Q_flow "";
+	output Modelica.Units.SI.Power Q_flow_window__Window_25x40__37 = -buildings.Houses.window__Window_25x40__37.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x40__37.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x40__4 = -buildings.Houses.window__Window_25x40__4.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x40__4.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x40__5 = -buildings.Houses.window__Window_25x40__5.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x40__5.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x40__6 = -buildings.Houses.window__Window_25x40__6.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x40__6.gain.iSolDif.port_b.Q_flow "";
@@ -707,6 +716,10 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x45__2 = -buildings.Houses.window__Window_25x45__2.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x45__2.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x45__20 = -buildings.Houses.window__Window_25x45__20.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x45__20.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x45__21 = -buildings.Houses.window__Window_25x45__21.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x45__21.gain.iSolDif.port_b.Q_flow "";
+	output Modelica.Units.SI.Power Q_flow_window__Window_25x45__22 = -buildings.Houses.window__Window_25x45__22.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x45__22.gain.iSolDif.port_b.Q_flow "";
+	output Modelica.Units.SI.Power Q_flow_window__Window_25x45__23 = -buildings.Houses.window__Window_25x45__23.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x45__23.gain.iSolDif.port_b.Q_flow "";
+	output Modelica.Units.SI.Power Q_flow_window__Window_25x45__24 = -buildings.Houses.window__Window_25x45__24.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x45__24.gain.iSolDif.port_b.Q_flow "";
+	output Modelica.Units.SI.Power Q_flow_window__Window_25x45__25 = -buildings.Houses.window__Window_25x45__25.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x45__25.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x45__3 = -buildings.Houses.window__Window_25x45__3.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x45__3.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x45__4 = -buildings.Houses.window__Window_25x45__4.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x45__4.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x45__5 = -buildings.Houses.window__Window_25x45__5.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x45__5.gain.iSolDif.port_b.Q_flow "";
@@ -731,7 +744,6 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x50__8 = -buildings.Houses.window__Window_25x50__8.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x50__8.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x50__9 = -buildings.Houses.window__Window_25x50__9.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x50__9.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x60 = -buildings.Houses.window__Window_25x60.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x60.gain.iSolDif.port_b.Q_flow "";
-	output Modelica.Units.SI.Power Q_flow_window__Window_25x60__10 = -buildings.Houses.window__Window_25x60__10.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x60__10.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x60__2 = -buildings.Houses.window__Window_25x60__2.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x60__2.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x60__3 = -buildings.Houses.window__Window_25x60__3.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x60__3.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x60__4 = -buildings.Houses.window__Window_25x60__4.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x60__4.gain.iSolDif.port_b.Q_flow "";
@@ -739,7 +751,6 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x60__6 = -buildings.Houses.window__Window_25x60__6.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x60__6.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x60__7 = -buildings.Houses.window__Window_25x60__7.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x60__7.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x60__8 = -buildings.Houses.window__Window_25x60__8.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x60__8.gain.iSolDif.port_b.Q_flow "";
-	output Modelica.Units.SI.Power Q_flow_window__Window_25x60__9 = -buildings.Houses.window__Window_25x60__9.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x60__9.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x65 = -buildings.Houses.window__Window_25x65.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x65.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x65__10 = -buildings.Houses.window__Window_25x65__10.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x65__10.gain.iSolDif.port_b.Q_flow "";
 	output Modelica.Units.SI.Power Q_flow_window__Window_25x65__11 = -buildings.Houses.window__Window_25x65__11.gain.iSolDir.port_b.Q_flow-buildings.Houses.window__Window_25x65__11.gain.iSolDif.port_b.Q_flow "";
@@ -871,8 +882,6 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real HSha_window__Window_25x130__2 = buildings.Houses.window__Window_25x130__2.shaType.HSha "Total solar irradiance through 'window__Window_25x130__2'";
 	output Real HSha_window__Window_25x130__3 = buildings.Houses.window__Window_25x130__3.shaType.HSha "Total solar irradiance through 'window__Window_25x130__3'";
 	output Real HSha_window__Window_25x130__4 = buildings.Houses.window__Window_25x130__4.shaType.HSha "Total solar irradiance through 'window__Window_25x130__4'";
-	output Real HSha_window__Window_25x130__5 = buildings.Houses.window__Window_25x130__5.shaType.HSha "Total solar irradiance through 'window__Window_25x130__5'";
-	output Real HSha_window__Window_25x130__6 = buildings.Houses.window__Window_25x130__6.shaType.HSha "Total solar irradiance through 'window__Window_25x130__6'";
 	output Real HSha_window__Window_25x140 = buildings.Houses.window__Window_25x140.shaType.HSha "Total solar irradiance through 'window__Window_25x140'";
 	output Real HSha_window__Window_25x140__2 = buildings.Houses.window__Window_25x140__2.shaType.HSha "Total solar irradiance through 'window__Window_25x140__2'";
 	output Real HSha_window__Window_25x15 = buildings.Houses.window__Window_25x15.shaType.HSha "Total solar irradiance through 'window__Window_25x15'";
@@ -924,7 +933,11 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real HSha_window__Window_25x20__26 = buildings.Houses.window__Window_25x20__26.shaType.HSha "Total solar irradiance through 'window__Window_25x20__26'";
 	output Real HSha_window__Window_25x20__27 = buildings.Houses.window__Window_25x20__27.shaType.HSha "Total solar irradiance through 'window__Window_25x20__27'";
 	output Real HSha_window__Window_25x20__28 = buildings.Houses.window__Window_25x20__28.shaType.HSha "Total solar irradiance through 'window__Window_25x20__28'";
+	output Real HSha_window__Window_25x20__29 = buildings.Houses.window__Window_25x20__29.shaType.HSha "Total solar irradiance through 'window__Window_25x20__29'";
 	output Real HSha_window__Window_25x20__3 = buildings.Houses.window__Window_25x20__3.shaType.HSha "Total solar irradiance through 'window__Window_25x20__3'";
+	output Real HSha_window__Window_25x20__30 = buildings.Houses.window__Window_25x20__30.shaType.HSha "Total solar irradiance through 'window__Window_25x20__30'";
+	output Real HSha_window__Window_25x20__31 = buildings.Houses.window__Window_25x20__31.shaType.HSha "Total solar irradiance through 'window__Window_25x20__31'";
+	output Real HSha_window__Window_25x20__32 = buildings.Houses.window__Window_25x20__32.shaType.HSha "Total solar irradiance through 'window__Window_25x20__32'";
 	output Real HSha_window__Window_25x20__4 = buildings.Houses.window__Window_25x20__4.shaType.HSha "Total solar irradiance through 'window__Window_25x20__4'";
 	output Real HSha_window__Window_25x20__5 = buildings.Houses.window__Window_25x20__5.shaType.HSha "Total solar irradiance through 'window__Window_25x20__5'";
 	output Real HSha_window__Window_25x20__6 = buildings.Houses.window__Window_25x20__6.shaType.HSha "Total solar irradiance through 'window__Window_25x20__6'";
@@ -995,6 +1008,10 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real HSha_window__Window_25x30__21 = buildings.Houses.window__Window_25x30__21.shaType.HSha "Total solar irradiance through 'window__Window_25x30__21'";
 	output Real HSha_window__Window_25x30__22 = buildings.Houses.window__Window_25x30__22.shaType.HSha "Total solar irradiance through 'window__Window_25x30__22'";
 	output Real HSha_window__Window_25x30__23 = buildings.Houses.window__Window_25x30__23.shaType.HSha "Total solar irradiance through 'window__Window_25x30__23'";
+	output Real HSha_window__Window_25x30__24 = buildings.Houses.window__Window_25x30__24.shaType.HSha "Total solar irradiance through 'window__Window_25x30__24'";
+	output Real HSha_window__Window_25x30__25 = buildings.Houses.window__Window_25x30__25.shaType.HSha "Total solar irradiance through 'window__Window_25x30__25'";
+	output Real HSha_window__Window_25x30__26 = buildings.Houses.window__Window_25x30__26.shaType.HSha "Total solar irradiance through 'window__Window_25x30__26'";
+	output Real HSha_window__Window_25x30__27 = buildings.Houses.window__Window_25x30__27.shaType.HSha "Total solar irradiance through 'window__Window_25x30__27'";
 	output Real HSha_window__Window_25x30__3 = buildings.Houses.window__Window_25x30__3.shaType.HSha "Total solar irradiance through 'window__Window_25x30__3'";
 	output Real HSha_window__Window_25x30__4 = buildings.Houses.window__Window_25x30__4.shaType.HSha "Total solar irradiance through 'window__Window_25x30__4'";
 	output Real HSha_window__Window_25x30__5 = buildings.Houses.window__Window_25x30__5.shaType.HSha "Total solar irradiance through 'window__Window_25x30__5'";
@@ -1008,6 +1025,7 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real HSha_window__Window_25x325__4 = buildings.Houses.window__Window_25x325__4.shaType.HSha "Total solar irradiance through 'window__Window_25x325__4'";
 	output Real HSha_window__Window_25x325__5 = buildings.Houses.window__Window_25x325__5.shaType.HSha "Total solar irradiance through 'window__Window_25x325__5'";
 	output Real HSha_window__Window_25x325__6 = buildings.Houses.window__Window_25x325__6.shaType.HSha "Total solar irradiance through 'window__Window_25x325__6'";
+	output Real HSha_window__Window_25x325__7 = buildings.Houses.window__Window_25x325__7.shaType.HSha "Total solar irradiance through 'window__Window_25x325__7'";
 	output Real HSha_window__Window_25x35 = buildings.Houses.window__Window_25x35.shaType.HSha "Total solar irradiance through 'window__Window_25x35'";
 	output Real HSha_window__Window_25x35__10 = buildings.Houses.window__Window_25x35__10.shaType.HSha "Total solar irradiance through 'window__Window_25x35__10'";
 	output Real HSha_window__Window_25x35__11 = buildings.Houses.window__Window_25x35__11.shaType.HSha "Total solar irradiance through 'window__Window_25x35__11'";
@@ -1060,6 +1078,8 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real HSha_window__Window_25x40__33 = buildings.Houses.window__Window_25x40__33.shaType.HSha "Total solar irradiance through 'window__Window_25x40__33'";
 	output Real HSha_window__Window_25x40__34 = buildings.Houses.window__Window_25x40__34.shaType.HSha "Total solar irradiance through 'window__Window_25x40__34'";
 	output Real HSha_window__Window_25x40__35 = buildings.Houses.window__Window_25x40__35.shaType.HSha "Total solar irradiance through 'window__Window_25x40__35'";
+	output Real HSha_window__Window_25x40__36 = buildings.Houses.window__Window_25x40__36.shaType.HSha "Total solar irradiance through 'window__Window_25x40__36'";
+	output Real HSha_window__Window_25x40__37 = buildings.Houses.window__Window_25x40__37.shaType.HSha "Total solar irradiance through 'window__Window_25x40__37'";
 	output Real HSha_window__Window_25x40__4 = buildings.Houses.window__Window_25x40__4.shaType.HSha "Total solar irradiance through 'window__Window_25x40__4'";
 	output Real HSha_window__Window_25x40__5 = buildings.Houses.window__Window_25x40__5.shaType.HSha "Total solar irradiance through 'window__Window_25x40__5'";
 	output Real HSha_window__Window_25x40__6 = buildings.Houses.window__Window_25x40__6.shaType.HSha "Total solar irradiance through 'window__Window_25x40__6'";
@@ -1090,6 +1110,10 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real HSha_window__Window_25x45__2 = buildings.Houses.window__Window_25x45__2.shaType.HSha "Total solar irradiance through 'window__Window_25x45__2'";
 	output Real HSha_window__Window_25x45__20 = buildings.Houses.window__Window_25x45__20.shaType.HSha "Total solar irradiance through 'window__Window_25x45__20'";
 	output Real HSha_window__Window_25x45__21 = buildings.Houses.window__Window_25x45__21.shaType.HSha "Total solar irradiance through 'window__Window_25x45__21'";
+	output Real HSha_window__Window_25x45__22 = buildings.Houses.window__Window_25x45__22.shaType.HSha "Total solar irradiance through 'window__Window_25x45__22'";
+	output Real HSha_window__Window_25x45__23 = buildings.Houses.window__Window_25x45__23.shaType.HSha "Total solar irradiance through 'window__Window_25x45__23'";
+	output Real HSha_window__Window_25x45__24 = buildings.Houses.window__Window_25x45__24.shaType.HSha "Total solar irradiance through 'window__Window_25x45__24'";
+	output Real HSha_window__Window_25x45__25 = buildings.Houses.window__Window_25x45__25.shaType.HSha "Total solar irradiance through 'window__Window_25x45__25'";
 	output Real HSha_window__Window_25x45__3 = buildings.Houses.window__Window_25x45__3.shaType.HSha "Total solar irradiance through 'window__Window_25x45__3'";
 	output Real HSha_window__Window_25x45__4 = buildings.Houses.window__Window_25x45__4.shaType.HSha "Total solar irradiance through 'window__Window_25x45__4'";
 	output Real HSha_window__Window_25x45__5 = buildings.Houses.window__Window_25x45__5.shaType.HSha "Total solar irradiance through 'window__Window_25x45__5'";
@@ -1114,7 +1138,6 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real HSha_window__Window_25x50__8 = buildings.Houses.window__Window_25x50__8.shaType.HSha "Total solar irradiance through 'window__Window_25x50__8'";
 	output Real HSha_window__Window_25x50__9 = buildings.Houses.window__Window_25x50__9.shaType.HSha "Total solar irradiance through 'window__Window_25x50__9'";
 	output Real HSha_window__Window_25x60 = buildings.Houses.window__Window_25x60.shaType.HSha "Total solar irradiance through 'window__Window_25x60'";
-	output Real HSha_window__Window_25x60__10 = buildings.Houses.window__Window_25x60__10.shaType.HSha "Total solar irradiance through 'window__Window_25x60__10'";
 	output Real HSha_window__Window_25x60__2 = buildings.Houses.window__Window_25x60__2.shaType.HSha "Total solar irradiance through 'window__Window_25x60__2'";
 	output Real HSha_window__Window_25x60__3 = buildings.Houses.window__Window_25x60__3.shaType.HSha "Total solar irradiance through 'window__Window_25x60__3'";
 	output Real HSha_window__Window_25x60__4 = buildings.Houses.window__Window_25x60__4.shaType.HSha "Total solar irradiance through 'window__Window_25x60__4'";
@@ -1122,7 +1145,6 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real HSha_window__Window_25x60__6 = buildings.Houses.window__Window_25x60__6.shaType.HSha "Total solar irradiance through 'window__Window_25x60__6'";
 	output Real HSha_window__Window_25x60__7 = buildings.Houses.window__Window_25x60__7.shaType.HSha "Total solar irradiance through 'window__Window_25x60__7'";
 	output Real HSha_window__Window_25x60__8 = buildings.Houses.window__Window_25x60__8.shaType.HSha "Total solar irradiance through 'window__Window_25x60__8'";
-	output Real HSha_window__Window_25x60__9 = buildings.Houses.window__Window_25x60__9.shaType.HSha "Total solar irradiance through 'window__Window_25x60__9'";
 	output Real HSha_window__Window_25x65 = buildings.Houses.window__Window_25x65.shaType.HSha "Total solar irradiance through 'window__Window_25x65'";
 	output Real HSha_window__Window_25x65__10 = buildings.Houses.window__Window_25x65__10.shaType.HSha "Total solar irradiance through 'window__Window_25x65__10'";
 	output Real HSha_window__Window_25x65__11 = buildings.Houses.window__Window_25x65__11.shaType.HSha "Total solar irradiance through 'window__Window_25x65__11'";
