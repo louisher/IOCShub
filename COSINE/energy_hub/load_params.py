@@ -165,6 +165,7 @@ def load_params():
     param_uncl["cop_gshp"] = np.loadtxt(path_input_profiles / "COP_GSHP.txt")
     param_uncl["cop_ashp"] = np.loadtxt(path_input_profiles / "COP_ASHP.txt")
     param_uncl["eer_aschi"] = np.loadtxt(path_input_profiles / "EER_ASCHI.txt")
+    param_uncl["heat_beob"] = np.loadtxt(path_input_profiles / "beo_booster.txt")
 
     ################################################################
     # LOAD DEMANDS
@@ -192,6 +193,7 @@ def load_params():
     param["cop_gshp"] = param_uncl["cop_gshp"].reshape((365, 24))
     param["cop_ashp"] = param_uncl["cop_ashp"].reshape((365, 24))
     param["eer_aschi"] = param_uncl["eer_aschi"].reshape((365, 24))
+    param["heat_beob"] = param_uncl["heat_beob"].reshape((365, 24))
 
     plt.figure("Demand profiles")
     plt.plot(dem_uncl["heat"], label="Heat demand")

@@ -339,7 +339,10 @@ def run_optim(devs, param, dem, result_dict):
             )
 
             model.addConstr(
-                inj_bor[d][t] == cool["Borefield"][d][t] + reg["Borefield"][d][t]
+                inj_bor[d][t]
+                == cool["Borefield"][d][t]
+                + reg["Borefield"][d][t]
+                + param["heat_beob"][d][t]
             )
 
             # Electric air source heat pump

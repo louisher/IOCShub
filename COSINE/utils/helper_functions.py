@@ -802,6 +802,7 @@ def write_input_profiles(path_results, path_input_data):
         QBor = df["QBor"].to_numpy()
         inj = np.where(QBor > 0, QBor, 0) / 1e3
         ext = np.where(QBor < 0, -QBor, 0) / 1e3
+        QBeoBoo = df["QBeoBoo"].to_numpy() / 1e3
 
         # Calculate COPs
         TSup = df["T_COP_Sup"].to_numpy()
@@ -840,6 +841,7 @@ def write_input_profiles(path_results, path_input_data):
         np.savetxt(path_input_profiles / "EER_ASCHI.txt", EER_CHI, fmt="%.1f")
         np.savetxt(path_input_profiles / "initial_borefield_ext.txt", ext, fmt="%.1f")
         np.savetxt(path_input_profiles / "initial_borefield_inj.txt", inj, fmt="%.1f")
+        np.savetxt(path_input_profiles / "beo_booster.txt", QBeoBoo, fmt="%.1f")
 
         end = perf_counter()
         write_inputs_time = end - start
