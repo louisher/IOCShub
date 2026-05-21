@@ -1,4 +1,4 @@
-optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="438*1", tolerance=1e-1, truncationDelta=1e-2)
+optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="24*1", tolerance=1e-1, truncationDelta=1e-2)
     extends IOCSmod.Optimization.Lanssens(
                                                 addDummyEquation=false,
                                                 sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata/Leuven-City_XMY2021-2040_ssp585_MAR-BCC_SWDbased.mos"),
@@ -1390,6 +1390,27 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating_floor_zone_G_7_App1__zone_G_6_App1 = buildings.Houses.Floorheating_floor_zone_G_7_App1__zone_G_6_App1.m_flow "Mass flow rate of floor heating for floor_zone_G_7_App1__zone_G_6_App1";
 	output Modelica.Units.SI.Power Q_flow_floorHeating_floor_zone_G_7_App1__zone_G_6_App1 = -buildings.Houses.Floorheating_floor_zone_G_7_App1__zone_G_6_App1.heatPortEmb[1].Q_flow "EmbeddedPipe thermal power for floor_zone_G_7_App1__zone_G_6_App1";
 	output Modelica.Units.NonSI.Temperature_degC TCore_floorheating_floor_zone_G_7_App1__zone_G_6_App1 = Modelica.Units.Conversions.to_degC(buildings.Houses.Floorheating_floor_zone_G_7_App1__zone_G_6_App1.heatPortEmb[1].T) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating_slabOnGround_zone_A_0_Creative1 = buildings.Houses.Floorheating_slabOnGround_zone_A_0_Creative1.m_flow "Mass flow rate of floor heating for slabOnGround_zone_A_0_Creative1";
+	output Modelica.Units.SI.Power Q_flow_floorHeating_slabOnGround_zone_A_0_Creative1 = -buildings.Houses.Floorheating_slabOnGround_zone_A_0_Creative1.heatPortEmb[1].Q_flow "EmbeddedPipe thermal power for slabOnGround_zone_A_0_Creative1";
+	output Modelica.Units.NonSI.Temperature_degC TCore_floorheating_slabOnGround_zone_A_0_Creative1 = Modelica.Units.Conversions.to_degC(buildings.Houses.Floorheating_slabOnGround_zone_A_0_Creative1.heatPortEmb[1].T) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating_slabOnGround_zone_B_0_App1 = buildings.Houses.Floorheating_slabOnGround_zone_B_0_App1.m_flow "Mass flow rate of floor heating for slabOnGround_zone_B_0_App1";
+	output Modelica.Units.SI.Power Q_flow_floorHeating_slabOnGround_zone_B_0_App1 = -buildings.Houses.Floorheating_slabOnGround_zone_B_0_App1.heatPortEmb[1].Q_flow "EmbeddedPipe thermal power for slabOnGround_zone_B_0_App1";
+	output Modelica.Units.NonSI.Temperature_degC TCore_floorheating_slabOnGround_zone_B_0_App1 = Modelica.Units.Conversions.to_degC(buildings.Houses.Floorheating_slabOnGround_zone_B_0_App1.heatPortEmb[1].T) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating_slabOnGround_zone_B_0_App2 = buildings.Houses.Floorheating_slabOnGround_zone_B_0_App2.m_flow "Mass flow rate of floor heating for slabOnGround_zone_B_0_App2";
+	output Modelica.Units.SI.Power Q_flow_floorHeating_slabOnGround_zone_B_0_App2 = -buildings.Houses.Floorheating_slabOnGround_zone_B_0_App2.heatPortEmb[1].Q_flow "EmbeddedPipe thermal power for slabOnGround_zone_B_0_App2";
+	output Modelica.Units.NonSI.Temperature_degC TCore_floorheating_slabOnGround_zone_B_0_App2 = Modelica.Units.Conversions.to_degC(buildings.Houses.Floorheating_slabOnGround_zone_B_0_App2.heatPortEmb[1].T) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating_slabOnGround_zone_CD_0_Creative1 = buildings.Houses.Floorheating_slabOnGround_zone_CD_0_Creative1.m_flow "Mass flow rate of floor heating for slabOnGround_zone_CD_0_Creative1";
+	output Modelica.Units.SI.Power Q_flow_floorHeating_slabOnGround_zone_CD_0_Creative1 = -buildings.Houses.Floorheating_slabOnGround_zone_CD_0_Creative1.heatPortEmb[1].Q_flow "EmbeddedPipe thermal power for slabOnGround_zone_CD_0_Creative1";
+	output Modelica.Units.NonSI.Temperature_degC TCore_floorheating_slabOnGround_zone_CD_0_Creative1 = Modelica.Units.Conversions.to_degC(buildings.Houses.Floorheating_slabOnGround_zone_CD_0_Creative1.heatPortEmb[1].T) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating_slabOnGround_zone_E_0_Creative1 = buildings.Houses.Floorheating_slabOnGround_zone_E_0_Creative1.m_flow "Mass flow rate of floor heating for slabOnGround_zone_E_0_Creative1";
+	output Modelica.Units.SI.Power Q_flow_floorHeating_slabOnGround_zone_E_0_Creative1 = -buildings.Houses.Floorheating_slabOnGround_zone_E_0_Creative1.heatPortEmb[1].Q_flow "EmbeddedPipe thermal power for slabOnGround_zone_E_0_Creative1";
+	output Modelica.Units.NonSI.Temperature_degC TCore_floorheating_slabOnGround_zone_E_0_Creative1 = Modelica.Units.Conversions.to_degC(buildings.Houses.Floorheating_slabOnGround_zone_E_0_Creative1.heatPortEmb[1].T) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating_slabOnGround_zone_F_0_Creative1 = buildings.Houses.Floorheating_slabOnGround_zone_F_0_Creative1.m_flow "Mass flow rate of floor heating for slabOnGround_zone_F_0_Creative1";
+	output Modelica.Units.SI.Power Q_flow_floorHeating_slabOnGround_zone_F_0_Creative1 = -buildings.Houses.Floorheating_slabOnGround_zone_F_0_Creative1.heatPortEmb[1].Q_flow "EmbeddedPipe thermal power for slabOnGround_zone_F_0_Creative1";
+	output Modelica.Units.NonSI.Temperature_degC TCore_floorheating_slabOnGround_zone_F_0_Creative1 = Modelica.Units.Conversions.to_degC(buildings.Houses.Floorheating_slabOnGround_zone_F_0_Creative1.heatPortEmb[1].T) "";
+	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating_slabOnGround_zone_G_0_Creative1 = buildings.Houses.Floorheating_slabOnGround_zone_G_0_Creative1.m_flow "Mass flow rate of floor heating for slabOnGround_zone_G_0_Creative1";
+	output Modelica.Units.SI.Power Q_flow_floorHeating_slabOnGround_zone_G_0_Creative1 = -buildings.Houses.Floorheating_slabOnGround_zone_G_0_Creative1.heatPortEmb[1].Q_flow "EmbeddedPipe thermal power for slabOnGround_zone_G_0_Creative1";
+	output Modelica.Units.NonSI.Temperature_degC TCore_floorheating_slabOnGround_zone_G_0_Creative1 = Modelica.Units.Conversions.to_degC(buildings.Houses.Floorheating_slabOnGround_zone_G_0_Creative1.heatPortEmb[1].T) "";
 	output Modelica.Units.SI.MassFlowRate m_flow_floorHeating_floor_zone_A_1_App2 = buildings.Houses.Floorheating_floor_zone_A_1_App2.m_flow "Mass flow rate of floor heating for floor_zone_A_1_App2";
 	output Modelica.Units.SI.Power Q_flow_floorHeating_floor_zone_A_1_App2 = -buildings.Houses.Floorheating_floor_zone_A_1_App2.heatPortEmb[1].Q_flow "EmbeddedPipe thermal power for floor_zone_A_1_App2";
 	output Modelica.Units.NonSI.Temperature_degC TCore_floorheating_floor_zone_A_1_App2 = Modelica.Units.Conversions.to_degC(buildings.Houses.Floorheating_floor_zone_A_1_App2.heatPortEmb[1].T) "";
@@ -1433,6 +1454,10 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.MassFlowRate m_flow_collector_G = buildings.Houses.collector_G.port_a2.m_flow "";
 	output Modelica.Units.NonSI.Temperature_degC TRet_collector_G = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_G.TRet) "";
 	output Modelica.Units.NonSI.Temperature_degC TSup_collector_G = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_G.TSup) "";
+	output Modelica.Units.SI.Power Q_flow_collector_A_0 = buildings.Houses.collector_A_0.Q_flow "collector_A_0 thermal power";
+	output Modelica.Units.SI.MassFlowRate m_flow_collector_A_0 = buildings.Houses.collector_A_0.port_a2.m_flow "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_collector_A_0 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_A_0.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_collector_A_0 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_A_0.TSup) "";
 	output Modelica.Units.SI.Power Q_flow_collector_A_1 = buildings.Houses.collector_A_1.Q_flow "collector_A_1 thermal power";
 	output Modelica.Units.SI.MassFlowRate m_flow_collector_A_1 = buildings.Houses.collector_A_1.port_a2.m_flow "";
 	output Modelica.Units.NonSI.Temperature_degC TRet_collector_A_1 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_A_1.TRet) "";
@@ -1461,6 +1486,10 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.MassFlowRate m_flow_collector_A_7 = buildings.Houses.collector_A_7.port_a2.m_flow "";
 	output Modelica.Units.NonSI.Temperature_degC TRet_collector_A_7 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_A_7.TRet) "";
 	output Modelica.Units.NonSI.Temperature_degC TSup_collector_A_7 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_A_7.TSup) "";
+	output Modelica.Units.SI.Power Q_flow_collector_B_0 = buildings.Houses.collector_B_0.Q_flow "collector_B_0 thermal power";
+	output Modelica.Units.SI.MassFlowRate m_flow_collector_B_0 = buildings.Houses.collector_B_0.port_a2.m_flow "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_collector_B_0 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_B_0.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_collector_B_0 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_B_0.TSup) "";
 	output Modelica.Units.SI.Power Q_flow_collector_B_1 = buildings.Houses.collector_B_1.Q_flow "collector_B_1 thermal power";
 	output Modelica.Units.SI.MassFlowRate m_flow_collector_B_1 = buildings.Houses.collector_B_1.port_a2.m_flow "";
 	output Modelica.Units.NonSI.Temperature_degC TRet_collector_B_1 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_B_1.TRet) "";
@@ -1477,6 +1506,10 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.MassFlowRate m_flow_collector_B_4 = buildings.Houses.collector_B_4.port_a2.m_flow "";
 	output Modelica.Units.NonSI.Temperature_degC TRet_collector_B_4 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_B_4.TRet) "";
 	output Modelica.Units.NonSI.Temperature_degC TSup_collector_B_4 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_B_4.TSup) "";
+	output Modelica.Units.SI.Power Q_flow_collector_CD_0 = buildings.Houses.collector_CD_0.Q_flow "collector_CD_0 thermal power";
+	output Modelica.Units.SI.MassFlowRate m_flow_collector_CD_0 = buildings.Houses.collector_CD_0.port_a2.m_flow "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_collector_CD_0 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_CD_0.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_collector_CD_0 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_CD_0.TSup) "";
 	output Modelica.Units.SI.Power Q_flow_collector_CD_1 = buildings.Houses.collector_CD_1.Q_flow "collector_CD_1 thermal power";
 	output Modelica.Units.SI.MassFlowRate m_flow_collector_CD_1 = buildings.Houses.collector_CD_1.port_a2.m_flow "";
 	output Modelica.Units.NonSI.Temperature_degC TRet_collector_CD_1 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_CD_1.TRet) "";
@@ -1505,6 +1538,10 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.MassFlowRate m_flow_collector_CD_7 = buildings.Houses.collector_CD_7.port_a2.m_flow "";
 	output Modelica.Units.NonSI.Temperature_degC TRet_collector_CD_7 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_CD_7.TRet) "";
 	output Modelica.Units.NonSI.Temperature_degC TSup_collector_CD_7 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_CD_7.TSup) "";
+	output Modelica.Units.SI.Power Q_flow_collector_E_0 = buildings.Houses.collector_E_0.Q_flow "collector_E_0 thermal power";
+	output Modelica.Units.SI.MassFlowRate m_flow_collector_E_0 = buildings.Houses.collector_E_0.port_a2.m_flow "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_collector_E_0 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_E_0.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_collector_E_0 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_E_0.TSup) "";
 	output Modelica.Units.SI.Power Q_flow_collector_E_1 = buildings.Houses.collector_E_1.Q_flow "collector_E_1 thermal power";
 	output Modelica.Units.SI.MassFlowRate m_flow_collector_E_1 = buildings.Houses.collector_E_1.port_a2.m_flow "";
 	output Modelica.Units.NonSI.Temperature_degC TRet_collector_E_1 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_E_1.TRet) "";
@@ -1525,6 +1562,10 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.MassFlowRate m_flow_collector_E_5 = buildings.Houses.collector_E_5.port_a2.m_flow "";
 	output Modelica.Units.NonSI.Temperature_degC TRet_collector_E_5 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_E_5.TRet) "";
 	output Modelica.Units.NonSI.Temperature_degC TSup_collector_E_5 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_E_5.TSup) "";
+	output Modelica.Units.SI.Power Q_flow_collector_F_0 = buildings.Houses.collector_F_0.Q_flow "collector_F_0 thermal power";
+	output Modelica.Units.SI.MassFlowRate m_flow_collector_F_0 = buildings.Houses.collector_F_0.port_a2.m_flow "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_collector_F_0 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_F_0.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_collector_F_0 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_F_0.TSup) "";
 	output Modelica.Units.SI.Power Q_flow_collector_F_1 = buildings.Houses.collector_F_1.Q_flow "collector_F_1 thermal power";
 	output Modelica.Units.SI.MassFlowRate m_flow_collector_F_1 = buildings.Houses.collector_F_1.port_a2.m_flow "";
 	output Modelica.Units.NonSI.Temperature_degC TRet_collector_F_1 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_F_1.TRet) "";
@@ -1553,6 +1594,10 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Modelica.Units.SI.MassFlowRate m_flow_collector_F_7 = buildings.Houses.collector_F_7.port_a2.m_flow "";
 	output Modelica.Units.NonSI.Temperature_degC TRet_collector_F_7 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_F_7.TRet) "";
 	output Modelica.Units.NonSI.Temperature_degC TSup_collector_F_7 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_F_7.TSup) "";
+	output Modelica.Units.SI.Power Q_flow_collector_G_0 = buildings.Houses.collector_G_0.Q_flow "collector_G_0 thermal power";
+	output Modelica.Units.SI.MassFlowRate m_flow_collector_G_0 = buildings.Houses.collector_G_0.port_a2.m_flow "";
+	output Modelica.Units.NonSI.Temperature_degC TRet_collector_G_0 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_G_0.TRet) "";
+	output Modelica.Units.NonSI.Temperature_degC TSup_collector_G_0 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_G_0.TSup) "";
 	output Modelica.Units.SI.Power Q_flow_collector_G_1 = buildings.Houses.collector_G_1.Q_flow "collector_G_1 thermal power";
 	output Modelica.Units.SI.MassFlowRate m_flow_collector_G_1 = buildings.Houses.collector_G_1.port_a2.m_flow "";
 	output Modelica.Units.NonSI.Temperature_degC TRet_collector_G_1 = Modelica.Units.Conversions.to_degC(buildings.Houses.collector_G_1.TRet) "";
