@@ -305,6 +305,9 @@ def calculate_parallelHorizon_for_dmpc(mop_file):
             f"This gives {ratio} optimizations, which is not an integer."
         )
 
+    print(" ")
+    print("Calculated parallelHorizon for DMPC:", int(ratio))
+    print(" ")
     return int(ratio)
 
 
