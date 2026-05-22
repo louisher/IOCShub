@@ -1,8 +1,10 @@
-optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="438*1", tolerance=1e-1, truncationDelta=1e-2)
+optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="1752*1", tolerance=1e-1, truncationDelta=1e-2)
     extends IOCSmod.Optimization.Lanssens(
                                                 addDummyEquation=false,
                                                 sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata/Leuven-City_XMY2021-2040_ssp585_MAR-BCC_SWDbased.mos"),
                                                 priceSim.path_economic_params_json="/homenvme/louis/software/iocs/input_data/economic_params.json",
+                                                priceSim.path_dynamic_elec_prices=Modelica.Utilities.Files.loadResource("modelica://ArtesMod/Resources/ElecPrices/2025_Dynamic_consumer_prices.txt"),
+                                                priceSim.use_dyn_elec_p=false,
                                                 enerHub.Size_AsHp=50,
                                                 enerHub.Size_GsHp=700,
                                                 enerHub.Size_AsChi=250,
@@ -33,12 +35,17 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real QDem = Q_flow_collector_central;
 	output Real PDem = P_Net_Houses;
 	output Real QBor = enerHub.GsHp.QBorefield;
+	output Real QBeoBoo = if enerHub.BeoBoo_On then enerHub.beoBooster.hex.Q2_flow else 0;
 
 	// temperature data for COP calculation
 
 	output Real T_COP_Sup = Ttank;
-	output Real T_COP_Bor = TBorOut;
+	output Real T_COP_Bor = TGsHpEvaIn;
 	output Real T_COP_Air = TAsHpEvaIn;
+
+	// Electricity prices
+	output Real elecPriceOfftake = priceSim.priceBus.elec_offtake_price; // Prices should be in €/MWh
+	output Real elecPriceInjection = priceSim.priceBus.elec_inj_price; // Prices should be in €/MWh
 
 	// overall result data:
 
@@ -54,9 +61,9 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real TotalPower = P_Net_enerHub + P_Net_Houses;
 
 	output Real tariff_scaler = 36000000;
-	output Real p_offtake = priceSim.p_elec_fix_offtake/(3600*1e6);
+	output Real p_offtake = priceSim.priceBus.elec_offtake_price/(3600*1e6);
 	output Real p_offtakeSca = p_offtake * tariff_scaler;
-	output Real p_inj = priceSim.p_elec_fix_inj/(3600*1e6);
+	output Real p_inj = priceSim.priceBus.elec_inj_price/(3600*1e6);
 	output Real p_injSca = p_inj * tariff_scaler;
 	output Real b = 50;
 	output Real smoothPrice = p_injSca + (p_offtakeSca - p_injSca) * 0.5 *(1 + TotalPower / (sqrt(TotalPower^2 + b^2)) );
@@ -332,7 +339,6 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 
 	output Real mFlowBeoBooGrey = enerHub.beoBooster.hex.m1_flow;
 	output Real mFlowBeoBooHex = enerHub.beoBooster.hex.m2_flow;
-	output Real QBeoBoo = enerHub.beoBooster.hex.Q2_flow;
 
 ////////////////////////////////
     // Demand Output variables    //
