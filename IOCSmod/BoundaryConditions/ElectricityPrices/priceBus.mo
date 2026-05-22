@@ -1,21 +1,13 @@
 within IOCSmod.BoundaryConditions.ElectricityPrices;
 connector priceBus "Data bus that stores electricity price data"
 
-  IDEAS.Buildings.Components.Interfaces.RealConnector dynamic_raw(
-    final unit="euro/J") "Dynamic grid electricity price (only energy component)"
+  IDEAS.Buildings.Components.Interfaces.RealConnector elec_offtake_price(
+    final unit="euro/MWh") "Electricity cost for offtake"
     annotation ();
-  IDEAS.Buildings.Components.Interfaces.RealConnector dynamic_consumer(
-    final unit="euro/J") "Dynamic grid electricity price for consumers (including grid tarrifs and taxes)"
+  IDEAS.Buildings.Components.Interfaces.RealConnector elec_inj_price(
+    final unit="euro/MWh") "Electricity revenue for injection"
     annotation ();
-  IDEAS.Buildings.Components.Interfaces.RealConnector dynamic_consumer_daily(
-    final unit="euro/J") "Dynamic grid electricity price for consumers (including grid tarrifs and taxes) - daily average"
-    annotation ();
-  IDEAS.Buildings.Components.Interfaces.RealConnector dynamic_consumer_weekly(
-    final unit="euro/J") "Dynamic grid electricity price for consumers (including grid tarrifs and taxes) - weekly average"
-    annotation ();
-  IDEAS.Buildings.Components.Interfaces.RealConnector dynamic_consumer_yearly(
-    final unit="euro/J") "Dynamic grid electricity price for consumers (including grid tarrifs and taxes) - yearly median"
-    annotation ();
+
 
   annotation (
     defaultComponentName="priceBus",

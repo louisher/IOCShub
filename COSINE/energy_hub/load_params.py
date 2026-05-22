@@ -117,7 +117,49 @@ def load_params():
     OBSERVATION_TIME = economic_constants["OBSERVATION_TIME"]
     ELEC_PRICE_OFFTAKE = economic_constants["ELEC_PRICE_OFFTAKE"]
     ELEC_PRICE_INJECTION = economic_constants["ELEC_PRICE_INJECTION"]
+    USE_DYN_ELEC_PRICE = economic_constants["USE_DYN_ELEC_PRICE"]
 
+    if USE_DYN_ELEC_PRICE:
+        electricity_file = (
+            path_input_data
+            / "ElectricityFiles"
+            / economic_constants["FILE_DYNAMIC_ELEC_PRICES"]
+        )
+        if not electricity_file.exists():
+            raise FileNotFoundError(
+                f"USE_DYN_ELEC_PRICE=true, but the electricity price file {electricity_file} does not exist. Please check the path and file name."
+            )
+
+        column_names = [
+            "Time",
+            "Belpex electricity price",
+            "Dynamic offtake price",
+            "Dynamic injection price",
+        ]
+        df_electricity = pd.read_csv(
+            electricity_file,
+            comment="#",
+            skiprows=2,
+            sep=",",
+            names=column_names,
+            header=None,
+            usecols=range(len(column_names)),
+        )
+
+        param_uncl["price_supply_el"] = (
+            df_electricity["Dynamic offtake price"].to_numpy() / 1e3
+        )  # €/kWh
+        param_uncl["revenue_feed_in_el"] = (
+            df_electricity["Dynamic injection price"].to_numpy() / 1e3
+        )  # €/kWh
+
+    else:
+        param_uncl["price_supply_el"] = (ELEC_PRICE_OFFTAKE / 1e3) * np.ones(
+            8760
+        )  # €/kWh
+        param_uncl["revenue_feed_in_el"] = (ELEC_PRICE_INJECTION / 1e3) * np.ones(
+            8760
+        )  # €/kWh
     ################################################################
     # LOAD WEATHER DATA
 
@@ -165,6 +207,7 @@ def load_params():
     param_uncl["cop_gshp"] = np.loadtxt(path_input_profiles / "COP_GSHP.txt")
     param_uncl["cop_ashp"] = np.loadtxt(path_input_profiles / "COP_ASHP.txt")
     param_uncl["eer_aschi"] = np.loadtxt(path_input_profiles / "EER_ASCHI.txt")
+    param_uncl["heat_beob"] = np.loadtxt(path_input_profiles / "beo_booster.txt")
 
     ################################################################
     # LOAD DEMANDS
@@ -192,6 +235,7 @@ def load_params():
     param["cop_gshp"] = param_uncl["cop_gshp"].reshape((365, 24))
     param["cop_ashp"] = param_uncl["cop_ashp"].reshape((365, 24))
     param["eer_aschi"] = param_uncl["eer_aschi"].reshape((365, 24))
+    param["heat_beob"] = param_uncl["heat_beob"].reshape((365, 24))
 
     plt.figure("Demand profiles")
     plt.plot(dem_uncl["heat"], label="Heat demand")
@@ -271,11 +315,13 @@ def load_params():
     ### Energy costs ###
     # Electricity costs
     param["enable_supply_el"] = True
-    param["price_supply_el"] = ELEC_PRICE_OFFTAKE / 1e3  # €/kWh
+    param["price_supply_el"] = param_uncl["price_supply_el"].reshape((365, 24))  # €/kWh
 
     param["price_cap_el"] = 0  # kEUR/MW
     param["enable_feed_in_el"] = True
-    param["revenue_feed_in_el"] = ELEC_PRICE_INJECTION / 1e3  # €/kWh
+    param["revenue_feed_in_el"] = param_uncl["revenue_feed_in_el"].reshape(
+        (365, 24)
+    )  # €/kWh
 
     param["enable_cap_limit_el"] = False
     param["cap_limit_el"] = 1000  # kW
