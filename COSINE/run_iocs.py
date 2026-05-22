@@ -101,6 +101,8 @@ print(
 operational_variables = {
     "elec_offtake": {"excel_row": 17},
     "elec_injection": {"excel_row": 18},
+    "elec_cost": {"excel_row": "X"},
+    "elec_revenue": {"excel_row": "X"},
     "hea_discmf": {"excel_row": 19},
     "coo_discmf": {"excel_row": 20},
 }
@@ -176,7 +178,16 @@ INTEREST_RATE = economic_constants["INTEREST_RATE"]
 OBSERVATION_TIME = economic_constants["OBSERVATION_TIME"]
 ELEC_PRICE_OFFTAKE = economic_constants["ELEC_PRICE_OFFTAKE"]
 ELEC_PRICE_INJECTION = economic_constants["ELEC_PRICE_INJECTION"]
+USE_DYN_ELEC_PRICE = economic_constants["USE_DYN_ELEC_PRICE"]
+# Set the electricity price in mop
+hf.set_dynamic_electricity_price_in_mop(
+    path_mop_file=path_mop_file,
+    dynamic_elec_price_file_name=economic_constants["DYNAMIC_ELEC_PRICE_FILE_NAME"],
+    use_dynamic_electricity_price=USE_DYN_ELEC_PRICE,
+)
 
+### Check if all required outputs are in the mop file
+hf.check_iocs_outputs_in_mop(path_mop_file)
 
 ### Create the devices_info dictionary from devices.json ###
 path_devices_json = path_input_data / "devices.json"
@@ -215,12 +226,7 @@ operational_variables = hf.read_oper_variables_from_results(
     iteration_directory, operational_variables
 )
 opex, maintCost, devices_info = hf.calculate_opex_and_maintCost(
-    operational_variables,
-    devices_info,
-    INTEREST_RATE,
-    OBSERVATION_TIME,
-    ELEC_PRICE_OFFTAKE,
-    ELEC_PRICE_INJECTION,
+    operational_variables, devices_info, INTEREST_RATE, OBSERVATION_TIME
 )
 
 end_time_iteration = perf_counter()
@@ -306,12 +312,7 @@ while iteration < 4 and rel_dif > 0.01:
         iteration_directory, operational_variables
     )
     opex, maintCost, devices_info = hf.calculate_opex_and_maintCost(
-        operational_variables,
-        devices_info,
-        INTEREST_RATE,
-        OBSERVATION_TIME,
-        ELEC_PRICE_OFFTAKE,
-        ELEC_PRICE_INJECTION,
+        operational_variables, devices_info, INTEREST_RATE, OBSERVATION_TIME
     )
 
     end_time_iteration = perf_counter()

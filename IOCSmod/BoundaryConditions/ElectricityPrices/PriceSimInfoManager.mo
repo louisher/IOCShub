@@ -4,19 +4,22 @@ model PriceSimInfoManager
   parameter String path_economic_params_json "path the the economic_params.json file";
   parameter ExternData.JSONFile jsonreader_economic_params(fileName=path_economic_params_json) annotation(evaluate=false);
 
+
+
    /* Fixed economic parameters*/
   parameter Real interest_rate(fixed=false, start=0) "Interest rate";
   parameter Integer observation_time(fixed=false, start=0) "Observation time in years";
   parameter Real p_elec_fix_offtake(fixed=false, start=0) "Fixed offtake electricity price in €/mWh";
   parameter Real p_elec_fix_inj(fixed=false, start=0) "Fixed injection electricity price €/mWh";
 
-  parameter String loadFile=Modelica.Utilities.Files.loadResource(
-        "modelica://IOCSmod/Resources/ElectricityPrices/BE_Belpex_consumer_2021_2022jan.txt")
+  parameter Boolean use_dyn_elec_p=false "Boolean to select whether to use dynamic prices or fixed prices";
+  parameter String path_dynamic_elec_prices=Modelica.Utilities.Files.loadResource(
+        "modelica://IOCSmod/Resources/ElectricityPrices/2025_Dynamic_consumer_prices.txt") "Path to profile with dynamic electricity prices in €/MWh"
         annotation(Dialog(loadSelector(filter="All files (*.*)", caption="Select the electricity price data file")));
   Modelica.Blocks.Sources.CombiTimeTable electricityPrices(
-    columns=2:6,
+    columns=2:4,
     extrapolation=Modelica.Blocks.Types.Extrapolation.Periodic,
-    fileName=loadFile,
+    fileName=path_dynamic_elec_prices,
     smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments,
     tableName="data",
     tableOnFile=true,
@@ -36,6 +39,16 @@ model PriceSimInfoManager
         rotation=90,
         origin={100,0})));
 
+
+  Modelica.Blocks.Sources.RealExpression pEleFixOfftakeExpr(y=
+        p_elec_fix_offtake)
+    annotation (Placement(transformation(extent={{-60,66},{-40,86}})));
+  Modelica.Blocks.Sources.RealExpression pEleFixInjExpr(y=p_elec_fix_inj)
+    annotation (Placement(transformation(extent={{-60,50},{-40,70}})));
+  Modelica.Blocks.Sources.RealExpression pEleDynInjExpr(y=electricityPrices.y[3])
+    annotation (Placement(transformation(extent={{-60,-50},{-40,-30}})));
+  Modelica.Blocks.Sources.RealExpression pEleDynOfftakeExpr(y=electricityPrices.y[
+        2]) annotation (Placement(transformation(extent={{-60,-32},{-40,-12}})));
 initial equation
   interest_rate = jsonreader_economic_params.getReal("INTEREST_RATE");
   observation_time = jsonreader_economic_params.getInteger("OBSERVATION_TIME");
@@ -43,21 +56,20 @@ initial equation
   p_elec_fix_inj = jsonreader_economic_params.getInteger("ELEC_PRICE_INJECTION");
 
 equation
-  connect(electricityPrices.y[1], priceBus.dynamic_raw)
-    annotation (Line(points={{1,0},{50,0},{50,0.1},{99.9,0.1}},
-                                             color={0,0,127}));
-  connect(electricityPrices.y[2], priceBus.dynamic_consumer)
-    annotation (Line(points={{1,0},{50,0},{50,0.1},{99.9,0.1}},
-                                             color={0,0,127}));
-  connect(electricityPrices.y[3], priceBus.dynamic_consumer_daily)
-    annotation (Line(points={{1,0},{50,0},{50,0.1},{99.9,0.1}},
-                                             color={0,0,127}));
-  connect(electricityPrices.y[4], priceBus.dynamic_consumer_weekly)
-    annotation (Line(points={{1,0},{50,0},{50,0.1},{99.9,0.1}},
-                                             color={0,0,127}));
-  connect(electricityPrices.y[5], priceBus.dynamic_consumer_yearly)
-    annotation (Line(points={{1,0},{50,0},{50,0.1},{99.9,0.1}},
-                                             color={0,0,127}));
+  if use_dyn_elec_p then
+      connect(pEleDynOfftakeExpr.y, priceBus.elec_offtake_price)
+    annotation ();
+      connect(pEleDynInjExpr.y, priceBus.elec_inj_price)
+    annotation ();
+  else
+      connect(pEleFixOfftakeExpr.y, priceBus.elec_offtake_price)
+    annotation ();
+      connect(pEleFixInjExpr.y, priceBus.elec_inj_price)
+    annotation ();
+  end if;
+
+
+
 annotation (Icon(coordinateSystem(extent={{-100,-100},{100,100}}),
          graphics={
         Line(points={{-80,-30},{88,-30}}, color={0,0,0}),

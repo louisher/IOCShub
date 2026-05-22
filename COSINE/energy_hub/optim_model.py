@@ -703,9 +703,27 @@ def run_optim(devs, param, dem, result_dict):
 
     ### Costs ###
     # Costs/revenues for electricity
-    model.addConstr(supply_costs_el == from_el_grid_total * param["price_supply_el"])
+    model.addConstr(
+        supply_costs_el
+        == sum(
+            sum(
+                power["from_grid"][d][t] * param["price_supply_el"][d][t]
+                for t in time_steps
+            )
+            for d in days
+        )
+    )
+    model.addConstr(
+        rev_feed_in_el
+        == sum(
+            sum(
+                power["to_grid"][d][t] * param["revenue_feed_in_el"][d][t]
+                for t in time_steps
+            )
+            for d in days
+        )
+    )
     model.addConstr(cap_costs_el == grid_limit_el * param["price_cap_el"])
-    model.addConstr(rev_feed_in_el == to_el_grid_total * param["revenue_feed_in_el"])
 
     # Costs/revenues for natural gas
     model.addConstr(supply_costs_gas == from_gas_grid_total * param["price_supply_gas"])

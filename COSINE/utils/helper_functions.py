@@ -7,6 +7,7 @@ import pandas as pd
 import datetime
 import ast
 import operator as op
+import re
 
 import numpy as np
 from time import perf_counter
@@ -311,6 +312,81 @@ def calculate_parallelHorizon_for_dmpc(mop_file):
     return int(ratio)
 
 
+import re
+
+
+def check_iocs_outputs_in_mop(path):
+    """
+    Checks whether all required IOCS output declarations are present.
+
+    Intended for error handling before running simulations or post-processing.
+
+    Parameters
+    ----------
+    path : str
+        Path to the .mop or .mo file.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the file does not exist.
+
+    RuntimeError
+        If one or more required IOCS outputs are missing.
+
+    Returns
+    -------
+    bool
+        True if all outputs are present.
+    """
+
+    required_outputs = [
+        "QDem",
+        "PDem",
+        "QBor",
+        "QBeoBoo",
+        "T_COP_Sup",
+        "T_COP_Bor",
+        "T_COP_Air",
+        "elecPriceOfftake",
+        "elecPriceInjection",
+        "DiscmfHea",
+        "DiscmfCoo",
+        "ElecUse",
+    ]
+
+    try:
+        with open(path, "r", encoding="utf-8") as file:
+            content = file.read()
+
+    except FileNotFoundError:
+        raise FileNotFoundError(f"MOP file not found:\n{path}")
+
+    missing_outputs = []
+
+    for output_name in required_outputs:
+
+        # Checks only declaration existence.
+        # Assigned value does not matter.
+        pattern = rf"\boutput\s+[\w\.]+\s+{re.escape(output_name)}\b"
+
+        if not re.search(pattern, content):
+            missing_outputs.append(output_name)
+
+    if missing_outputs:
+
+        error_message = (
+            "\nMissing required IOCS output declarations:\n"
+            + "\n".join(f"  - {name}" for name in missing_outputs)
+            + "\n\nPlease make sure the IOCS definitions block "
+            "has been added correctly."
+        )
+
+        raise RuntimeError(error_message)
+
+    return True
+
+
 def load_json_file_as_dict(path):
     """
     Loads a JSON file and returns its content as a dictionary.
@@ -387,6 +463,109 @@ def change_weather_file_in_mop(path_mop_file, weather_file_name):
             file.writelines(lines)
     except PermissionError:
         raise PermissionError(f"Permission denied when writing to: {path_mop_file}")
+    except IOError as e:
+        raise IOError(f"Error writing to file {path_mop_file}: {e}")
+
+
+def set_dynamic_electricity_price_in_mop(
+    path_mop_file,
+    dynamic_elec_price_file_name,
+    use_dynamic_electricity_price,
+):
+    """
+    Updates the dynamic electricity price settings in a Modelica .mop file.
+
+    Behaviour:
+    - Always updates:
+          priceSim.use_dyn_elec_p
+    - Only updates:
+          dynamic_elec_price_file_name
+      when use_dynamic_electricity_price == True
+
+    Args:
+        path_mop_file (str):
+            Path to the .mop file to modify.
+
+        dynamic_elec_price_file_name (str):
+            Name of the dynamic electricity price file.
+
+        use_dynamic_electricity_price (bool):
+            Enables or disables dynamic electricity prices.
+
+    Raises:
+        FileNotFoundError:
+            If the MOP file does not exist.
+
+        PermissionError:
+            If there are insufficient permissions.
+
+        IOError:
+            If reading/writing fails.
+
+        ValueError:
+            If the boolean parameter line is not found.
+    """
+
+    try:
+        with open(path_mop_file, "r") as file:
+            lines = file.readlines()
+
+    except FileNotFoundError:
+        raise FileNotFoundError(f"MOP file not found: {path_mop_file}")
+
+    except PermissionError:
+        raise PermissionError(f"Permission denied when reading: {path_mop_file}")
+
+    except IOError as e:
+        raise IOError(f"Error reading file {path_mop_file}: {e}")
+
+    use_dyn_price_line_found = False
+    dyn_price_line_found = False
+
+    for i, line in enumerate(lines):
+
+        # Update boolean switch
+        if "priceSim.use_dyn_elec_p=" in line:
+
+            bool_str = "true" if use_dynamic_electricity_price else "false"
+
+            lines[i] = f"\t\t\t\t\t\t\t\t\t\t\t\tpriceSim.use_dyn_elec_p={bool_str},\n"
+
+            use_dyn_price_line_found = True
+
+        # Only update file name if dynamic pricing is enabled
+        if (
+            use_dynamic_electricity_price
+            and "priceSim.path_dynamic_elec_prices=" in line
+        ):
+
+            lines[i] = (
+                f'\t\t\t\t\t\t\t\t\t\t\t\tpriceSim.path_dynamic_elec_prices=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/ElectricityPrices/{dynamic_elec_price_file_name}"),\n'
+            )
+
+            dyn_price_line_found = True
+
+    # Boolean line must always exist
+    if not use_dyn_price_line_found:
+        raise ValueError(
+            "Boolean line 'priceSim.use_dyn_elec_p=' not found " f"in {path_mop_file}"
+        )
+
+    # File name line is only required when dynamic pricing is enabled
+    if use_dynamic_electricity_price and not dyn_price_line_found:
+        raise ValueError(
+            "Dynamic electricity price file line "
+            "'dynamic_elec_price_file_name=' not found "
+            f"in {path_mop_file}"
+        )
+
+    try:
+        with open(path_mop_file, "w") as file:
+            file.writelines(lines)
+
+    except PermissionError:
+        raise PermissionError(f"Permission denied when writing to: {path_mop_file}")
+
     except IOError as e:
         raise IOError(f"Error writing to file {path_mop_file}: {e}")
 
@@ -569,6 +748,45 @@ def read_elec_use(df):
     return TotalOfftake, TotalInjection
 
 
+def read_electricity_cost_and_revenue(df):
+    """
+    Calculate electricity cost and injection revenue from results DataFrame.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing at least the following columns:
+            - 'ElecUse' (float): net electricity use in W (positive = offtake, negative = injection)
+            - 'elecPriceOfftake' (float): offtake price in €/MWh
+            - 'elecPriceInjection' (float): injection price in €/MWh
+
+    Returns:
+        tuple: (cost_offtake, revenue_injection) where values are in EUR.
+
+    Raises:
+        TypeError: if df is not a pandas DataFrame.
+        KeyError: if required columns are missing.
+    """
+
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Input must be a pandas DataFrame")
+
+    try:
+        elec_use = df["ElecUse"].to_numpy() / 1e3  # convert to kW
+        # elec_use is now in kW; convert to MWh by dividing by 1e3 (kW->MW) then by 1e3 (MW->MWh per hour)
+        elec_use_offtake = np.where(elec_use >= 0, elec_use, 0) / 1e3  # convert kW->MWh
+        elec_use_injection = (
+            np.where(elec_use < 0, -elec_use, 0) / 1e3
+        )  # convert kW->MWh
+        # prices are expected in €/MWh
+        elec_price_offtake = df["elecPriceOfftake"].to_numpy()
+        elec_price_injection = df["elecPriceInjection"].to_numpy()
+        cost_offtake = np.sum(elec_use_offtake * elec_price_offtake)
+        revenue_injection = np.sum(elec_use_injection * elec_price_injection)
+    except KeyError as e:
+        raise KeyError(f"Required column not found in DataFrame: {e}")
+
+    return cost_offtake, revenue_injection
+
+
 def read_discomfort(df):
     """
     Calculates total heating and cooling discomfort from a DataFrame.
@@ -608,6 +826,8 @@ def read_oper_variables_from_results(iteration_directory, operational_variables)
         operational_variables (dict): Dictionary to store operational variables with structure:
             - "elec_offtake": {"value": float}
             - "elec_injection": {"value": float}
+            - "elec_cost": {"value": float}
+            - "elec_revenue": {"value": float}
             - "hea_discmf": {"value": float}
             - "coo_discmf": {"value": float}
 
@@ -627,6 +847,10 @@ def read_oper_variables_from_results(iteration_directory, operational_variables)
             operational_variables["elec_offtake"]["value"],
             operational_variables["elec_injection"]["value"],
         ) = read_elec_use(df)
+        (
+            operational_variables["elec_cost"]["value"],
+            operational_variables["elec_revenue"]["value"],
+        ) = read_electricity_cost_and_revenue(df)
         (
             operational_variables["hea_discmf"]["value"],
             operational_variables["coo_discmf"]["value"],
@@ -691,6 +915,8 @@ def update_overview_sheet(
                 sheet[cell] = variable_info["value"]
 
         for variable, value in operational_variables.items():
+            if operational_variables[variable]["excel_row"] == "X":
+                continue
             cell = col_letter + str(operational_variables[variable]["excel_row"])
             sheet[cell] = operational_variables[variable]["value"]
 
@@ -1188,12 +1414,7 @@ def calculate_capex(devices_info, interest_rate, observation_time):
 
 
 def calculate_opex_and_maintCost(
-    operational_variables,
-    devices_info,
-    interest_rate,
-    observation_time,
-    elec_price_offtake,
-    elec_price_injection,
+    operational_variables, devices_info, interest_rate, observation_time
 ):
     """
     Calculates the operational expenditure (OPEX) and maintenance costs.
@@ -1203,8 +1424,6 @@ def calculate_opex_and_maintCost(
         devices_info (dict): Dictionary containing device information including maintenance costs.
         interest_rate (float): Interest rate (as a decimal, e.g., 0.05 for 5%).
         observation_time (float): Observation period in years.
-        elec_price_offtake (float): Electricity price for offtake in €/MWh.
-        elec_price_injection (float): Electricity price for injection in €/MWh.
 
     Returns:
         tuple: (opex, maintCost, devices_info) where:
@@ -1227,16 +1446,8 @@ def calculate_opex_and_maintCost(
         )
 
         # Calculate OPEX
-        opex = (
-            operational_variables["elec_offtake"]["value"]
-            * elec_price_offtake
-            * annuity_factor
-        )
-        opex -= (
-            operational_variables["elec_injection"]["value"]
-            * elec_price_injection
-            * annuity_factor
-        )
+        opex = operational_variables["elec_cost"]["value"] * annuity_factor
+        opex -= operational_variables["elec_revenue"]["value"] * annuity_factor
 
         # Calculate maintCost
         maintCost = 0
