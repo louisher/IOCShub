@@ -182,7 +182,7 @@ USE_DYN_ELEC_PRICE = economic_constants["USE_DYN_ELEC_PRICE"]
 # Set the electricity price in mop
 hf.set_dynamic_electricity_price_in_mop(
     path_mop_file=path_mop_file,
-    dynamic_elec_price_file_name=economic_constants["DYNAMIC_ELEC_PRICE_FILE_NAME"],
+    dynamic_elec_price_file_name=economic_constants["FILE_DYNAMIC_ELEC_PRICES"],
     use_dynamic_electricity_price=USE_DYN_ELEC_PRICE,
 )
 
