@@ -188,7 +188,11 @@ def download_results_from_TACO_server(local_path, model_name, TACO_server):
     if result2 != 0:
         raise Exception("Failed to download OutputNames.txt from the TACO server.")
 
-
+    result3 = os.system(f"scp -P {TACO_server['port']} {TACO_server['user']}@{TACO_server['hostname']}:{path}/outputsAll.mat {local_path}/outputsAll.mat")
+    if result3 != 0:
+        raise Exception("Failed to download outputsAll.mat from the TACO server.")
+    
+    
 def run_operational_optimization(iteration_directory, path_iteration_mop, model_name, TACO_server, dmpc):
     """
     Runs the operational optimization for a given model on the TACO server.
