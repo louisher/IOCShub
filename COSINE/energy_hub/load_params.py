@@ -146,11 +146,15 @@ def load_params():
             usecols=range(len(column_names)),
         )
 
-        param_uncl["price_supply_el"] = (
+        price_sup = (
             df_electricity["Dynamic offtake price"].to_numpy() / 1e3
-        )  # €/kWh
-        param_uncl["revenue_feed_in_el"] = (
+        )  # Convert from €/MWh to €/kWh
+        price_inj = (
             df_electricity["Dynamic injection price"].to_numpy() / 1e3
+        )  # Convert from €/MWh to €/kWh
+        param_uncl["price_supply_el"] = np.where(price_sup > 0, price_sup, 0)  # €/kWh
+        param_uncl["revenue_feed_in_el"] = np.where(
+            price_inj > 0, price_inj, 0
         )  # €/kWh
 
     else:
@@ -160,6 +164,7 @@ def load_params():
         param_uncl["revenue_feed_in_el"] = (ELEC_PRICE_INJECTION / 1e3) * np.ones(
             8760
         )  # €/kWh
+
     ################################################################
     # LOAD WEATHER DATA
 
