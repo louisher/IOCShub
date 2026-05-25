@@ -1,5 +1,5 @@
 within IOCSmod.ComponentModels.Thermal;
-model Bhp "Model of booster heat pump"
+model Bhp "Model of booster heat pump (Important: nominal flow through evaporator should be lower than in condensor)"
 
   parameter String Qbhp_profile_name = "FTE_PTE_School_BHP" "house nb";
   parameter String QConBhpFile = Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/BHP_profiles/" + Qbhp_profile_name + ".txt")
@@ -9,7 +9,7 @@ model Bhp "Model of booster heat pump"
 
     parameter Modelica.Units.SI.MassFlowRate m_flow_nominalCon=Qbhp_nominal/4180/bhp.dT_max
     "Nominal mass flow rate condensor bhp";
-  parameter Modelica.Units.SI.MassFlowRate m_flow_nominalEva=Qbhp_nominal*((bhp.copDef-1)/bhp.copDef)/4180/5;
+  parameter Modelica.Units.SI.MassFlowRate m_flow_nominalEva=Qbhp_nominal*((bhp.copDef-1)/bhp.copDef)/4180/bhp.dT_max;
   parameter Modelica.Units.SI.PressureDifference dpFixed_nominal=0
     "Pressure drop of pipe and other resistances that are in series";
   parameter Real Kv=valBhp.m_flow_nominal/sqrt(valBhp.dpValve_nominal)/(valBhp.rhoStd
@@ -46,7 +46,7 @@ model Bhp "Model of booster heat pump"
     smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments,
     timeEvents=Modelica.Blocks.Types.TimeEvents.NoTimeEvents)
     annotation (Placement(transformation(extent={{80,20},{60,40}})));
-  Modelica.Blocks.Sources.RealExpression modBhpExpr(y=Qcon_profile.y[1]/(bhp.m2_flow_nominal
+  Modelica.Blocks.Sources.RealExpression modBhpExpr(y=Qcon_profile.y[1]/(bhp.m1_flow
         *4180*bhp.dT_max)) annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=180,
