@@ -10,7 +10,7 @@ optimization Test(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1,
 	output Modelica.Units.SI.MassFlowRate m_flow_bhpCon_A = bhp_A.bhp.m2_flow;
 
 	output Real mod_bhp_A = bhp_A.bhp.mod;
-	output Real QCon_profile = bhp_A.bhp.Qcon_profile.y[1];
+	output Real QCon_profile = bhp_A.Qcon_profile.y[1];
 	output Real bhp_smoothmin = bhp_A.bhp.smoothMin;
 
 	///////////////////////////////////
