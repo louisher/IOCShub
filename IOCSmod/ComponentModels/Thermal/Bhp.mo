@@ -46,7 +46,7 @@ model Bhp "Model of booster heat pump"
     smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments,
     timeEvents=Modelica.Blocks.Types.TimeEvents.NoTimeEvents)
     annotation (Placement(transformation(extent={{80,20},{60,40}})));
-  Modelica.Blocks.Sources.RealExpression modBhpExpr(y=Qcon_profile.y[1]/(bhp.smoothMin
+  Modelica.Blocks.Sources.RealExpression modBhpExpr(y=Qcon_profile.y[1]/(bhp.m2_flow_nominal
         *4180*bhp.dT_max)) annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=180,
