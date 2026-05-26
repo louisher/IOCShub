@@ -417,8 +417,8 @@ def determine_nBor(
               False if the minimum size cannot be achieved.
     """
 
-    N_1: int = 15  # Initial number of boreholes in the first direction
-    N_2: int = 15  # Initial number of boreholes in the second direction
+    N_1: int = 25  # Initial number of boreholes in the first direction
+    N_2: int = 20  # Initial number of boreholes in the second direction
     write_N_1_N_2_to_json(devs, N_1, N_2)
     devs = set_general_parameters(devs)  
     L: float = size_borefield(devs, ext_load, inj_load)

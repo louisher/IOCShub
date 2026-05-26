@@ -159,7 +159,7 @@ def run_OCP(model_name, TACO_server, dmpc):
     if dmpc["On"] == False:
         command = ( f"cd {TACO_server['path_ocp_on_server']}/{model_name} && ./test.sh -f -w -i10000")
     elif dmpc["On"] == True:
-        command = ( f"cd {TACO_server['path_ocp_on_server']}/{model_name} && ./test.sh -f -w -i3500 --parallelHorizon={dmpc['parallelHorizon']} --delaySync=350")
+        command = ( f"cd {TACO_server['path_ocp_on_server']}/{model_name} && ./test.sh -f -w -i2500 --parallelHorizon={dmpc['parallelHorizon']} --delaySync=350")
 
     success = run_command_on_Taco_server(command, TACO_server)
     if not success:
