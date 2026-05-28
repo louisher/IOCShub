@@ -395,51 +395,86 @@ def find_next_N_1_N_2(N_1: int, N_2: int) -> tuple[int, int, int]:
             succes = True
     return optimal_N_1, optimal_N_2, nBor
 
+def max_aspect_ratio(nBor: int) -> float:
+    """
+    Piecewise constraint:
+    - large systems → must be close to square
+    - small systems → can be more elongated
+    """
+
+    if nBor > 200:
+        return 2.0
+    elif nBor > 100:
+        return 4.0
+    elif nBor > 50:
+        return 7.0
+    else:
+        return 10.0
+        
+
+def generate_valid_borefields(max_N1: int, max_N2: int):
+    combinations = []
+
+    for N_1 in range(1, max_N1 + 1):
+        for N_2 in range(N_1, max_N2 + 1):
+
+            nBor = N_1 * N_2
+
+            ratio = N_2 / N_1
+            limit = max_aspect_ratio(nBor)
+
+            if ratio <= limit:
+                combinations.append((nBor, N_1, N_2))
+
+    # Sort: largest first, then most compact shape
+    combinations.sort(key=lambda x: (-x[0], abs(x[1] - x[2])))
+
+    return combinations
+
 def determine_nBor(
     devs: dict,
     param: dict,
-    ext_load: np.ndarray,
-    inj_load: np.ndarray
+    ext_load,
+    inj_load
 ) -> bool:
-    """
-    Determines the optimal number of boreholes in a borefield to ensure the borehole depth (L) 
-    falls within specified minimum and maximum limits. The function iteratively adjusts the 
-    borefield configuration, updating the number of boreholes in two directions, and writes 
-    these values to a JSON file. If the borefield size is too small to meet the minimum depth 
-    requirement, the function returns False.
-    Parameters:
-        devs (dict): Device or configuration object containing borefield parameters.
-        param (dict): Additional parameters required for borefield calculations.
-        ext_load (np.ndarray): External load applied to the borefield.
-        inj_load (np.ndarray): Injection load applied to the borefield.
-    Returns:
-        bool: True if a suitable borefield size is found within the specified limits, 
-              False if the minimum size cannot be achieved.
-    """
 
-    N_1: int = 25  # Initial number of boreholes in the first direction
-    N_2: int = 20  # Initial number of boreholes in the second direction
-    write_N_1_N_2_to_json(devs, N_1, N_2)
-    devs = set_general_parameters(devs)  
-    L: float = size_borefield(devs, ext_load, inj_load)
+    min_L = 125
+    max_L = 225
 
-    # Check if the borefield size is within the limits
-    min_L: float = 125
-    max_L: float = 225
-    size_found: bool = True
-    while L < min_L or L > max_L:
-        N_1, N_2, nBor = find_next_N_1_N_2(N_1, N_2)
+    # Define search limits
+    max_N1 = 25
+    max_N2 = 25
+
+    combinations = generate_valid_borefields(
+        max_N1=max_N1,
+        max_N2=max_N2,
+        max_ratio=10
+    )
+
+    size_found = False
+
+    for nBor, N_1, N_2 in combinations:
+
+        print(f"Testing: {N_1} x {N_2} (nBor={nBor})")
+
         write_N_1_N_2_to_json(devs, N_1, N_2)
+
         devs = set_general_parameters(devs)
+
         L = size_borefield(devs, ext_load, inj_load)
-        print("L: ", L)
-        if nBor == 2 and L < min_L:
-            print("Minimum borefield size reached")
-            if L < 25:  # if the size with 2 boreholes is smaller than 25m, the size is too small
-                size_found = False
+
+        print("L:", L)
+
+        if min_L <= L <= max_L:
+
+            print(
+                f"Valid borefield found: "
+                f"{N_1} x {N_2} -- Length: {L}"
+            )
+
+            size_found = True
             break
-    if size_found:
-        print(f"Resulting borefield size: {N_1}X{N_2} -- Length: {L}")
+
     return size_found
 
 def increase_nBor(N_1, N_2):
