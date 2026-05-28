@@ -476,7 +476,7 @@ def load_params():
     devs = borefield_params.set_general_parameters(devs)
     if devs["Borefield"]["feasible"]:
         if devs["Borefield"]["intialize_length"]:
-            devs["Borefield"]["intialize_lengthh"] = False
+            devs["Borefield"]["intialize_length"] = False
             # Determine the starting borefield configuration
             Borefield_possible = borefield_params.determine_nBor(devs, param, init_inj, init_ext)  # This function outputs false if the borefield load is to small
             if Borefield_possible:
