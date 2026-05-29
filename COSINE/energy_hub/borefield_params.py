@@ -447,8 +447,7 @@ def determine_nBor(
 
     combinations = generate_valid_borefields(
         max_N1=max_N1,
-        max_N2=max_N2,
-        max_ratio=10
+        max_N2=max_N2
     )
 
     size_found = False
