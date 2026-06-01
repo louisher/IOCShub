@@ -55,7 +55,7 @@
         "min_depth": 25,
         "max_depth": 300,
         "fixed_T_model": false,
-        "regeneration_cap": 10000,
+        "regeneration_cap": 0,
         "intialize_length": true
     },
     "ASHP": {
