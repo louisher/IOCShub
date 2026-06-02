@@ -1,15 +1,15 @@
-optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="584*1", tolerance=1e-1, truncationDelta=1e-2)
+optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="292*1", tolerance=1e-1, truncationDelta=1e-2)
     extends IOCSmod.Optimization.Lanssens(
                                                 addDummyEquation=false,
-                                                sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata/Leuven-City_XMY2021-2040_ssp585_MAR-BCC_SWDbased.mos"),
+                                                sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata/Vliet_2025.mos.mos"),
                                                 priceSim.path_economic_params_json="/homenvme/louis/software/iocs/input_data/economic_params.json",
                                                 priceSim.path_dynamic_elec_prices=Modelica.Utilities.Files.loadResource("modelica://ArtesMod/Resources/ElecPrices/2025_Dynamic_consumer_prices.txt"),
                                                 priceSim.use_dyn_elec_p=false,
                                                 enerHub.Size_AsHp=50,
                                                 enerHub.Size_GsHp=700,
-                                                enerHub.Size_AsChi=250,
-                                                enerHub.Size_Tank=40,
-                                                enerHub.Size_PV=100.0,
+                                                enerHub.Size_AsChi=0.1,
+                                                enerHub.Size_Tank=20,
+                                                enerHub.Size_PV=0.1,
                                                 enerHub.Size_STC=0.1,
                                                 enerHub.Size_PVT=0.1,
                                                 enerHub.hasBat=false,
