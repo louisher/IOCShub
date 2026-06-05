@@ -1,5 +1,5 @@
 #1
-double tab1(8784,30)
+double tab1(8760,30)
 #LOCATION,Heverlee,VLG,BEL,TMY3,123456789,50.8599059,4.6790238,1.0,28
 #C1 Time in seconds. Beginning of a year is 0s.
 #C2 Dry bulb temperature in Celsius at indicated time
