@@ -1,4 +1,4 @@
-optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="584*1", tolerance=1e-1, truncationDelta=1e-2)
+optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="730*1", tolerance=1e-1, truncationDelta=1e-2)
     extends IOCSmod.Optimization.Lanssens(
                                                 addDummyEquation=false,
                                                 sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata/Vliet_2025.mos"),
@@ -90,9 +90,9 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real ObjIntTBorMax = 10000*max(0, TBorAvg - TBorMax)^2;
 
 	/// Comfort ///
-	//output Real TSetHea = 21;
-	output Real TSetCoo = if (T_COP_Air < 10) then 21.5 else 26;
-	output Real TSetCoo = 26;
+	output Real TSetHea = 21;
+	output Real TSetCoo = if (T_COP_Air < 10) then 22 else 26;
+	//output Real TSetCoo = 26;
 	output Real weight_hea = 10000;
 	output Real weight_coo = 10000;
 	output Real ObjIntComfSHea_A_0 = weight_hea*(DiscmfHea_zone_A_0_Creative1^2);
