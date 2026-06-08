@@ -75,7 +75,7 @@
         "COP": "PLACEHOLDER"
     },
     "ASCHI": {
-        "feasible": false,
+        "feasible": true,
         "size_parameters": {
             "Size": {
                 "value": 0.1,
@@ -83,7 +83,7 @@
                 "excel_row": 8
             }
         },
-        "inv_cost": 900,
+        "inv_cost": 900000,
         "life_time": 20,
         "cost_om": 0.03,
         "min_cap": 0,
