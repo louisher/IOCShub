@@ -64,14 +64,21 @@ from time import perf_counter
 parser = argparse.ArgumentParser(description="Script for iocs ")
 parser.add_argument("base_model_name", help="Name of the base mop (no flag needed)")
 parser.add_argument("--run_identifier", help="Run identifier (optional)", default="")
+parser.add_argument(
+    "--dmpc", action="store_true", help="Enable DMPC operational optimization"
+)
+
 args = parser.parse_args()
 base_model_name = args.base_model_name
 run_identifier = args.run_identifier
+
 model_name = base_model_name + run_identifier
 
 ### Load TACO server configuration
 TACO_server = load_taco_config()
-TACO_server["path_ocp_on_server"] = TACO_server["path_ocps_on_server"] / model_name
+TACO_server["path_ocp_on_server"] = (
+    TACO_server["path_ocps_on_server"] + "/" + model_name
+)
 
 
 ########################################################################################################
@@ -94,6 +101,8 @@ print(
 operational_variables = {
     "elec_offtake": {"excel_row": 17},
     "elec_injection": {"excel_row": 18},
+    "elec_cost": {"excel_row": "X"},
+    "elec_revenue": {"excel_row": "X"},
     "hea_discmf": {"excel_row": 19},
     "coo_discmf": {"excel_row": 20},
 }
@@ -133,6 +142,14 @@ hf.change_model_name_in_mop(
     path_mop_file=path_mop_file, old_name=base_model_name, new_name=model_name
 )  # Replace the base model name in the MOP file
 
+### If dmpc is enabled, check the time horizon of the optimization and determine parallelHorizon.
+if args.dmpc:
+    parallel_horizon = hf.calculate_parallelHorizon_for_dmpc(path_mop_file)
+    dmpc = {"On": args.dmpc, "parallelHorizon": parallel_horizon}
+else:
+    dmpc = {"On": False, "parallelHorizon": None}
+
+
 ###  Add overview excel file and input_data folder to the model directory ###
 shutil.copy(
     "IterationOverviewTemplate.xlsx", model_directory / "IterationOverview.xlsx"
@@ -161,7 +178,16 @@ INTEREST_RATE = economic_constants["INTEREST_RATE"]
 OBSERVATION_TIME = economic_constants["OBSERVATION_TIME"]
 ELEC_PRICE_OFFTAKE = economic_constants["ELEC_PRICE_OFFTAKE"]
 ELEC_PRICE_INJECTION = economic_constants["ELEC_PRICE_INJECTION"]
+USE_DYN_ELEC_PRICE = economic_constants["USE_DYN_ELEC_PRICE"]
+# Set the electricity price in mop
+hf.set_dynamic_electricity_price_in_mop(
+    path_mop_file=path_mop_file,
+    dynamic_elec_price_file_name=economic_constants["FILE_DYNAMIC_ELEC_PRICES"],
+    use_dynamic_electricity_price=USE_DYN_ELEC_PRICE,
+)
 
+### Check if all required outputs are in the mop file
+hf.check_iocs_outputs_in_mop(path_mop_file)
 
 ### Create the devices_info dictionary from devices.json ###
 path_devices_json = path_input_data / "devices.json"
@@ -192,7 +218,7 @@ hf.set_size_parameters_in_mop(path_iteration_mop, devices_info)
 capex, devices_info = hf.calculate_capex(devices_info, INTEREST_RATE, OBSERVATION_TIME)
 # Run the OCP
 ocp_compilation_time, ocp_optimization_time = tf.run_operational_optimization(
-    iteration_directory, path_iteration_mop, model_name, TACO_server
+    iteration_directory, path_iteration_mop, model_name, TACO_server, dmpc
 )
 
 # Read the OCP results and write value in operational_variables dictionary
@@ -200,12 +226,7 @@ operational_variables = hf.read_oper_variables_from_results(
     iteration_directory, operational_variables
 )
 opex, maintCost, devices_info = hf.calculate_opex_and_maintCost(
-    operational_variables,
-    devices_info,
-    INTEREST_RATE,
-    OBSERVATION_TIME,
-    ELEC_PRICE_OFFTAKE,
-    ELEC_PRICE_INJECTION,
+    operational_variables, devices_info, INTEREST_RATE, OBSERVATION_TIME
 )
 
 end_time_iteration = perf_counter()
@@ -284,19 +305,14 @@ while iteration < 4 and rel_dif > 0.01:
     hf.set_size_parameters_in_mop(path_iteration_mop, devices_info)
     # Run the OCP
     ocp_compilation_time, ocp_optimization_time = tf.run_operational_optimization(
-        iteration_directory, path_iteration_mop, model_name, TACO_server
+        iteration_directory, path_iteration_mop, model_name, TACO_server, dmpc
     )
     # Read the OCP results and write value in operational_variables dictionary
     operational_variables = hf.read_oper_variables_from_results(
         iteration_directory, operational_variables
     )
     opex, maintCost, devices_info = hf.calculate_opex_and_maintCost(
-        operational_variables,
-        devices_info,
-        INTEREST_RATE,
-        OBSERVATION_TIME,
-        ELEC_PRICE_OFFTAKE,
-        ELEC_PRICE_INJECTION,
+        operational_variables, devices_info, INTEREST_RATE, OBSERVATION_TIME
     )
 
     end_time_iteration = perf_counter()

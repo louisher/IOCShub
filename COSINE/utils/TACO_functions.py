@@ -4,7 +4,6 @@ from time import perf_counter
 import pandas as pd
 import paramiko
 
-
 # fmt: off
 
 def run_command_on_Taco_server(command, TACO_server):
@@ -147,17 +146,21 @@ def compile_OCP(model_name, TACO_server):
 
 
 
-def run_OCP(model_name, TACO_server):
+def run_OCP(model_name, TACO_server, dmpc):
     """
     Executes an OCP (Optimal Control Problem) model on a specified TACO server.
     Parameters:
     model_name (str): The name of the model to be executed.
     TACO_server (dict): A dictionary containing server details, including the path to the OCP on the server.
+    dmpc (dict): A dictionary containing DMPC configuration parameters.
     Returns:
     None
     """
+    if dmpc["On"] == False:
+        command = ( f"cd {TACO_server['path_ocp_on_server']}/{model_name} && ./test.sh -f -w -i10000")
+    elif dmpc["On"] == True:
+        command = ( f"cd {TACO_server['path_ocp_on_server']}/{model_name} && ./test.sh -f -w -i2500 --parallelHorizon={dmpc['parallelHorizon']} --delaySync=350")
 
-    command = ( f"cd {TACO_server['path_ocp_on_server']}/{model_name} ; ./test.sh -f -w -i10000")
     success = run_command_on_Taco_server(command, TACO_server)
     if not success:
         raise Exception("Failed to solve the OCP.")
@@ -185,13 +188,18 @@ def download_results_from_TACO_server(local_path, model_name, TACO_server):
     if result2 != 0:
         raise Exception("Failed to download OutputNames.txt from the TACO server.")
 
-
-def run_operational_optimization(iteration_directory, path_iteration_mop, model_name, TACO_server):
+    result3 = os.system(f"scp -P {TACO_server['port']} {TACO_server['user']}@{TACO_server['hostname']}:{path}/outputsAll.mat {local_path}/outputsAll.mat")
+    if result3 != 0:
+        raise Exception("Failed to download outputsAll.mat from the TACO server.")
+    
+    
+def run_operational_optimization(iteration_directory, path_iteration_mop, model_name, TACO_server, dmpc):
     """
     Runs the operational optimization for a given model on the TACO server.
     Args:
         mop_file (str): The local path to the MOP file to be sent and optimized on the TACO server.
         TACO_server (dict): A dictionary containing the server connection details.
+        dmpc (dict): A dictionary containing DMPC configuration parameters.
     Returns:
         tuple: Compilation time and optimization time in seconds.
     """
@@ -210,7 +218,7 @@ def run_operational_optimization(iteration_directory, path_iteration_mop, model_
 
     # Run the OCP model
     start = perf_counter()
-    run_OCP(model_name, TACO_server)
+    run_OCP(model_name, TACO_server, dmpc)
     end = perf_counter()
     optimization_time = end - start
 
