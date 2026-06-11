@@ -137,10 +137,10 @@ model GeneralHubOpt
   parameter Modelica.Units.SI.Power P_ac0_PVT=0.7*(pvt.panels.ATot_internal/pvt.panels.per.A)*pvt.panels.P_STC "Inverter rated AC power" annotation (Dialog(tab="PVT", group="Electrical"));
 
   /* BeoBooster parameters */
-  parameter String fileName_beob=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/<File>.txt") "File with grey water mass flow rate for beo booster" annotation (Dialog(tab="BeoBooster"));
+  parameter String fileName_beob=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/BHP_profiles/m_flow_beob_total.txt") "File with grey water mass flow rate for beo booster" annotation (Dialog(tab="BeoBooster"));
   parameter Modelica.Units.SI.MassFlowRate m_flow_peak_beob=0.13  "Peak mass flow rate of grey water in BeoBooster" annotation (Dialog(tab="BeoBooster"));
   parameter Modelica.Units.SI.MassFlowRate m_flow_fix_beob=0 "Fixed mass flow rate added to the profiles of BeoBooster" annotation (Dialog(tab="BeoBooster"));
-  parameter Boolean BeoBoo_On=true "Boolean to set turn BeoBooster on/off (true: On, false: off)" annotation (Dialog(tab="BeoBooster"));
+  parameter Boolean hasBeoBoo=true "Boolean to set turn BeoBooster on/off (true: On, false: off)" annotation (Dialog(tab="BeoBooster"));
 
   ComponentModels.Thermal.SizeOpt.GsHpOpt
                                GsHp(addDummyEquation=addDummyEquation, redeclare
@@ -187,7 +187,7 @@ model GeneralHubOpt
 
   ComponentModels.Thermal.BeoBooster beoBooster(
      redeclare package Medium = Medium,
-    BeoBoo_On=BeoBoo_On,
+    BeoBoo_On=hasBeoBoo,
     fileName=fileName_beob,
     m_flow_peak=m_flow_peak_beob,
     m_flow_fix=m_flow_fix_beob)
