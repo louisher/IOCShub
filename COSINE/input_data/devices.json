@@ -56,7 +56,8 @@
         "max_depth": 300,
         "fixed_T_model": false,
         "regeneration_cap": 0,
-        "intialize_length": true
+        "intialize_length": true,
+        "has_beo_booster": true
     },
     "ASHP": {
         "feasible": true,

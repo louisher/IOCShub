@@ -212,7 +212,6 @@ def load_params():
     param_uncl["cop_gshp"] = np.loadtxt(path_input_profiles / "COP_GSHP.txt")
     param_uncl["cop_ashp"] = np.loadtxt(path_input_profiles / "COP_ASHP.txt")
     param_uncl["eer_aschi"] = np.loadtxt(path_input_profiles / "EER_ASCHI.txt")
-    param_uncl["heat_beob"] = np.loadtxt(path_input_profiles / "beo_booster.txt")
 
     ################################################################
     # LOAD DEMANDS
@@ -240,7 +239,6 @@ def load_params():
     param["cop_gshp"] = param_uncl["cop_gshp"].reshape((365, 24))
     param["cop_ashp"] = param_uncl["cop_ashp"].reshape((365, 24))
     param["eer_aschi"] = param_uncl["eer_aschi"].reshape((365, 24))
-    param["heat_beob"] = param_uncl["heat_beob"].reshape((365, 24))
 
     plt.figure("Demand profiles")
     plt.plot(dem_uncl["heat"], label="Heat demand")
@@ -488,6 +486,14 @@ def load_params():
                 devs["ASCHI"]["feasible"] = True
         else:
             devs = borefield_params.set_calculation_parameters(devs)
+
+    # Beo booster
+    if devs["Borefield"]["has_beo_booster"]: # Only load the beo booster profile if the borefield is enabled and has the booster enabled, otherwise set to zero
+        param_uncl["heat_beob"] = np.loadtxt(path_input_profiles / "beo_booster.txt")
+        param["heat_beob"] = param_uncl["heat_beob"].reshape((365, 24))
+    else:
+        param_uncl["heat_beob"] = np.zeros(8760)
+        param["heat_beob"] = param_uncl["heat_beob"].reshape((365, 24))
 
     # fmt: on
 

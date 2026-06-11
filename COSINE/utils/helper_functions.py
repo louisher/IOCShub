@@ -376,7 +376,7 @@ def check_iocs_outputs_in_mop(path):
     if missing_outputs:
 
         error_message = (
-            "\nMissing required IOCS output declarations:\n"
+            "\nMissing required IOCS output declarations in mop file:\n"
             + "\n".join(f"  - {name}" for name in missing_outputs)
             + "\n\nPlease make sure the IOCS definitions block "
             "has been added correctly."
@@ -594,6 +594,82 @@ def set_dynamic_electricity_price_in_mop(
         raise IOError(f"Error writing to file {path_mop_file}: {e}")
 
 
+def check_beobooster_parameters():
+    """Prompt the user to confirm Beo Booster parameters before continuing."""
+    # Ask the user to confirm the settings before continuing.
+    print(
+        "\nWARNING: Beo Booster is enabled.\n"
+        "Please verify that all required Beo Booster parameters have been "
+        "configured correctly, either directly in the Modelica model or "
+        "in the MOP file.\n"
+    )
+
+    while True:
+        answer = (
+            input("Have you verified the Beo Booster parameters? (yes/no): ")
+            .strip()
+            .lower()
+        )
+
+        if answer in ("yes", "y"):
+            break
+
+        if answer in ("no", "n"):
+            raise ValueError(
+                "Simulation aborted because Beo Booster parameters "
+                "have not been confirmed by the user."
+            )
+
+        print("Please answer 'yes' or 'no'.")
+
+
+def set_beobooster_parameter_in_mop(path_mop_file, has_beo_booster):
+    """Set the Beo Booster flag in a MOP file to match the provided value."""
+
+    try:
+        # Read the file once so the required line can be validated below.
+        with open(path_mop_file, "r", encoding="utf-8") as file:
+            lines = file.readlines()
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(f"MOP file not found: {path_mop_file}") from exc
+    except PermissionError as exc:
+        raise PermissionError(
+            f"Permission denied when reading: {path_mop_file}"
+        ) from exc
+    except IOError as exc:
+        raise IOError(f"Error reading file {path_mop_file}: {exc}") from exc
+
+    # Confirm that the Beo Booster flag exists in the MOP file.
+    has_beo_booster_line_found = False
+    for line in lines:
+        if "enerHub.BeoBoo_On=" in line:
+            has_beo_booster_line_found = True
+            break
+
+    if not has_beo_booster_line_found:
+        raise ValueError(
+            "devices.json indicates that the borefield has a beo booster, "
+            "but no line with 'enerHub.BeoBoo_On=' was found in the MOP file."
+        )
+
+    # Update the line to match the devices.json setting.
+    for i, line in enumerate(lines):
+        if "enerHub.BeoBoo_On=" in line:
+            bool_str = "true" if has_beo_booster else "false"
+            lines[i] = f"\t\t\t\t\t\t\t\t\tenerHub.BeoBoo_On={bool_str},\n"
+            break
+
+    try:
+        with open(path_mop_file, "w", encoding="utf-8") as file:
+            file.writelines(lines)
+    except PermissionError as exc:
+        raise PermissionError(
+            f"Permission denied when writing to: {path_mop_file}"
+        ) from exc
+    except IOError as exc:
+        raise IOError(f"Error writing to file {path_mop_file}: {exc}") from exc
+
+
 def set_size_parameters_in_mop(path_mop_file, devices_info):
     """
     Updates size parameter values in a MOP file based on the provided devices_info dictionary.
@@ -641,6 +717,14 @@ def set_size_parameters_in_mop(path_mop_file, devices_info):
         raise PermissionError(f"Permission denied when writing to: {path_mop_file}")
     except IOError as e:
         raise IOError(f"Error writing to file {path_mop_file}: {e}")
+
+    if devices_info["Borefield"]["has_beo_booster"]:
+        # Double check with user that all beo booster parameters have been set correctly
+        check_beobooster_parameters()
+        # Set the paramater to turn on beo booster in the MOP file
+        set_beobooster_parameter_in_mop(
+            path_mop_file, devices_info["Borefield"]["has_beo_booster"]
+        )
 
 
 def update_computational_times(

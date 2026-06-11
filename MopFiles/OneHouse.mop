@@ -237,11 +237,16 @@ optimization OneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
     output Real QDem = Q_subSt1;         // Demand profile for heat and cold: heat should be positive, cold should be negative
     output Real PDem = P_Net_Houses;     // Demand profile for electricity in the buildings only, offtake should be positive
 	output Real QBor = enerHub.GsHp.QBorefield;
+	output Real QBeoBoo = if enerHub.BeoBoo_On then enerHub.beoBooster.hex.Q2_flow else 0; // Set this value to zero if there is no beo booster
 	
 	// temperature data for COP calculation	
 	output Real T_COP_Sup = Ttank; 			// Temperatures should be in °C
 	output Real T_COP_Bor = TBorOut; 		// Temperatures should be in °C
 	output Real T_COP_Air = TAsHpEvaIn; 	// Temperatures should be in °C
+
+	// Electricity prices
+	output Real elecPriceOfftake = priceSim.priceBus.elec_offtake_price; // Prices should be in €/MWh
+	output Real elecPriceInjection = priceSim.priceBus.elec_inj_price; // Prices should be in €/MWh
 
 	// overall result data:
 	output Real DiscmfHea = DiscmfHeaDay1 + DiscmfHeaNight1; // Heating discomort in Kh
