@@ -268,7 +268,7 @@ os.chdir(model_directory)
 
 rel_dif = 1
 TCO_current = capex + opex + maintCost
-while iteration < 4 and rel_dif > 0.01:
+while iteration < 4 and rel_dif > 0.001:
     start_time_iteration = perf_counter()
     iteration += 1
     # Make the iteration directory
