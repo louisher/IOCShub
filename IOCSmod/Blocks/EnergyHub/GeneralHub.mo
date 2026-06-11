@@ -142,6 +142,13 @@ model GeneralHub
   parameter Modelica.Units.SI.Efficiency eta_nom_inverter_PVT=0.96 "Nominal inverter efficiency" annotation (Dialog(tab="PVT", group="Electrical"));
   parameter Modelica.Units.SI.Power P_ac0_PVT=0.7*(pvt.panels.ATot_internal/pvt.panels.per.A)*pvt.panels.P_STC "Inverter rated AC power" annotation (Dialog(tab="PVT", group="Electrical"));
 
+
+  /* BeoBooster parameters */
+  parameter String fileName_beob=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/<File>.txt") "File with grey water mass flow rate for beo booster" annotation (Dialog(tab="BeoBooster"));
+  parameter Modelica.Units.SI.MassFlowRate m_flow_peak_beob=0.13  "Peak mass flow rate of grey water in BeoBooster" annotation (Dialog(tab="BeoBooster"));
+  parameter Modelica.Units.SI.MassFlowRate m_flow_fix_beob=0 "Fixed mass flow rate added to the profiles of BeoBooster" annotation (Dialog(tab="BeoBooster"));
+  parameter Boolean BeoBoo_On=true "Boolean to set turn BeoBooster on/off (true: On, false: off)" annotation (Dialog(tab="BeoBooster"));
+
   ComponentModels.Thermal.GsHp GsHp(addDummyEquation=addDummyEquation, redeclare
       replaceable package Medium =                                                                          Medium,
     hasReg=true,
@@ -270,6 +277,14 @@ model GeneralHub
     coeffCon=coeffCon_aschi)
     annotation (Placement(transformation(extent={{-40,-60},{-60,-40}})));
 
+  ComponentModels.Thermal.BeoBooster beoBooster(
+     redeclare package Medium = Medium,
+    BeoBoo_On=BeoBoo_On,
+    fileName=fileName_beob,
+    m_flow_peak=m_flow_peak_beob,
+    m_flow_fix=m_flow_fix_beob)
+    annotation (Placement(transformation(extent={{20,32},{40,52}})));
+
 protected
   parameter Modelica.Units.SI.HeatFlowRate Qnom_GsHp = Size_GsHp*1000 annotation(Dialog(tab="GSHP", group="Heat flows"));
   parameter Modelica.Units.SI.Power Qnom_AsHp = Size_AsHp*1000 "Nominal heat flow rate of ASHP in W" annotation(Dialog(tab="ASHP"));
@@ -337,6 +352,10 @@ equation
                                       color={0,127,255}));
   connect(AsChi.P, Pnet.u[5]) annotation (Line(points={{-61,-55.4},{-80,-55.4},{
           -80,76},{-32,76},{-32,91.6},{-38,91.6}}, color={0,0,127}));
+  connect(beoBooster.port_b, GsHp.port_aReg) annotation (Line(points={{24,32},{24,
+          28},{-36,28},{-36,35},{-40,35}}, color={0,127,255}));
+  connect(beoBooster.port_a, GsHp.port_bReg) annotation (Line(points={{36,32},{36,
+          28},{-64,28},{-64,35},{-60,35}}, color={0,127,255}));
                                                                                                                                                    annotation (Dialog(tab="STC", group="Panel"),
               defaultComponentName="enerHub", Icon(graphics={Text(
           extent={{-74,82},{76,-60}},
