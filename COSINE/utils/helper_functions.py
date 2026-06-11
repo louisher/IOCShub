@@ -552,13 +552,35 @@ def set_dynamic_electricity_price_in_mop(
             "Assuming fixed electricity price (default behaviour)."
         )
 
-    # File name line is only required when dynamic pricing is enabled
-    if use_dynamic_electricity_price and not dyn_price_line_found:
+    if (
+        use_dynamic_electricity_price
+        and use_dyn_price_line_found
+        and not dyn_price_line_found
+    ):
         raise ValueError(
-            "Dynamic electricity price file line "
-            "'dynamic_elec_price_file_name=' not found "
-            "The default model behaviour (fixed price) will be used instead. "
-            f"in {path_mop_file}"
+            "A dynamic electricity price was requested in the input data and the mop file does contain the line: "
+            "'priceSim.use_dyn_elec_p=' but the line for setting the file name is missing: "
+            "'priceSim.path_dynamic_elec_prices=' not found in {path_mop_file}"
+        )
+
+    if (
+        use_dynamic_electricity_price
+        and dyn_price_line_found
+        and not use_dyn_price_line_found
+    ):
+        raise ValueError(
+            "A dynamic electricity price was requested in the input data and the mop file does contain the line for setting the file name: "
+            "'priceSim.path_dynamic_elec_prices=' but the boolean switch line is missing: "
+            "'priceSim.use_dyn_elec_p=' not found in {path_mop_file}"
+        )
+
+    # Final check: if dynamic pricing is requested, both lines must be found. If not, raise an error.
+    if use_dynamic_electricity_price and (
+        not dyn_price_line_found or not use_dyn_price_line_found
+    ):
+        raise ValueError(
+            "Dynamic electricity price was requested but required lines not found in MOP file. "
+            "Expected lines: 'priceSim.use_dyn_elec_p=' and 'priceSim.path_dynamic_elec_prices='"
         )
 
     try:
