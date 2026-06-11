@@ -2,7 +2,7 @@ within IOCSmod.ComponentModels.Thermal;
 model BeoBooster "Model of a BeoBooster that uses warm waste water to regenerate a borefield"
   extends IOCSmod.ComponentModels.BaseClasses.ElecThermInterface(hasEl=false);
 
-  parameter Boolean BeoBoo_On = true "Boolean to set turn BeoBooster on/off (true: On, false: off)";
+  parameter Boolean hasBeoBoo = true "Boolean to set turn BeoBooster on/off (true: On, false: off)";
 
   parameter String fileName=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/<File>.txt") "File where matrix is stored";
   parameter Modelica.Units.SI.MassFlowRate m_flow_peak=0.13 "Peak mass flow rate of grey water";
@@ -118,7 +118,7 @@ equation
   connect(pumHex.port_a, port_a)
     annotation (Line(points={{60,-70},{60,-100}}, color={0,127,255}));
 
-  if BeoBoo_On then
+  if hasBeoBoo then
       connect(mFlowGreyExprOn.y, boundary.m_flow_in)
     annotation (Line(points={{-79,20},{-72,20},{-72,8}}, color={0,0,127}));
       connect(mFlowHexExprOn.y, pumHex.m_flow_in)

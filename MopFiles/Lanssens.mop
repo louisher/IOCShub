@@ -1,4 +1,4 @@
-optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="584*1", tolerance=1e-1, truncationDelta=1e-2)
+optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="292*1", tolerance=1e-1, truncationDelta=1e-2)
     extends IOCSmod.Optimization.Lanssens(
                                                 addDummyEquation=false,
                                                 sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata/Vliet_2025.mos"),
@@ -20,7 +20,7 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
                                                 enerHub.borFieDat.conDat.nBor=169,
                                                 enerHub.groTemResDat.rCel.rCel={1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0, 2048.0, 4096.0, 8192.0, 16384.0, 32768.0, 65536.0, 131072.0, 88257.0},
                                                 enerHub.groTemResDat.kappa.kappa={2.9670546203941707e-06, 1.301365313898155e-06, 1.1714977157588399e-06, 1.1469588551128406e-06, 1.1491727221787094e-06, 1.1564631274669545e-06, 1.1617624111854974e-06, 1.166277593310128e-06, 1.2236906138917169e-06, 1.670945902569785e-06, 3.0109719489022908e-06, 5.655815222951366e-06, 1.0308447541584948e-05, 1.770427589644899e-05, 2.7682539825208647e-05, 3.779049848422334e-05, 4.309318483149614e-05, 3.934020493380261e-05, 1.3387923824395494e-05},
-                                                enerHub.BeoBoo_On=true,
+                                                enerHub.hasBeoBoo=true,
                                                 enerHub.fileName_beob=Modelica.Utilities.Files.loadResource("modelica://ArtesMod/Resources/BHP_profiles/m_flow_beob_total.txt"),
                                                 enerHub.m_flow_peak_beob=2.27,
                                                 enerHub.m_flow_fix_beob=0.0631,
@@ -35,7 +35,7 @@ optimization Lanssens(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real QDem = Q_flow_collector_central;
 	output Real PDem = P_Net_Houses;
 	output Real QBor = enerHub.GsHp.QBorefield;
-	output Real QBeoBoo = if enerHub.BeoBoo_On then enerHub.beoBooster.hex.Q2_flow else 0;
+	output Real QBeoBoo = if enerHub.hasBeoBoo then enerHub.beoBooster.hex.Q2_flow else 0;
 
 	// temperature data for COP calculation
 
