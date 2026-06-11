@@ -437,6 +437,7 @@ def load_params():
 
     # Air Source Heat pump
     devs["ASHP"]["COP"] = param["cop_ashp"]
+    devs["ASHP"]["EER"] = param["eer_aschi"]
 
     # Air source compression chiller
     devs["ASCHI"]["EER"] = param["eer_aschi"]

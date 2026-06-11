@@ -164,7 +164,8 @@ model GeneralHub
     coeffEva=coeffEva_gshp,
     coeffCon=coeffCon_gshp)
     annotation (Placement(transformation(extent={{-40,20},{-60,40}})));
-  ComponentModels.Thermal.AsHp AsHp(addDummyEquation=addDummyEquation, redeclare
+  ComponentModels.Thermal.revAsHp
+                               AsHp(addDummyEquation=addDummyEquation, redeclare
       replaceable package Medium =                                                                          Medium,
     Qnom_AsHp=Qnom_AsHp,
     m_flow_ashp_nominal=m_flow_ashp_nominal,

@@ -73,6 +73,7 @@
         "cost_om": 0.03,
         "min_cap": 0,
         "max_cap": 50,
+        "reversible": false,
         "COP": "PLACEHOLDER"
     },
     "ASCHI": {

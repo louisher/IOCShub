@@ -123,7 +123,7 @@ def run_optim(devs, param, dem, result_dict):
 
     # Cooling power to/from devices
     cool = {}
-    for device in ["ASCHI", "AC", "Borefield"]:
+    for device in ["ASHP", "ASCHI", "AC", "Borefield"]:
         cool[device] = {}
         for d in days:
             cool[device][d] = {}
@@ -167,6 +167,15 @@ def run_optim(devs, param, dem, result_dict):
             )
             inj_bor[d][t] = model.addVar(
                 vtype="C", name="inj_bor" + "_d" + str(d) + "_t" + str(t)
+            )
+
+    # ASHP mode
+    ashp_heating_mode = {}
+    for d in days:
+        ashp_heating_mode[d] = {}
+        for t in time_steps:
+            ashp_heating_mode[d][t] = model.addVar(
+                vtype="B", name=f"ashp_heating_mode_{d}_{t}"
             )
 
     # Variables for annual device costs
@@ -259,9 +268,11 @@ def run_optim(devs, param, dem, result_dict):
     model.addConstr(cap["GSHP"] >= x["Borefield"] * devs["GSHP"]["min_cap"])
     model.addConstr(cap["GSHP"] <= x["Borefield"] * devs["GSHP"]["max_cap"])
 
+    # ASHP
+
     for d in days:
         for t in time_steps:
-            for device in ["EB", "GSHP", "ASHP", "BOI"]:
+            for device in ["EB", "GSHP", "BOI"]:
                 model.addConstr(heat[device][d][t] <= cap[device])
 
             for device in ["CHP"]:
@@ -269,6 +280,19 @@ def run_optim(devs, param, dem, result_dict):
 
             for device in ["ASCHI", "AC"]:
                 model.addConstr(cool[device][d][t] <= cap[device])
+
+            for device in ["ASHP"]:
+                if devs["ASHP"]["reversible"] == True:
+                    model.addConstr(
+                        heat["ASHP"][d][t] <= cap[device] * ashp_heating_mode[d][t]
+                    )
+                    model.addConstr(
+                        cool[device][d][t]
+                        <= 0.8 * cap[device] * (1 - ashp_heating_mode[d][t])
+                    )
+                else:
+                    model.addConstr(heat[device][d][t] <= cap[device])
+                    model.addConstr(cool[device][d][t] == 0)
 
             for device in ["Borefield"]:
                 # Ensure no cooling or regeneration with borefield if no borefield is installed
@@ -347,7 +371,9 @@ def run_optim(devs, param, dem, result_dict):
 
             # Electric air source heat pump
             model.addConstr(
-                heat["ASHP"][d][t] == power["ASHP"][d][t] * devs["ASHP"]["COP"][d][t]
+                power["ASHP"][d][t]
+                == heat["ASHP"][d][t] / devs["ASHP"]["COP"][d][t]
+                + cool["ASHP"][d][t] / devs["ASHP"]["EER"][d][t]
             )
 
             # Electric boiler
@@ -412,7 +438,10 @@ def run_optim(devs, param, dem, result_dict):
             )
 
             model.addConstr(
-                cool["Borefield"][d][t] + cool["AC"][d][t] + cool["ASCHI"][d][t]
+                cool["Borefield"][d][t]
+                + cool["AC"][d][t]
+                + cool["ASCHI"][d][t]
+                + cool["ASHP"][d][t]
                 == dem["cool"][d][t] + ch["CTES"][d][t]
             )
 
