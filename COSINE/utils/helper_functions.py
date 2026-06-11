@@ -642,21 +642,21 @@ def set_beobooster_parameter_in_mop(path_mop_file, has_beo_booster):
     # Confirm that the Beo Booster flag exists in the MOP file.
     has_beo_booster_line_found = False
     for line in lines:
-        if "enerHub.BeoBoo_On=" in line:
+        if "enerHub.hasBeoBoo=" in line:
             has_beo_booster_line_found = True
             break
 
     if not has_beo_booster_line_found:
         raise ValueError(
             "devices.json indicates that the borefield has a beo booster, "
-            "but no line with 'enerHub.BeoBoo_On=' was found in the MOP file."
+            "but no line with 'enerHub.hasBeoBoo=' was found in the MOP file."
         )
 
     # Update the line to match the devices.json setting.
     for i, line in enumerate(lines):
-        if "enerHub.BeoBoo_On=" in line:
+        if "enerHub.hasBeoBoo=" in line:
             bool_str = "true" if has_beo_booster else "false"
-            lines[i] = f"\t\t\t\t\t\t\t\t\tenerHub.BeoBoo_On={bool_str},\n"
+            lines[i] = f"\t\t\t\t\t\t\t\t\tenerHub.hasBeoBoo={bool_str},\n"
             break
 
     try:
