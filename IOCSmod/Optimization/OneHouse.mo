@@ -12,7 +12,8 @@ model OneHouse
         Rb(unit="(m.K)/W"),
         mBor_flow_nominal=enerHub.GsHp.borFieDat.conDat.mBorFie_flow_nominal/
             enerHub.GsHp.borFieDat.conDat.nBor,
-        dp_nominal(displayUnit="Pa"))))
+        dp_nominal(displayUnit="Pa"))),
+    isRev_ashp=true)
     annotation (Placement(transformation(extent={{-40,0},{-20,20}})));
 
   IDEAS.Fluid.Sources.Boundary_pT bou(redeclare package Medium =

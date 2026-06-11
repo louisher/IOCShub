@@ -65,7 +65,9 @@ parser = argparse.ArgumentParser(description="Script for iocs ")
 parser.add_argument("base_model_name", help="Name of the base mop (no flag needed)")
 parser.add_argument("--run_identifier", help="Run identifier (optional)", default="")
 parser.add_argument(
-    "--dmpc", action="store_true", help="Enable DMPC operational optimization"
+    "--dmpc",
+    action="store_true",
+    help="Enable DMPC operational optimization (optional)",
 )
 
 args = parser.parse_args()

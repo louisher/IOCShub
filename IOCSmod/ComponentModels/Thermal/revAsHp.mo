@@ -13,17 +13,17 @@ model revAsHp "Model of a reversible ASHP:
   parameter Modelica.Units.SI.PressureDifference dp_nominalEva=10000
     "Pressure difference at evaporator (water side)";
   parameter Real copDef=4.055 "Default COP";
-  parameter Real EERDef=3.99 "Default EER";
+  parameter Real EERDef=3.2 "Default EER";
 
   parameter Modelica.Units.SI.Temperature TAir_nominal=280.15
     "Nominal air temperature for COP calculation";
   parameter Modelica.Units.SI.Temperature TConOut_nominal=313.15
     "Nominal condensor leaving temperature for COP calculation";
 
-  parameter Modelica.Units.SI.Temperature TAir_nominal_cooling=25 + 273.15
+  parameter Modelica.Units.SI.Temperature TAir_nominal_cooling=35 + 273.15
     "Nominal air temperature for EER calculation";
 
-  parameter Modelica.Units.SI.Temperature TEvaOut_nominal_cooling=7 + 273.15
+  parameter Modelica.Units.SI.Temperature TEvaOut_nominal_cooling=18 + 273.15
     "Nominal evaporater leaving temperature for EER calculation";
 
   parameter Real coeffEva=0.1095853

@@ -51,6 +51,11 @@ model GeneralHub
   parameter Real coeffCon_ashp=-0.0895519 "Linearisation coefficient of leaving condensor temperature in COP calculation"  annotation(Dialog(tab="ASHP"));
   parameter Modelica.Units.SI.Temperature TAir_nominal_ashp=280.15 "Nominal air temperature for COP calculation" annotation(Dialog(tab="ASHP"));
   parameter Modelica.Units.SI.Temperature TConOut_nominal_ashp=313.15 "Nominal condensor leaving temperature for COP calculation" annotation(Dialog(tab="ASHP"));
+  parameter Boolean isRev_ashp=false "Boolean to select whether the heat pump is reversible or not. If not, the cooling part is turned off" annotation(Dialog(tab="ASHP"));
+  parameter Real EERDef_ashp=3.2 "Default EER" annotation(Dialog(tab="ASHP", enable=isRev_ashp));
+  parameter Modelica.Units.SI.Temperature TAir_nominal_cooling_ashp=35 + 273.15 "Nominal air temperature for EER calculation" annotation(Dialog(tab="ASHP", enable=isRev_ashp));
+  parameter Modelica.Units.SI.Temperature TEvaOut_nominal_cooling_ashp=18 + 273.15 "Nominal evaporater leaving temperature for EER calculation" annotation(Dialog(tab="ASHP", enable=isRev_ashp));
+
 
   /* Chiller parameters */
   parameter Real Size_AsChi "Nominal size of air-source chiller in kW" annotation(Dialog(tab="CHILLER"));
@@ -167,11 +172,15 @@ model GeneralHub
   ComponentModels.Thermal.revAsHp
                                AsHp(addDummyEquation=addDummyEquation, redeclare
       replaceable package Medium =                                                                          Medium,
+    isRev=isRev_ashp,
     Qnom_AsHp=Qnom_AsHp,
     m_flow_ashp_nominal=m_flow_ashp_nominal,
     copDef=copDef_ashp,
+    EERDef=EERDef_ashp,
     TAir_nominal=TAir_nominal_ashp,
     TConOut_nominal=TConOut_nominal_ashp,
+    TAir_nominal_cooling=TAir_nominal_cooling_ashp,
+    TEvaOut_nominal_cooling=TEvaOut_nominal_cooling_ashp,
     coeffEva=coeffEva_ashp,
     coeffCon=coeffCon_ashp)
     annotation (Placement(transformation(extent={{-40,-20},{-60,0}})));
@@ -285,6 +294,8 @@ model GeneralHub
     m_flow_peak=m_flow_peak_beob,
     m_flow_fix=m_flow_fix_beob)
     annotation (Placement(transformation(extent={{20,32},{40,52}})));
+
+
 
 protected
   parameter Modelica.Units.SI.HeatFlowRate Qnom_GsHp = Size_GsHp*1000 annotation(Dialog(tab="GSHP", group="Heat flows"));

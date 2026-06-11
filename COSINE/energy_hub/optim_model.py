@@ -969,7 +969,7 @@ def run_optim(devs, param, dem, result_dict):
         heat_dem_devs = ["AC"]
         heat_dem_devs = [dev for dev in heat_dem_devs if dev in result_devs]
         heat_devs = heat_gen_devs + heat_dem_devs
-        cool_devs = ["ASCHI", "AC", "Borefield"]
+        cool_devs = ["ASHP", "ASCHI", "AC", "Borefield"]
         cool_devs = [dev for dev in cool_devs if dev in result_devs]
         power_gen_devs = ["PV", "PVT", "CHP"]
         power_gen_devs = [dev for dev in power_gen_devs if dev in result_devs]
