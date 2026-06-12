@@ -1325,6 +1325,9 @@ def read_optimal_sizes(result_dict, devices_info):
                 devices_info[device]["size_parameters"]["TBorMin"]["value"] = (
                     result_dict[device]["Tf_min"] + 273.15
                 )
+                devices_info[device]["size_parameters"]["TBorMax"]["value"] = (
+                    result_dict[device]["Tf_max"] + 273.15
+                )
                 devices_info[device]["size_parameters"]["rCel"]["value"] = result_dict[
                     device
                 ]["rCel"]

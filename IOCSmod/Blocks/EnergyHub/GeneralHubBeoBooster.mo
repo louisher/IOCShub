@@ -11,6 +11,8 @@ model GeneralHubBeoBooster
 
   parameter Modelica.Units.SI.Temperature TBorMin=3+273.15
     "Minimum allowable borefield temperature (to be used in objective)" annotation(Dialog(tab="GSHP", group="Borefield"));
+  parameter Modelica.Units.SI.Temperature TBorMax=17+273.15
+    "Maximum allowable borefield temperature (to be used in objective)" annotation(Dialog(tab="GSHP", group="Borefield"));
 
   parameter IDEAS.Fluid.Geothermal.Borefields.Data.Borefield.Template borFieDat(
       filDat(
@@ -158,6 +160,7 @@ model GeneralHubBeoBooster
     m_flow_bor_nominal=m_flow_bor_nominal,
     m_flow_hex_coo_nominal=m_flow_hex_coo_nominal,
     TBorMin=TBorMin,
+    TBorMax=TBorMax,
     borFieDat=borFieDat,
     groTemResDat=groTemResDat,
     dT_max=dT_max,

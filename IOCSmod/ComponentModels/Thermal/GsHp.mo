@@ -15,6 +15,7 @@ model GsHp "Model of a GSHP with optimizable borefield model and passive cooling
     parameter Modelica.Units.SI.MassFlowRate m_flow_hex_coo_nominal= m_flow_bor_nominal
       "Nomtinal mass flow of the cooling side of the cooling heat exchanger" annotation(Dialog(group="Mass Flows"));
     parameter Modelica.Units.SI.Temperature TBorMin "Minimum allowable borefield temperature (to be used in objective)";
+    parameter Modelica.Units.SI.Temperature TBorMax "Maximum allowable borefield temperature (to be used in objective)";
 
     parameter IDEAS.Fluid.Geothermal.Borefields.Data.Borefield.Template borFieDat(
       filDat(

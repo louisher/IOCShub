@@ -1071,14 +1071,18 @@ def run_optim(devs, param, dem, result_dict):
                     result_dict["Borefield"]["reg"][d * len(time_steps) + t] = reg["Borefield"][d][t].X
             result_dict["Borefield"]["reg_total"] = int(sum(result_dict["Borefield"]["reg"]) / 1000) # MWh
 
-        # Calculate minimum borefield temperature in first year of operation
+        # Calculate minimum and maximum borefield temperature in first year of operation
         if "Borefield" in result_devs:
             if result_dict["Borefield"]["cap"] > 0:
                 result_dict["Borefield"]["Tf_min"] = np.min(
                     result_dict["Borefield"]["Tf_peak_extraction"][0:nb_bor_steps_per_year]
                 )  # degC
+                result_dict["Borefield"]["Tf_max"] = np.max(
+                    result_dict["Borefield"]["Tf_peak_injection"][0:nb_bor_steps_per_year]
+                )  # degC
             else:
-                result_dict["Borefield"]["Tf_min"] = 0 # degC
+                result_dict["Borefield"]["Tf_min"] = Tf_min # degC
+                result_dict["Borefield"]["Tf_max"] = Tf_max # degC
 
 
         # Renewable curtailment

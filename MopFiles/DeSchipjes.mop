@@ -2,6 +2,8 @@ optimization DeSchipjes(tolerance=1e-1, objectiveIntegrand=ObjInt, startTime=0, 
 	extends IOCSmod.Optimization.DeSchipjes(addDummyEquation=false,
 									sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//BEL_VLG_Uccle.064470_TMYx.2007-2021.mos"),
 									priceSim.path_economic_params_json="/homenvme/louis/software/iocs/input_data/economic_params.json",
+									priceSim.path_dynamic_elec_prices=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/ElectricityPrices/2025_Dynamic_consumer_prices.txt"),
+                                    priceSim.use_dyn_elec_p=false,
 									enerHub.Size_AsHp=35.2,
 									enerHub.Size_GsHp=19.1,
 									enerHub.Size_AsChi=0.01,
@@ -13,6 +15,7 @@ optimization DeSchipjes(tolerance=1e-1, objectiveIntegrand=ObjInt, startTime=0, 
 									enerHub.Size_Bat=0.01,
 									enerHub.P_max_bat_kW=0.01,
 									enerHub.TBorMin=273.15+1.2,
+									enerHub.TBorMax=290.15,
 									enerHub.borFieDat.conDat.hBor=95.4,
 									enerHub.borFieDat.conDat.nBor=6,
 									enerHub.groTemResDat.rCel.rCel={1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0, 2048.0, 4096.0, 8192.0, 16384.0, 32768.0, 65536.0, 131072.0, 88257.0},
@@ -166,11 +169,16 @@ optimization DeSchipjes(tolerance=1e-1, objectiveIntegrand=ObjInt, startTime=0, 
 	output Real QDem = Q_flow_collector__Heating_collector; 	// Demand profile for heat and cold: heat should be positive, cold should be negative
 	output Real PDem = P_Net_Houses;							// Demand profile for electricity in the buildings only, offtake should be positive
 	output Real QBor = enerHub.GsHp.QBorefield;
+	output Real QBeoBoo = if enerHub.hasBeoBoo then enerHub.beoBooster.hex.Q2_flow else 0; // Set this value to zero if there is no beo booster
 	
 	// temperature data for COP calculation	
 	output Real T_COP_Sup = Ttank; 			// Temperatures should be in °C
 	output Real T_COP_Bor = TBorOut; 		// Temperatures should be in °C
 	output Real T_COP_Air = TAsHpEvaIn; 	// Temperatures should be in °C
+
+	// Electricity prices
+	output Real elecPriceOfftake = priceSim.priceBus.elec_offtake_price; // Prices should be in €/MWh
+	output Real elecPriceInjection = priceSim.priceBus.elec_inj_price; // Prices should be in €/MWh
 
 	// overall result data:
 	output Real DiscmfHea = 
@@ -210,11 +218,11 @@ optimization DeSchipjes(tolerance=1e-1, objectiveIntegrand=ObjInt, startTime=0, 
 	output Real TotalPower = P_Net_enerHub + P_Net_Houses;
 
 	output Real tariff_scaler = 36000000;
-	output Real p_offtake = priceSim.p_elec_fix_offtake/(3600*1e6); // €/J
+	output Real p_offtake = priceSim.priceBus.elec_offtake_price/(3600*1e6);
 	output Real p_offtakeSca = p_offtake * tariff_scaler;
-	output Real p_inj = priceSim.p_elec_fix_inj/(3600*1e6); // €/J
+	output Real p_inj = priceSim.priceBus.elec_inj_price/(3600*1e6);
 	output Real p_injSca = p_inj * tariff_scaler;
-	output Real b = 50; // transition parameter
+	output Real b = 50;
 	output Real smoothPrice = p_injSca + (p_offtakeSca - p_injSca) * 0.5 *(1 + TotalPower / (sqrt(TotalPower^2 + b^2)) );
 
 	output Real ObjIntElecCost = TotalPower*smoothPrice;
@@ -233,10 +241,10 @@ optimization DeSchipjes(tolerance=1e-1, objectiveIntegrand=ObjInt, startTime=0, 
 
 	// Borefield temperature
 	output Real TBorMin_degC = enerHub.TBorMin - 273.15;
-	output Real TBorMax_degC = 17;
+	output Real TBorMax_degC = enerHub.TBorMax - 273.15;
 	output Real TBorAvg = (TBorIn + TBorOut)/2;
-	output Real ObjIntTBorMin = 10000*max(0, TBorMin_degC - TBorAvg)^2;
-	output Real ObjIntTBorMax = 10000*max(0, TBorAvg - TBorMax_degC)^2;
+	output Real ObjIntTBorMin = 1000*max(0, TBorMin_degC - TBorAvg)^2;
+	output Real ObjIntTBorMax = 1000*max(0, TBorAvg - TBorMax_degC)^2;
 
 	/// Comfort ///
 	output Real TSetHea = 21;
