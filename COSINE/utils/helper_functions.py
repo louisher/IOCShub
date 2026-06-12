@@ -718,12 +718,6 @@ def set_size_parameters_in_mop(path_mop_file, devices_info):
     except IOError as e:
         raise IOError(f"Error writing to file {path_mop_file}: {e}")
 
-    if devices_info["Borefield"]["has_beo_booster"]:
-        # Set the paramater to turn on beo booster in the MOP file
-        set_beobooster_parameter_in_mop(
-            path_mop_file, devices_info["Borefield"]["has_beo_booster"]
-        )
-
 
 def update_computational_times(
     computational_times,
