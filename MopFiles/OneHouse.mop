@@ -7,7 +7,7 @@ optimization OneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 											enerHub.Size_AsChi=0.01,
 											enerHub.Size_Tank=1.62,
 											enerHub.Size_PV=20,
-											eenerHub.Size_STC=10,
+											enerHub.Size_STC=10,
 											enerHub.Size_PVT=10,
 											enerHub.hasBat=true,
 											enerHub.Size_Bat=10,
@@ -144,9 +144,14 @@ optimization OneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real QCon_ASHP = enerHub.AsHp.AsHp.QCon;
 	output Real QEva_ASHP = -enerHub.AsHp.AsHp.HP.Q_eva.y; // !!! Add a minus sign to make positive
 	output Real COP_ASHP = enerHub.AsHp.AsHp.COP;
+	
+	output Real QEva_ASHP_chi = enerHub.AsChi.QEva;
+ 	output Real QCon_ASHP_chi = enerHub.AsChi.Chi.con.Q_flow;
+	output Real EER_ASHP_chi = enerHub.AsChi.EER;
 
-	output Real TAsHpConIn = enerHub.AsHp.senTAsHpConIn.T - 273.15; //°C
-	output Real TAsHpConOut = enerHub.AsHp.senTAsHpConOut.T - 273.15; //°C
+	output Real TAsHpIn = enerHub.AsHp.senTAsHpIn.T - 273.15; //°C
+	output Real TAsHpOut = enerHub.AsHp.senTAsHpOut.T - 273.15; //°C
+	output Real TAsHpHeaCooBtwn = enerHub.AsHp.senTAsHpHeaCooBtwn.T - 273.15; //°C
 	output Real TAsHpEvaIn = enerHub.AsHp.AsHp.HP.TEvaIn.T - 273.15; //°C
 	output Real TAsHpEvaOut = enerHub.AsHp.AsHp.HP.TEvaOut.T - 273.15; //°C
 
