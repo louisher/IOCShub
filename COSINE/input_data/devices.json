@@ -57,7 +57,7 @@
         "fixed_T_model": false,
         "regeneration_cap": 0,
         "intialize_length": true,
-        "has_beo_booster": true
+        "has_beo_booster": false
     },
     "ASHP": {
         "feasible": true,
