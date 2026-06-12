@@ -623,6 +623,53 @@ def check_beobooster_parameters():
         print("Please answer 'yes' or 'no'.")
 
 
+def set_reversible_air_source_heat_pump_in_mop(path_mop_file, is_reversible):
+    """Set the reversible air source heat pump flag in a MOP file to match the provided value."""
+
+    try:
+        # Read the file once so the required line can be validated below.
+        with open(path_mop_file, "r", encoding="utf-8") as file:
+            lines = file.readlines()
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(f"MOP file not found: {path_mop_file}") from exc
+    except PermissionError as exc:
+        raise PermissionError(
+            f"Permission denied when reading: {path_mop_file}"
+        ) from exc
+    except IOError as exc:
+        raise IOError(f"Error reading file {path_mop_file}: {exc}") from exc
+
+    # Confirm that the reversible air source heat pump flag exists in the MOP file.
+    reversible_line_found = False
+    for line in lines:
+        if "enerHub.isRev_ashp=" in line:
+            reversible_line_found = True
+            break
+
+    if not reversible_line_found:
+        raise ValueError(
+            "devices.json indicates that there is a reversible air source heat pump, "
+            "but no line with 'enerHub.isRev_ashp=' was found in the MOP file."
+        )
+
+    # Update the line to match the devices.json setting.
+    for i, line in enumerate(lines):
+        if "enerHub.isRev_ashp=" in line:
+            bool_str = "true" if is_reversible else "false"
+            lines[i] = f"\t\t\t\t\t\t\t\t\tenerHub.isRev_ashp={bool_str},\n"
+            break
+
+    try:
+        with open(path_mop_file, "w", encoding="utf-8") as file:
+            file.writelines(lines)
+    except PermissionError as exc:
+        raise PermissionError(
+            f"Permission denied when writing to: {path_mop_file}"
+        ) from exc
+    except IOError as exc:
+        raise IOError(f"Error writing to file {path_mop_file}: {exc}") from exc
+
+
 def set_beobooster_parameter_in_mop(path_mop_file, has_beo_booster):
     """Set the Beo Booster flag in a MOP file to match the provided value."""
 
@@ -668,6 +715,39 @@ def set_beobooster_parameter_in_mop(path_mop_file, has_beo_booster):
         ) from exc
     except IOError as exc:
         raise IOError(f"Error writing to file {path_mop_file}: {exc}") from exc
+
+
+def general_setup_mop(path_mop_file, devices_info, economic_constants, weather_params):
+
+    # Change weather file in MOP
+    change_weather_file_in_mop(
+        path_mop_file=path_mop_file,
+        weather_file_name=weather_params["weather_file_name"],
+    )
+
+    # Set dynamic electricity price settings in MOP
+    set_dynamic_electricity_price_in_mop(
+        path_mop_file=path_mop_file,
+        dynamic_elec_price_file_name=economic_constants["FILE_DYNAMIC_ELEC_PRICES"],
+        use_dynamic_electricity_price=economic_constants["USE_DYN_ELEC_PRICE"],
+    )
+
+    # Set beo booster parameter in MOP
+    if devices_info["Borefield"]["has_beo_booster"]:
+        # Double check with user that all beo booster parameters have been set correctly
+        check_beobooster_parameters()
+        set_beobooster_parameter_in_mop(
+            path_mop_file, devices_info["Borefield"]["has_beo_booster"]
+        )
+
+    # Set reversible air source heat pump parameter in MOP
+    if devices_info["ASHP"]["reversible"]:
+        set_reversible_air_source_heat_pump_in_mop(
+            path_mop_file,
+            devices_info["ASHP"]["reversible"],
+        )
+    ### Check if all required outputs are in the mop file
+    check_iocs_outputs_in_mop(path_mop_file)
 
 
 def set_size_parameters_in_mop(path_mop_file, devices_info):

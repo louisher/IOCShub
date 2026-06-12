@@ -169,9 +169,6 @@ if not path_input_data.exists() or not path_input_data.is_dir():
 ### Read the weather data and change the weather file in the MOP file ###
 path_weather_params = path_input_data / "weather_params.json"
 weather_params = hf.load_json_file_as_dict(path_weather_params)
-hf.change_weather_file_in_mop(
-    path_mop_file=path_mop_file, weather_file_name=weather_params["weather_file_name"]
-)
 
 ### Read the economical constants into a dictionary ###
 path_economic_constants = path_input_data / "economic_params.json"
@@ -181,15 +178,7 @@ OBSERVATION_TIME = economic_constants["OBSERVATION_TIME"]
 ELEC_PRICE_OFFTAKE = economic_constants["ELEC_PRICE_OFFTAKE"]
 ELEC_PRICE_INJECTION = economic_constants["ELEC_PRICE_INJECTION"]
 USE_DYN_ELEC_PRICE = economic_constants["USE_DYN_ELEC_PRICE"]
-# Set the electricity price in mop
-hf.set_dynamic_electricity_price_in_mop(
-    path_mop_file=path_mop_file,
-    dynamic_elec_price_file_name=economic_constants["FILE_DYNAMIC_ELEC_PRICES"],
-    use_dynamic_electricity_price=USE_DYN_ELEC_PRICE,
-)
 
-### Check if all required outputs are in the mop file
-hf.check_iocs_outputs_in_mop(path_mop_file)
 
 ### Create the devices_info dictionary from devices.json ###
 path_devices_json = path_input_data / "devices.json"
@@ -201,13 +190,9 @@ devices_info = hf.add_NPV_of_rel_inv_cost_to_devices_info(
     devices_info, INTEREST_RATE, OBSERVATION_TIME
 )
 
-### Beobooster
-if devices_info["Borefield"]["has_beo_booster"]:
-    # Double check with user that all beo booster parameters have been set correctly
-    hf.check_beobooster_parameters()
-    hf.set_beobooster_parameter_in_mop(
-        path_mop_file, devices_info["Borefield"]["has_beo_booster"]
-    )
+### General MOP setup
+# Set the weather file, electricity prices, beo booster parameter, reversible ASHP parameter and check for required outputs in the MOP file
+hf.general_setup_mop(path_mop_file, devices_info, economic_constants, weather_params)
 
 
 ##########################################################################
