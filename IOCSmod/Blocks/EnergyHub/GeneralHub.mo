@@ -289,7 +289,7 @@ model GeneralHub
 
   ComponentModels.Thermal.BeoBooster beoBooster(
      redeclare package Medium = Medium,
-    BeoBoo_On=hasBeoBoo,
+    hasBeoBoo=hasBeoBoo,
     fileName=fileName_beob,
     m_flow_peak=m_flow_peak_beob,
     m_flow_fix=m_flow_fix_beob)

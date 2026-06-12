@@ -284,8 +284,10 @@ optimization OneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 
 	// Borefield temperature
 	output Real TBorMin_degC = enerHub.TBorMin - 273.15;
+	output Real TBorMax_degC = 10;
 	output Real TBorAvg = (TBorIn + TBorOut)/2;
 	output Real ObjIntTBorMin = 1000*max(0, TBorMin_degC - TBorAvg)^2;
+	output Real ObjIntTBorMax = 1000*max(0, TBorAvg - TBorMax_degC)^2;
 
 	/// Comfort ///
 	output Real weight_hea = 10000;
@@ -296,7 +298,7 @@ optimization OneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	
 
 	/// Overall objective ///
-	output Real ObjInt = ObjIntElecCost + ObjIntComfSCoo + ObjIntComfSHea + ObjIntBat + ObjIntTSupMax + ObjIntTSupMin + ObjIntTBorMin;
+	output Real ObjInt = ObjIntElecCost + ObjIntComfSCoo + ObjIntComfSHea + ObjIntBat + ObjIntTSupMax + ObjIntTSupMin + ObjIntTBorMin + ObjIntTBorMax;
 
 
 end OneHouse;
