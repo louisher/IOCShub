@@ -145,9 +145,9 @@ optimization OneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real QEva_ASHP = -enerHub.AsHp.AsHp.HP.Q_eva.y; // !!! Add a minus sign to make positive
 	output Real COP_ASHP = enerHub.AsHp.AsHp.COP;
 	
-	output Real QEva_ASHP_chi = enerHub.AsHp.Chi.QEva;
- 	output Real QCon_ASHP_chi = enerHub.AsHp.Chi.con.Q_flow;
-	output Real EER_ASHP_chi = enerHub.AsHp.Chi.EER;
+	output Real QEva_ASHP_chi = enerHub.AsHp.AsChi.QEva;
+ 	output Real QCon_ASHP_chi = enerHub.AsHp.AsChi.Chi.con.Q_flow;
+	output Real EER_ASHP_chi = enerHub.AsHp.AsChi.EER;
 
 	output Real TAsHpIn = enerHub.AsHp.senTAsHpIn.T - 273.15; //°C
 	output Real TAsHpOut = enerHub.AsHp.senTAsHpOut.T - 273.15; //°C
