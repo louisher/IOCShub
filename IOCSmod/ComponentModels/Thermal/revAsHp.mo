@@ -95,7 +95,8 @@ model revAsHp "Model of a reversible ASHP:
     annotation (Placement(transformation(extent={{110,80},{130,100}})));
   Modelica.Blocks.Continuous.Integrator EAsHp_kWh(k=1/3600000)
     annotation (Placement(transformation(extent={{140,80},{160,100}})));
-  AirSourceChillers.Chiller_AirWater AsChi(Chi(mod(max=mod_max_cooling)),
+  AirSourceChillers.Chiller_AirWater AsChi(
+    Q_flow_nominal=0.8*Qnom_AsHp,          Chi(mod(max=mod_max_cooling)),
     EERDef=EERDef,
     TAir_nominal=TAir_nominal_cooling,
     TEvaOut_nominal=TEvaOut_nominal_cooling,
