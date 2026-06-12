@@ -217,6 +217,9 @@ shutil.copy(path_mop_file, path_iteration_mop)
 
 # Set the sizes in the iteration MOP file
 hf.set_size_parameters_in_mop(path_iteration_mop, devices_info)
+if devices_info["Borefield"]["has_beo_booster"]:
+    # Double check with user that all beo booster parameters have been set correctly
+    hf.check_beobooster_parameters()
 capex, devices_info = hf.calculate_capex(devices_info, INTEREST_RATE, OBSERVATION_TIME)
 # Run the OCP
 ocp_compilation_time, ocp_optimization_time = tf.run_operational_optimization(
