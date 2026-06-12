@@ -5,6 +5,7 @@ optimization OneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
                                             priceSim.path_dynamic_elec_prices=Modelica.Utilities.Files.loadResource("modelica://ArtesMod/Resources/ElecPrices/2025_Dynamic_consumer_prices.txt"),
                                             priceSim.use_dyn_elec_p=false,
 											enerHub.Size_AsHp=3,
+											enerHub.isRev_ashp=true,
 											enerHub.Size_GsHp=3,
 											enerHub.Size_AsChi=0.01,
 											enerHub.Size_Tank=1.62,
