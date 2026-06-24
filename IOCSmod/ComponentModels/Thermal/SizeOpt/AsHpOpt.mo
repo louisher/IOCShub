@@ -15,7 +15,6 @@ model AsHpOpt "Model of a ASHP:
 
   // parameters:
   parameter Boolean isRev=false "Boolean to select whether the heat pump is reversible or not. If not, the cooling part is turned off";
-  parameter Modelica.Units.SI.Power Qnom_AsHp "Nominal heat flow rate";
   parameter Modelica.Units.SI.PressureDifference dp_nominalCon(displayUnit="Pa")=
        10000 "Pressure difference at condenser (water side)";
   parameter Modelica.Units.SI.PressureDifference dp_nominalEva=10000

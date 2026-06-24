@@ -176,9 +176,13 @@ model GeneralHubOpt
     interest_rate=priceSim.interest_rate,
     lifetime=lifetime_AsHp,
     observation_time=priceSim.observation_time,
+    isRev=isRev_ashp,
     copDef=copDef_ashp,
+    EERDef=EERDef_ashp,
     TAir_nominal=TAir_nominal_ashp,
     TConOut_nominal=TConOut_nominal_ashp,
+    TAir_nominal_cooling=TAir_nominal_cooling_ashp,
+    TEvaOut_nominal_cooling=TEvaOut_nominal_cooling_ashp,
     coeffEva=coeffEva_ashp,
     coeffCon=coeffCon_ashp)
     annotation (Placement(transformation(extent={{-40,-20},{-60,0}})));

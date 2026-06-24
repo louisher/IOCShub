@@ -15,7 +15,7 @@ optimization OneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 											enerHub.hasBat=true,
 											enerHub.Size_Bat=10,
 											enerHub.P_max_bat_kW=5,
-											enerHub.TBorMin=293.15,
+											enerHub.TBorMin=273.15,
 											enerHub.TBorMax=290.15,
 											enerHub.borFieDat.conDat.hBor=60,
 											enerHub.borFieDat.conDat.nBor=2,

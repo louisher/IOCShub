@@ -1,10 +1,13 @@
 optimization DeSchipjesOpt(tolerance=1e-1, objectiveIntegrand=ObjInt, terminalObjective=termObj, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="8760*1", truncationDelta=1e-2)
 	extends IOCSmod.Optimization.SizeOpt.DeSchipjesOpt(addDummyEquation=false,
 											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//Brussels-City_XMY2021-2040_ssp245_MAR-BCC_SWDbased.mos"),
-											priceSim.path_economic_params_json="/home/louis/software/iocs/input_data/economic_params.json",
-											enerHub.path_devices_json="/home/louis/software/iocs/input_data/devices.json",
+											priceSim.path_economic_params_json="/homenvme/louis/software/IOCShub/input_data/economic_params.json",
+                                            priceSim.path_dynamic_elec_prices=Modelica.Utilities.Files.loadResource("modelica://IOCSod/Resources/ElectricityPrices/2025_Dynamic_consumer_prices.txt"),
+                                            priceSim.use_dyn_elec_p=false,
+											enerHub.path_devices_json="/homenvme/louis/software/IOCShub/input_data/devices.json",
 											enerHub.Size_AsHp=AsHpSize,
 											enerHub.AsHp.Size_nominal=40.0,
+											enerHub.isRev_ashp=true,
 											enerHub.Size_GsHp=GsHpSize,
 											enerHub.GsHp.Size_nominal=20.0,
 											enerHub.Size_AsChi=AsChiSize,
@@ -19,6 +22,7 @@ optimization DeSchipjesOpt(tolerance=1e-1, objectiveIntegrand=ObjInt, terminalOb
 											enerHub.Size_Bat=BatSize,
 											enerHub.P_max_bat_kW=5,
 											enerHub.TBorMin=273.15,
+											enerHub.TBorMax=298.15,
 											enerHub.borFieDat.conDat.nBor=6,
 											enerHub.groTemResDat.rCel.rCel={1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0, 2048.0, 4096.0, 8192.0, 16384.0, 32768.0, 65536.0, 131072.0, 88257.0},
                                             enerHub.groTemResDat.kappa.kappa={0.00012117729480712768, 5.315575943043797e-05, 4.785087410583819e-05, 4.684645672961804e-05, 4.693814066320326e-05, 4.723811128840786e-05, 4.745763782935296e-05, 4.7624566536216286e-05, 4.886462804239806e-05, 5.8101255446173727e-05, 8.194135556696821e-05, 0.000112950845866406, 0.00013802195155999096, 0.00015095446932675554, 0.00015214103571410957, 0.00014430997436454544, 0.00012941092497862857, 0.00010835450288530475, 3.792544497066433e-05},
@@ -83,15 +87,20 @@ optimization DeSchipjesOpt(tolerance=1e-1, objectiveIntegrand=ObjInt, terminalOb
 	output Real QpInjOut = enerHub.GsHp.borefield.groTemResFin.QpeakInjExpr.y;
 
 	// ASHP
-    output Real QNom_ASHP_kW = enerHub.AsHp.Size;
+	output Real QNom_ASHP = enerHub.Qnom_AsHp;
 	output Real P_ASHP = enerHub.AsHp.AsHp.PEl;
 	output Real E_ASHP_kWh = enerHub.AsHp.EAsHp_kWh.y;
 	output Real QCon_ASHP = enerHub.AsHp.AsHp.QCon;
 	output Real QEva_ASHP = -enerHub.AsHp.AsHp.HP.Q_eva.y; // !!! Add a minus sign to make positive
 	output Real COP_ASHP = enerHub.AsHp.AsHp.COP;
+	
+	output Real QEva_ASHP_chi = enerHub.AsHp.AsChi.QEva;
+ 	output Real QCon_ASHP_chi = enerHub.AsHp.AsChi.Chi.con.Q_flow;
+	output Real EER_ASHP_chi = enerHub.AsHp.AsChi.EER;
 
-	output Real TAsHpConIn = enerHub.AsHp.senTAsHpConIn.T - 273.15; //°C
-	output Real TAsHpConOut = enerHub.AsHp.senTAsHpConOut.T - 273.15; //°C
+	output Real TAsHpIn = enerHub.AsHp.senTAsHpIn.T - 273.15; //°C
+	output Real TAsHpOut = enerHub.AsHp.senTAsHpOut.T - 273.15; //°C
+	output Real TAsHpHeaCooBtwn = enerHub.AsHp.senTAsHpHeaCooBtwn.T - 273.15; //°C
 	output Real TAsHpEvaIn = enerHub.AsHp.AsHp.HP.TEvaIn.T - 273.15; //°C
 	output Real TAsHpEvaOut = enerHub.AsHp.AsHp.HP.TEvaOut.T - 273.15; //°C
 
@@ -197,6 +206,10 @@ optimization DeSchipjesOpt(tolerance=1e-1, objectiveIntegrand=ObjInt, terminalOb
 	output Real T_COP_Bor = TBorOut; 		// Temperatures should be in °C
 	output Real T_COP_Air = TAsHpEvaIn; 	// Temperatures should be in °C
 
+	// Electricity prices
+	output Real elecPriceOfftake = priceSim.priceBus.elec_offtake_price; // Prices should be in €/MWh
+	output Real elecPriceInjection = priceSim.priceBus.elec_inj_price; // Prices should be in €/MWh
+
 	// overall result data:
 	output Real DiscmfHea = 
 		DiscmfHea_zone__136_badkamer   + DiscmfHea_zone__136_keuken   + DiscmfHea_zone__136_slaapkamer   + DiscmfHea_zone__136_woonruimte +
@@ -286,11 +299,11 @@ optimization DeSchipjesOpt(tolerance=1e-1, objectiveIntegrand=ObjInt, terminalOb
 	output Real TotalPower = P_Net_enerHub + P_Net_Houses;
 
 	output Real tariff_scaler = 36000000;
-	output Real p_offtake = priceSim.p_elec_fix_offtake/(3600*1e6); // €/J
+	output Real p_offtake = priceSim.priceBus.elec_offtake_price/(3600*1e6);
 	output Real p_offtakeSca = p_offtake * tariff_scaler;
-	output Real p_inj = priceSim.p_elec_fix_inj/(3600*1e6); // €/J
+	output Real p_inj = priceSim.priceBus.elec_inj_price/(3600*1e6);
 	output Real p_injSca = p_inj * tariff_scaler;
-	output Real b = 50; // transition parameter
+	output Real b = 50;
 	output Real smoothPrice = p_injSca + (p_offtakeSca - p_injSca) * 0.5 *(1 + TotalPower / (sqrt(TotalPower^2 + b^2)) );
 
 	output Real ObjIntElecCost = TotalPower*smoothPrice;
@@ -309,10 +322,10 @@ optimization DeSchipjesOpt(tolerance=1e-1, objectiveIntegrand=ObjInt, terminalOb
 
 	// Borefield temperature
 	output Real TBorMin_degC = enerHub.TBorMin - 273.15;
-	output Real TBorMax_degC = 25;
+	output Real TBorMax_degC = enerHub.TBorMax - 273.15;
 	output Real TBorAvg = (TBorIn + TBorOut)/2;
-	output Real ObjIntTBorMin = 10000*max(0, TBorMin_degC - TBorAvg)^2;
-	output Real ObjIntTBorMax = 10000*max(0, TBorAvg - TBorMax_degC)^2;
+	output Real ObjIntTBorMin = 1000*max(0, TBorMin_degC - TBorAvg)^2;
+	output Real ObjIntTBorMax = 1000*max(0, TBorAvg - TBorMax_degC)^2;
 
 	// Borefield peak
 	output Real ObjIntBorPeak = 0.1*(max(0, QpExtOpt - QBorIn_L3)^2 + max(0, -QpInjOpt + QBorIn_L3)^2);
