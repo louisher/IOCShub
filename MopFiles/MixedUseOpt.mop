@@ -604,7 +604,7 @@ optimization MixedUseOpt(objectiveIntegrand=ObjInt, terminalObjective=termObj, s
 	
 
 	// ASHP
-	output Real QNom_ASHP = enerHub.Qnom_AsHp;
+    output Real QNom_ASHP_kW = enerHub.AsHp.Size;
 	output Real P_ASHP = enerHub.AsHp.AsHp.PEl;
 	output Real E_ASHP_kWh = enerHub.AsHp.EAsHp_kWh.y;
 	output Real QCon_ASHP = enerHub.AsHp.AsHp.QCon;

@@ -127,7 +127,7 @@ optimization StijnStreuvelOpt(tolerance=1e-1, objectiveIntegrand=ObjInt, termina
 	output Real QBorAvg_M12    = enerHub.GsHp.borefield.groTemResFin.QBorStepAvg[12].y;
 
 	// ASHP
-	output Real QNom_ASHP = enerHub.Qnom_AsHp;
+    output Real QNom_ASHP_kW = enerHub.AsHp.Size;
 	output Real P_ASHP = enerHub.AsHp.AsHp.PEl;
 	output Real E_ASHP_kWh = enerHub.AsHp.EAsHp_kWh.y;
 	output Real QCon_ASHP = enerHub.AsHp.AsHp.QCon;
