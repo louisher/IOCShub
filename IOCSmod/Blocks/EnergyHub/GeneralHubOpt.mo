@@ -10,6 +10,8 @@ model GeneralHubOpt
 
   parameter Modelica.Units.SI.Temperature TBorMin=3+273.15
     "Minimum allowable borefield temperature (to be used in objective)" annotation(Dialog(tab="GSHP", group="Borefield"));
+  parameter Modelica.Units.SI.Temperature TBorMax=17+273.15
+    "Maximum allowable borefield temperature (to be used in objective)" annotation(Dialog(tab="GSHP", group="Borefield"));
 
   parameter IDEAS.Fluid.Geothermal.Borefields.Data.Borefield.Template borFieDat(
       filDat(
@@ -50,6 +52,11 @@ model GeneralHubOpt
   parameter Real coeffCon_ashp=-0.0895519 "Linearisation coefficient of leaving condensor temperature in COP calculation"  annotation(Dialog(tab="ASHP"));
   parameter Modelica.Units.SI.Temperature TAir_nominal_ashp=280.15 "Nominal air temperature for COP calculation" annotation(Dialog(tab="ASHP"));
   parameter Modelica.Units.SI.Temperature TConOut_nominal_ashp=313.15 "Nominal condensor leaving temperature for COP calculation" annotation(Dialog(tab="ASHP"));
+  parameter Boolean isRev_ashp=false "Boolean to select whether the heat pump is reversible or not. If not, the cooling part is turned off" annotation(Dialog(tab="ASHP"));
+  parameter Real EERDef_ashp=3.2 "Default EER" annotation(Dialog(tab="ASHP", enable=isRev_ashp));
+  parameter Modelica.Units.SI.Temperature TAir_nominal_cooling_ashp=35 + 273.15 "Nominal air temperature for EER calculation" annotation(Dialog(tab="ASHP", enable=isRev_ashp));
+  parameter Modelica.Units.SI.Temperature TEvaOut_nominal_cooling_ashp=18 + 273.15 "Nominal evaporater leaving temperature for EER calculation" annotation(Dialog(tab="ASHP", enable=isRev_ashp));
+
 
   /* Chiller parameters */
   parameter input Real Size_AsChi "Nominal size of air-source chiller in kW" annotation(Dialog(tab="CHILLER"));
@@ -140,7 +147,7 @@ model GeneralHubOpt
   parameter String fileName_beob=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/BHP_profiles/m_flow_beob_total.txt") "File with grey water mass flow rate for beo booster" annotation (Dialog(tab="BeoBooster"));
   parameter Modelica.Units.SI.MassFlowRate m_flow_peak_beob=0.13  "Peak mass flow rate of grey water in BeoBooster" annotation (Dialog(tab="BeoBooster"));
   parameter Modelica.Units.SI.MassFlowRate m_flow_fix_beob=0 "Fixed mass flow rate added to the profiles of BeoBooster" annotation (Dialog(tab="BeoBooster"));
-  parameter Boolean hasBeoBoo=true "Boolean to set turn BeoBooster on/off (true: On, false: off)" annotation (Dialog(tab="BeoBooster"));
+  parameter Boolean hasBeoBoo=false "Boolean to set turn BeoBooster on/off (true: On, false: off)" annotation (Dialog(tab="BeoBooster"));
 
   ComponentModels.Thermal.SizeOpt.GsHpOpt
                                GsHp(addDummyEquation=addDummyEquation, redeclare
