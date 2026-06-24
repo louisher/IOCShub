@@ -8,7 +8,7 @@ optimization MixedUseOpt(objectiveIntegrand=ObjInt, terminalObjective=termObj, s
 											buildings.Houses.office3.hvac.optVar(y=uOff3),
 											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//Brussels-City_XMY2021-2040_ssp245_MAR-BCC_SWDbased.mos"),
 											priceSim.path_economic_params_json="/homenvme/louis/software/IOCShub/input_data/economic_params.json",
-                                            priceSim.path_dynamic_elec_prices=Modelica.Utilities.Files.loadResource("modelica://IOCSod/Resources/ElectricityPrices/2025_Dynamic_consumer_prices.txt"),
+                                            priceSim.path_dynamic_elec_prices=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/ElectricityPrices/2025_Dynamic_consumer_prices.txt"),
                                             priceSim.use_dyn_elec_p=false,
 											enerHub.path_devices_json="/homenvme/louis/software/IOCShub/input_data/devices.json",
 											enerHub.Size_AsHp=AsHpSize,
