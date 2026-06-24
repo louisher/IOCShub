@@ -1,10 +1,10 @@
 optimization StijnStreuvelOpt(tolerance=1e-1, objectiveIntegrand=ObjInt, terminalObjective=termObj, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="8760*1", truncationDelta=1e-2)
 	extends IOCSmod.Optimization.SizeOpt.StijnStreuvelOpt(addDummyEquation=false,
 											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//Brussels-City_XMY2021-2040_ssp245_MAR-BCC_SWDbased.mos"),
-											priceSim.path_economic_params_json="/homenvme/louis/software/IOCShub/input_data/economic_params.json",
+											priceSim.path_economic_params_json="/homenvme/louis/software/IOCShub/COSINE/input_data/economic_params.json",
                                             priceSim.path_dynamic_elec_prices=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/ElectricityPrices/2025_Dynamic_consumer_prices.txt"),
                                             priceSim.use_dyn_elec_p=false,
-											enerHub.path_devices_json="/homenvme/louis/software/IOCShub/input_data/devices.json",
+											enerHub.path_devices_json="/homenvme/louis/software/IOCShub/COSINE/input_data/devices.json",
 											enerHub.Size_AsHp=AsHpSize,
 											enerHub.AsHp.Size_nominal=22.0,
 											enerHub.isRev_ashp=true,
