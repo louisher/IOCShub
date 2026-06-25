@@ -383,8 +383,7 @@ protected
 initial equation
 
 equation
-  Size_state = Size;
-  der(Size)= 0;
+  der(Size_state) = 0;
 
   QBorefield = borefield.port_a.m_flow*(inStream(borefield.port_a.h_outflow) - borefield.port_b.h_outflow);
 
