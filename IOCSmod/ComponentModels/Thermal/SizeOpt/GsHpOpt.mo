@@ -6,6 +6,7 @@ model GsHpOpt "Model of a GSHP with optimizable borefield model and passive cool
     // Parameters
     parameter input Real Size "Heat pump size in kW" annotation(Dialog(group="Optimal sizing"));
     parameter input Real Size_nominal "Nominal HP sizei in kW, used for calculating nominal mass flow rates" annotation(Dialog(group="Optimal sizing"));
+    Real Size_state "State of size to allow distributed MPC";
 
     // investemnt
     parameter Real inv_cost_hp(fixed=false, start=0) "Investment cost per unit of Size (€/kW)" annotation(Dialog(group="Investment cost"));
@@ -379,7 +380,8 @@ protected
   parameter Modelica.Units.SI.MassFlowRate m_flow_hex_coo_nominal=m_flow_bor_nominal
       "Nomtinal mass flow of the cooling side of the cooling heat exchanger";
 equation
-
+  der(Size_state) = 0;
+  Size_state = Size;
   QBorefield = borefield.port_a.m_flow*(inStream(borefield.port_a.h_outflow) - borefield.port_b.h_outflow);
 
 
