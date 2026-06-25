@@ -381,9 +381,9 @@ protected
   parameter Modelica.Units.SI.MassFlowRate m_flow_hex_coo_nominal=m_flow_bor_nominal
       "Nomtinal mass flow of the cooling side of the cooling heat exchanger";
 initial equation
-  Size_state = Size;
-equation
   der(Size_state) = 0;
+equation
+  Size_state = Size;
 
   QBorefield = borefield.port_a.m_flow*(inStream(borefield.port_a.h_outflow) - borefield.port_b.h_outflow);
 
