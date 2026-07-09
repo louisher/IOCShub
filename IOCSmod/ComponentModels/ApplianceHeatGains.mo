@@ -27,7 +27,7 @@ model ApplianceHeatGains
     annotation (Placement(transformation(extent={{0,10},{-20,30}})));
   Modelica.Blocks.Sources.RealExpression[nZones] radHeatInput(y=occSim.occBus.heaGainRad*partition)
     annotation (Placement(transformation(extent={{0,-30},{-20,-10}})));
-  outer TinyCluster.BoundaryConditions.Occupancy.OccSimInfoManager occSim(loadFile=
+  outer IOCSmod.BoundaryConditions.Occupancy.OccSimInfoManager occSim(loadFile=
         loadFile)
     annotation (Placement(transformation(extent={{-94,72},{-74,94}})));
 equation
