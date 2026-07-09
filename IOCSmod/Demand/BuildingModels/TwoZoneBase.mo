@@ -86,13 +86,13 @@ model TwoZoneBase "Base building model with only two zone envelope and occupancy
         0.8,0.2}, loadFile=loadFile)
     annotation (Placement(transformation(extent={{20,60},{40,80}})));
 
-  MoPED.Electrical.Photovoltaics.PVOrientedDCPower PV1(
-    n=n1,
+  ComponentModels.Electrical.PVPanelDC             PV1(
+    PVArea=0,
     til=til1,
     azi=azi1) "Main PV installation"
     annotation (Placement(transformation(extent={{40,130},{20,150}})));
-  MoPED.Electrical.Photovoltaics.PVOrientedDCPower PV2(
-    n=n2,
+  ComponentModels.Electrical.PVPanelDC             PV2(
+    PVArea=0,
     til=til2,
     azi=azi2)
     "Second PV installation for different orientation than PV1. Set n2=0 if not used."
