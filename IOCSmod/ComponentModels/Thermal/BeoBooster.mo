@@ -82,7 +82,7 @@ model BeoBooster "Model of a BeoBooster that uses warm waste water to regenerate
   Modelica.Blocks.Sources.RealExpression mFlowHexExprOn(y=2*mFlowGreyExprOn.y)
     annotation (Placement(transformation(extent={{100,-52},{80,-32}})));
 
-  UnitTests.Components.FlowControlled_m_flow pumHex(
+  IDEAS.Fluid.Movers.FlowControlled_m_flow   pumHex(
   redeclare package Medium = Medium,
     energyDynamics=Modelica.Fluid.Types.Dynamics.SteadyState,
     m_flow_nominal=hex.m2_flow_nominal,
