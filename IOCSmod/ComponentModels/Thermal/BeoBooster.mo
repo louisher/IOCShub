@@ -72,7 +72,7 @@ model BeoBooster "Model of a BeoBooster that uses warm waste water to regenerate
     m_flow_nominal=hex.m2_flow_nominal,
     redeclare package Medium = Medium) "Inlet temperature of grey water"
     annotation (Placement(transformation(
-        extent={{10,10},{-10,-10}},
+        extent={{-10,10},{10,-10}},
         rotation=180,
         origin={-30,-40})));
 
@@ -108,10 +108,6 @@ equation
           {50,6.66134e-16}}, color={0,127,255}));
   connect(senTHexIn.port_b, hex.port_a2)
     annotation (Line(points={{20,-40},{10,-40},{10,-12}}, color={0,127,255}));
-  connect(hex.port_b2, senTHexOut.port_b) annotation (Line(points={{-10,-12},{-10,
-          -40},{-20,-40}}, color={0,127,255}));
-  connect(senTHexOut.port_a, port_b) annotation (Line(points={{-40,-40},{-60,-40},
-          {-60,-100}}, color={0,127,255}));
 
   connect(pumHex.port_b, senTHexIn.port_a)
     annotation (Line(points={{60,-50},{60,-40},{40,-40}}, color={0,127,255}));
@@ -131,6 +127,10 @@ equation
   end if;
 
 
+  connect(hex.port_b2, senTHexOut.port_a) annotation (Line(points={{-10,-12},{
+          -14,-12},{-14,-40},{-20,-40}}, color={0,127,255}));
+  connect(senTHexOut.port_b, port_b) annotation (Line(points={{-40,-40},{-60,
+          -40},{-60,-100}}, color={0,127,255}));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false), graphics={                             Text(
           extent={{-140,62},{148,-112}},
           textColor={238,46,47},
