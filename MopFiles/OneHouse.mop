@@ -239,6 +239,16 @@ optimization OneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real mFlowPvtHeaOut = enerHub.pvt.valRetHea.m_flow;
 	output Real mFlowPvtRegIn = enerHub.pvt.valSupReg.m_flow;
 	output Real mFlowPVtRegOut = enerHub.pvt.valRetReg.m_flow;
+	
+	// BeoBooster
+	output Real TBeoBooGreyIn = enerHub.beoBooster.senTGreyIn.T - 273.15;
+	output Real TBeoBooGreyOut = enerHub.beoBooster.senTGreyOut.T - 273.15;
+	output Real TBeoBooHexOut = enerHub.beoBooster.senTHexOut.T - 273.15;
+	output Real TBeoBooHexIn = enerHub.beoBooster.senTHexIn.T - 273.15;
+
+	output Real mFlowBeoBooGrey = enerHub.beoBooster.hex.m1_flow;
+	output Real mFlowBeoBooHex = enerHub.beoBooster.hex.m2_flow;
+
 
 	///////////////////////////////////
 	// IOCS definitions //

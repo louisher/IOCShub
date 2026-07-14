@@ -268,6 +268,16 @@ optimization OneHouseOpt(objectiveIntegrand=ObjInt, terminalObjective=termObj, s
 	output Real mFlowPvtRegIn = enerHub.pvt.valSupReg.m_flow;
 	output Real mFlowPVtRegOut = enerHub.pvt.valRetReg.m_flow;
 
+	// BeoBooster
+	output Real TBeoBooGreyIn = enerHub.beoBooster.senTGreyIn.T - 273.15;
+	output Real TBeoBooGreyOut = enerHub.beoBooster.senTGreyOut.T - 273.15;
+	output Real TBeoBooHexOut = enerHub.beoBooster.senTHexOut.T - 273.15;
+	output Real TBeoBooHexIn = enerHub.beoBooster.senTHexIn.T - 273.15;
+
+	output Real mFlowBeoBooGrey = enerHub.beoBooster.hex.m1_flow;
+	output Real mFlowBeoBooHex = enerHub.beoBooster.hex.m2_flow;
+
+
 	///////////////////////////////////
 	// IOCS definitions //
 	///////////////////////////////////
@@ -275,6 +285,7 @@ optimization OneHouseOpt(objectiveIntegrand=ObjInt, terminalObjective=termObj, s
     output Real QDem = Q_subSt1;         // Demand profile for heat and cold: heat should be positive, cold should be negative
     output Real PDem = P_Net_Houses;     // Demand profile for electricity in the buildings only, offtake should be positive
 	output Real QBor = enerHub.GsHp.QBorefield;
+	output Real QBeoBoo = if enerHub.hasBeoBoo then enerHub.beoBooster.hex.Q2_flow else 0;
 	
 	// temperature data for COP calculation	
 	output Real T_COP_Sup = Ttank; 			// Temperatures should be in °C
