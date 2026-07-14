@@ -1,4 +1,4 @@
-optimization OneHouseOpt(objectiveIntegrand=ObjInt, terminalObjective=termObj, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="8760*1", tolerance=1e-1, truncationDelta=1e-2)
+optimization OneHouseOpt(objectiveIntegrand=ObjInt, terminalObjective=termObj, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="102*1", tolerance=1e-1, truncationDelta=1e-2)
 	extends IOCSmod.Optimization.SizeOpt.OneHouseOpt(addDummyEquation=false,
 											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//BEL_VLG_Uccle.064470_TMYx.2007-2021.mos"),
 											priceSim.path_economic_params_json="/homenvme/louis/software/IOCShub/COSINE/input_data/economic_params.json",
@@ -204,7 +204,7 @@ optimization OneHouseOpt(objectiveIntegrand=ObjInt, terminalObjective=termObj, s
     output Real UTank = enerHub.tan.vol.U;    
     output Real TMedTank = enerHub.tan.vol.dynBal.medium.T -273.15;
     output Real uMedTank = enerHub.tan.vol.dynBal.medium.u;
-
+    output Real QtankLoss = enerHub.tan.resTan.Q_flow;
 	// PV panels
 	output Real A_PV = enerHub.pv.PVArea;
 	output Real P_PV_DC = enerHub.pv.solarPower.y;
@@ -276,7 +276,7 @@ optimization OneHouseOpt(objectiveIntegrand=ObjInt, terminalObjective=termObj, s
 
 	output Real mFlowBeoBooGrey = enerHub.beoBooster.hex.m1_flow;
 	output Real mFlowBeoBooHex = enerHub.beoBooster.hex.m2_flow;
-
+	output Real QBeoBooAct = enerHub.beoBooster.hex.Q2_flow;
 
 	///////////////////////////////////
 	// IOCS definitions //
