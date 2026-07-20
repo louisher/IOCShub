@@ -33,7 +33,7 @@ model Test
     inputType=IDEAS.Fluid.Types.InputType.Constant,
     addPowerToMedium=true,
     use_inputFilter=false,
-    dp_nominal=1)
+    dp_nominal=10000)
     annotation (Placement(transformation(extent={{-10,-62},{10,-42}})));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow prescribedHeatFlow
     annotation (Placement(transformation(extent={{10,34},{30,54}})));
@@ -59,6 +59,11 @@ model Test
         extent={{6,-6},{-6,6}},
         rotation=0,
         origin={24,-26})));
+  IDEAS.Fluid.FixedResistances.PressureDrop res(
+    redeclare package Medium = IDEAS.Media.Water,
+    m_flow_nominal=2,
+    dp_nominal=10000)
+    annotation (Placement(transformation(extent={{-36,-62},{-16,-42}})));
 equation
   connect(bou.ports[1], enerHub.port_a) annotation (Line(points={{8,8},{8,-14},{
           -24,-14},{-24,0}}, color={0,127,255}));
@@ -70,14 +75,16 @@ equation
     annotation (Line(points={{-9,44},{10,44}}, color={0,0,127}));
   connect(pum.port_b, senTVolIn.port_a)
     annotation (Line(points={{10,-52},{18,-52}}, color={0,127,255}));
-  connect(enerHub.port_b, pum.port_a) annotation (Line(points={{-36,0},{-36,-50},
-          {-10,-50},{-10,-52}}, color={0,127,255}));
   connect(senTVolIn.port_b, vol.ports[1])
     annotation (Line(points={{30,-52},{48,-52},{48,0}}, color={0,127,255}));
   connect(senTVolOut.port_a, vol.ports[2])
     annotation (Line(points={{30,-26},{52,-26},{52,0}}, color={0,127,255}));
   connect(senTVolOut.port_b, enerHub.port_a)
     annotation (Line(points={{18,-26},{-24,-26},{-24,0}}, color={0,127,255}));
+  connect(pum.port_a, res.port_b)
+    annotation (Line(points={{-10,-52},{-16,-52}}, color={0,127,255}));
+  connect(res.port_a, enerHub.port_b)
+    annotation (Line(points={{-36,-52},{-36,0}}, color={0,127,255}));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
         coordinateSystem(preserveAspectRatio=false)),
     experiment(
