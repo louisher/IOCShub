@@ -25,12 +25,6 @@ model TestSimple
     annotation (Placement(transformation(extent={{-10,-62},{10,-42}})));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow prescribedHeatFlow
     annotation (Placement(transformation(extent={{10,34},{30,54}})));
-  Modelica.Blocks.Sources.Pulse pulse(
-    amplitude=230000,
-    width=50,
-    period=7200,
-    offset=-230000)
-    annotation (Placement(transformation(extent={{-30,34},{-10,54}})));
   IDEAS.Fluid.Sensors.TemperatureTwoPort senTVolIn(
     redeclare package Medium = IDEAS.Media.Water,
     m_flow_nominal=2,
@@ -104,13 +98,17 @@ model TestSimple
     annotation (Placement(transformation(extent={{-92,48},{-72,68}})));
   Modelica.Blocks.Sources.RealExpression timeExpr(y=time)
     annotation (Placement(transformation(extent={{-128,48},{-108,68}})));
+  Modelica.Blocks.Tables.CombiTable1Ds pulse(
+    tableOnFile=true,
+    tableName="data",
+    fileName=Modelica.Utilities.Files.loadResource("pulseHea.txt"),
+    smoothness=Modelica.Blocks.Types.Smoothness.ConstantSegments)
+    annotation (Placement(transformation(extent={{-20,34},{0,54}})));
 equation
 
 
   connect(prescribedHeatFlow.port, vol.heatPort) annotation (Line(points={{30,44},
           {34,44},{34,10},{40,10}}, color={191,0,0}));
-  connect(pulse.y, prescribedHeatFlow.Q_flow)
-    annotation (Line(points={{-9,44},{10,44}}, color={0,0,127}));
   connect(pum.port_b, senTVolIn.port_a)
     annotation (Line(points={{10,-52},{18,-52}}, color={0,127,255}));
   connect(senTVolIn.port_b, vol.ports[1])
@@ -137,6 +135,10 @@ equation
           -158,-18},{-158,-16},{-166,-16},{-166,-2}}, color={0,127,255}));
   connect(timeExpr.y, uHeaTable.u)
     annotation (Line(points={{-107,58},{-94,58}}, color={0,0,127}));
+  connect(pulse.y[1], prescribedHeatFlow.Q_flow)
+    annotation (Line(points={{1,44},{10,44}}, color={0,0,127}));
+  connect(pulse.u, timeExpr.y)
+    annotation (Line(points={{-22,44},{-107,44},{-107,58}}, color={0,0,127}));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
         coordinateSystem(preserveAspectRatio=false)),
     experiment(
