@@ -10,12 +10,14 @@ optimization TestSimple(objectiveIntegrand=ObjInt, startTime=0, finalTime=startT
 	// Optimisation variables
 	// Already included in the models
 
-	//input Real uHea(free=true, min=-1, max=1, nominal=1/300000, start=0);
-	output Real uHea = uHeaTable.y[1];
+	input Real uHea(free=true, min=-1, max=1, nominal=1/300000, start=0);
+	//output Real uHea = uHeaTable.y[1];
 
 	////////////////////////////////
 	// Demand Output variables    //
 	////////////////////////////////
+	output Real tOut = time;
+	output Real QvolProbe = pulse.y;
 
 	output Real Tvol = vol.T - 273.15;
 	output Real Qvol = vol.heatPort.Q_flow;
