@@ -10,8 +10,8 @@ optimization TestSimple(objectiveIntegrand=ObjInt, startTime=0, finalTime=startT
 	// Optimisation variables
 	// Already included in the models
 
-	//input Real uHea(free=true, min=-1, max=1, nominal=1/300000, start=0);
-	output Real uHea = uHeaTable.y[1];
+	input Real uHea(free=true, min=-1, max=1, nominal=1/300000, start=0);
+	//output Real uHea = uHeaTable.y[1];
 
 	////////////////////////////////
 	// Demand Output variables    //
@@ -28,10 +28,6 @@ optimization TestSimple(objectiveIntegrand=ObjInt, startTime=0, finalTime=startT
 	output Real DiscmfCooVol = max(0, Tvol - TSetCoo);
 	
 
-	// Tank
-	output Real Ttank = tan.vol.T - 273.15; //°C
-	output Real Vtank = tan.VTan;
-	
 	// Heater
 	output Real THeaIn = senTHeaIn.T -273.15;
 	output Real THeaOut = senTHeaOut.T -273.15;
@@ -44,7 +40,7 @@ optimization TestSimple(objectiveIntegrand=ObjInt, startTime=0, finalTime=startT
 
 
 	// temperature data for COP calculation	
-	output Real T_COP_Sup = Ttank; 			// Temperatures should be in °C
+	output Real T_COP_Sup = Tvol; 			// Temperatures should be in °C
 
 
 	// Electricity prices
@@ -77,9 +73,9 @@ optimization TestSimple(objectiveIntegrand=ObjInt, startTime=0, finalTime=startT
 
 	// Supply temperature	
 	output Real TSupMax = 60;
-	output Real ObjIntTSupMax = 10000*max(0, Ttank - TSupMax)^2;
+	output Real ObjIntTSupMax = 10000*max(0, Tvol - TSupMax)^2;
 	output Real TSupMin = 5;
-	output Real ObjIntTSupMin = 10000*max(0, TSupMin - Ttank)^2;
+	output Real ObjIntTSupMin = 10000*max(0, Tvol - Ttank)^2;
 
 
 	/// Comfort ///
