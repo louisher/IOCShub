@@ -37,7 +37,7 @@ optimization TestSimple(objectiveIntegrand=ObjInt, startTime=0, finalTime=startT
 	output Real QHea = hea.Q_flow;
 	output Real mFlowHea = hea.m_flow;
 	output Real n1 = -0.0645; // first COP coeff
-	output Real n2 = 0.395,; // second COP coeff
+	output Real n2 = 0.395; // second COP coeff
 	output Real COPHea = n1 + n2 / (1 - (sim.Te/tan.vol.T));
 	output Real PHea = QHea/COPHea;
 
