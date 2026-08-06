@@ -98,7 +98,7 @@ model TestSimple
   Modelica.Blocks.Tables.CombiTable1Ds uHeaTable(
     tableOnFile=true,
     tableName="data",
-    fileName="uHea.txt",
+    fileName="usr/src/app/Taco/uHea.txt",
     smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments)
     annotation (Placement(transformation(extent={{-92,48},{-72,68}})));
   Modelica.Blocks.Sources.RealExpression timeExpr(y=time)
