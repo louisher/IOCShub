@@ -75,6 +75,7 @@ model TestSimple
     redeclare package Medium = IDEAS.Media.Water,
     m_flow_nominal=1,
     dp_nominal=1000,
+    energyDynamics=Modelica.Fluid.Types.Dynamics.SteadyState,
     Q_flow_nominal=300000) annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=90,
