@@ -35,7 +35,7 @@ optimization TestSimple(objectiveIntegrand=ObjInt, startTime=0, finalTime=startT
 	output Real mFlowHea = hea.m_flow;
 	output Real n1 = -0.0645; // first COP coeff
 	output Real n2 = 0.395; // second COP coeff
-	output Real COPHea = n1 + n2 / (1 - (sim.Te/vol.T));
+	output Real COPHea = n1 + n2 / (1 - (sim.Te/tan.vol.T));
 	output Real PHea = QHea/COPHea;
 
 
@@ -75,7 +75,7 @@ optimization TestSimple(objectiveIntegrand=ObjInt, startTime=0, finalTime=startT
 	output Real TSupMax = 60;
 	output Real ObjIntTSupMax = 10000*max(0, Tvol - TSupMax)^2;
 	output Real TSupMin = 5;
-	output Real ObjIntTSupMin = 10000*max(0, TSupMin - Tvol)^2;
+	output Real ObjIntTSupMin = 10000*max(0, Tvol - Ttank)^2;
 
 
 	/// Comfort ///
