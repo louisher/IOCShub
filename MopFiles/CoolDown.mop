@@ -1,4 +1,4 @@
-optimization CoolDown(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="336*1", tolerance=1e-5, truncationDelta=1e-2)
+optimization CoolDown(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="336*1", tolerance=1e-5, truncationDelta=0)
 	extends UnitTests.CoolDown(optVar.y=uHea);
 
 	// Optimisation variables
