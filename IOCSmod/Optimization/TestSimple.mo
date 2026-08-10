@@ -99,7 +99,7 @@ model TestSimple
   Modelica.Blocks.Sources.RealExpression timeExpr(y=time)
     annotation (Placement(transformation(extent={{-128,48},{-108,68}})));
   Modelica.Blocks.Sources.CombiTimeTable pulse(
-    fileName=Modelica.Utilities.Files.loadResource("pulseHea"),
+    fileName=Modelica.Utilities.Files.loadResource("pulseHea.txt"),
     final smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments,
     tableOnFile=true,
     tableName="data",
