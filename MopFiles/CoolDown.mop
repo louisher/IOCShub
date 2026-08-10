@@ -4,8 +4,8 @@ optimization CoolDown(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	// Optimisation variables
 	// Already included in the models
 
-	//input Real uHea(free=true, min=-1000, max=1000, nominal=1000, start=0);
-	output Real uHea=0;
+	input Real uHea(free=true, min=-1000, max=1000, nominal=1000, start=0);
+	//output Real uHea=0;
 
 	////////////////////////////////
 	// Demand Output variables    //
