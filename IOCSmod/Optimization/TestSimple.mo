@@ -90,14 +90,6 @@ model TestSimple
         extent={{6,-6},{-6,6}},
         rotation=0,
         origin={-144,-18})));
-  Modelica.Blocks.Tables.CombiTable1Ds uHeaTable(
-    tableOnFile=true,
-    tableName="data",
-    fileName=Modelica.Utilities.Files.loadResource("uHea.txt"),
-    smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments)
-    annotation (Placement(transformation(extent={{-92,48},{-72,68}})));
-  Modelica.Blocks.Sources.RealExpression timeExpr(y=time)
-    annotation (Placement(transformation(extent={{-128,48},{-108,68}})));
   Modelica.Blocks.Sources.CombiTimeTable pulse(
     fileName=Modelica.Utilities.Files.loadResource("pulseHea.txt"),
     final smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments,
@@ -135,8 +127,6 @@ equation
     annotation (Line(points={{-122,-18},{-138,-18}}, color={0,127,255}));
   connect(senTHeaIn.port_b, hea.port_a) annotation (Line(points={{-150,-18},{
           -158,-18},{-158,-16},{-166,-16},{-166,-2}}, color={0,127,255}));
-  connect(timeExpr.y, uHeaTable.u)
-    annotation (Line(points={{-107,58},{-94,58}}, color={0,0,127}));
   connect(pulse.y[1], prescribedHeatFlow.Q_flow)
     annotation (Line(points={{-1.3,43},{-1.3,44},{10,44}}, color={0,0,127}));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
