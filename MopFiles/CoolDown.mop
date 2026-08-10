@@ -19,7 +19,7 @@ optimization CoolDown(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
     tableOnFile=true,
     tableName="data",
     fileName=Modelica.Utilities.Files.loadResource("uHea.txt"),
-    smoothness=Modelica.Blocks.Types.Smoothness.ConstantSegments,
+    smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments,
     timeEvents=Modelica.Blocks.Types.TimeEvents.NoTimeEvents);
 	
 	output Real test = combiTimeTable.y[1];
