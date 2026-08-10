@@ -1,10 +1,10 @@
 optimization CoolDown(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="336*1", tolerance=1e-5, truncationDelta=1e-2)
-	extends UnitTests.CoolDown(optVar.y=uHea);
+	extends UnitTests.CoolDown(optVar.y=0);
 
 	// Optimisation variables
 	// Already included in the models
 
-	input Real uHea(free=true, min=-1000, max=1000, nominal=1000, start=0);
+	//input Real uHea(free=true, min=-1000, max=1000, nominal=1000, start=0);
 
 
 	////////////////////////////////
