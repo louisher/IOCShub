@@ -32,6 +32,8 @@ optimization TestSimple(objectiveIntegrand=ObjInt, startTime=0, finalTime=startT
 	output Real DiscmfCooVol = max(0, Tvol - TSetCoo);
 
 	output Real TAir = sim.Te;	
+	
+	output Real testCombiTimeTable = combiTimeTable.y[1];
 
 	// Tank
 	output Real Ttank = tan.vol.T - 273.15; //°C
