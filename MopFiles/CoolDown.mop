@@ -1,0 +1,47 @@
+optimization CoolDown(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="336*1", tolerance=1e-5, truncationDelta=1e-2)
+	extends UnitTests.CoolDown(optVar.y=uHea);
+
+	// Optimisation variables
+	// Already included in the models
+
+	input Real uHea(free=true, min=-1000, max=1000, nominal=1000, start=0);
+
+
+	////////////////////////////////
+	// Demand Output variables    //
+	////////////////////////////////
+	output Real tOut = time;
+
+	output Real TCap = heatCapacitor.T -273.15;
+	output Real QflowRes = theCon.Q_flow;
+	
+	 Modelica.Blocks.Sources.CombiTimeTable combiTimeTable(
+    tableOnFile=true,
+    tableName="data",
+    fileName=Modelica.Utilities.Files.loadResource("uHea.txt"),
+    smoothness=Modelica.Blocks.Types.Smoothness.ConstantSegments,
+    timeEvents=Modelica.Blocks.Types.TimeEvents.NoTimeEvents);
+	
+	output Real test = combiTimeTable.y[1];
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+
+	output Real ObjIntElec = uHea/5;
+
+	/// Comfort ///
+	output Real weight_hea = 10000;
+	output Real weight_coo = 10000;
+	
+	output Real DiscmfHea = max(0,	TSet.y - TCap);
+	output Real DiscmfCoo = max(0, TCap - TSet.y);
+	output Real ObjIntComfSHea = weight_hea*(DiscmfHea^2); /// Kh/jaar
+	output Real ObjIntComfSCoo = weight_coo*(DiscmfCoo^2);
+	
+
+	/// Overall objective ///
+	output Real ObjInt = ObjIntElec + ObjIntComfSCoo + ObjIntComfSHea;
+
+
+end CoolDown;
