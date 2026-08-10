@@ -21,7 +21,7 @@ optimization CoolDown(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
     tableOnFile=true,
     tableName="data",
     columns={2},
-    timeEvents=Modelica.Blocks.Types.TimeEvents.NoTimeEvents));
+    timeEvents=Modelica.Blocks.Types.TimeEvents.NoTimeEvents);
 	
 	output Real test = combiTimeTable.y[1];
 
