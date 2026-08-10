@@ -104,6 +104,12 @@ model TestSimple
     fileName=Modelica.Utilities.Files.loadResource("pulseHea.txt"),
     smoothness=Modelica.Blocks.Types.Smoothness.ConstantSegments)
     annotation (Placement(transformation(extent={{-20,34},{0,54}})));
+  Modelica.Blocks.Sources.CombiTimeTable combiTimeTable(
+    tableOnFile=true,
+    tableName="data",
+    fileName=Modelica.Utilities.Files.loadResource("uHea.txt"),
+    timeEvents=Modelica.Blocks.Types.TimeEvents.NoTimeEvents)
+    annotation (Placement(transformation(extent={{-100,-80},{-80,-60}})));
 equation
 
 
@@ -122,7 +128,7 @@ equation
   connect(tan.ports[2], res.port_a) annotation (Line(points={{-87,18},{-82,18},
           {-82,-50},{-36,-50},{-36,-52}}, color={0,127,255}));
   connect(senTVolOut.port_b, tan.ports[3]) annotation (Line(points={{18,-26},{
-          -24,-26},{-24,-28},{-85,-28},{-85,18}}, color={0,127,255}));
+          -85,-26},{-85,18}},                     color={0,127,255}));
   connect(bou.ports[1], senTVolOut.port_b) annotation (Line(points={{8,8},{10,8},
           {10,-16},{18,-16},{18,-26}}, color={0,127,255}));
   connect(hea.port_b, senTHeaOut.port_a) annotation (Line(points={{-166,18},{
