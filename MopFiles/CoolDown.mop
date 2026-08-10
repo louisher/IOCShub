@@ -15,12 +15,14 @@ optimization CoolDown(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTim
 	output Real TCap = heatCapacitor.T -273.15;
 	output Real QflowRes = theCon.Q_flow;
 	
-	 Modelica.Blocks.Sources.CombiTimeTable combiTimeTable(
-    fileName=Modelica.Utilities.Files.loadResource("uHea.txt"),
-    final smoothness=Modelica.Blocks.Types.Smoothness.ConstantSegments,
+  Modelica.Blocks.Sources.CombiTimeTable combiTimeTable(
     tableOnFile=true,
     tableName="data",
-    columns={2},
+    fileName=IDEAS.BoundaryConditions.WeatherData.BaseClasses.getAbsolutePath(
+        "modelica://IOCSmod/Resources/OccupancyProfiles/Appliance_power_demand_StijnS_14houses.txt"),
+    columns=2:2,
+    smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments,
+    extrapolation=Modelica.Blocks.Types.Extrapolation.Periodic,
     timeEvents=Modelica.Blocks.Types.TimeEvents.NoTimeEvents);
 	
 	output Real test = combiTimeTable.y[1];
