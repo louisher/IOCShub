@@ -1,0 +1,12 @@
+optimization ZoneWithAlgebraicLoop(objectiveIntegrand = (PTot.y), startTime=0, finalTime=1e6, tolerance=5e-3)
+  extends UnitTests.ZoneWithAlgebraicLoop2(
+	addDummyEquation=false);
+  output Real TZone=zone1.TSensor;output Real TMin=TSet.k;
+  output Real m1=pump1.m_flow;output Real m2=pump.m_flow;
+  output Real PHP=PTot.u3;output Real P=PTot.y;   
+	output Real Discmf = 1000*max(0, TMin - zone1.TSensor)^2;
+//constraint
+  //zone1.TSensor*10 >= TSet.k*10;  
+end ZoneWithAlgebraicLoop;
+
+
