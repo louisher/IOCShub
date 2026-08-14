@@ -1,4 +1,4 @@
-optimization ZoneWithAlgebraicLoop(objectiveIntegrand = (PTot.y), startTime=0, finalTime=1e6, tolerance=5e-3)
+optimization ZoneWithAlgebraicLoop(objectiveIntegrand = (PTot.y + Discmf), startTime=0, finalTime=1e6, tolerance=5e-3)
   extends UnitTests.ZoneWithAlgebraicLoop2(
 	addDummyEquation=false);
   output Real TZone=zone1.TSensor;output Real TMin=TSet.k;
