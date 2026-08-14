@@ -46,18 +46,6 @@ model TestSimple
     m_flow_nominal=2,
     dp_nominal=10000)
     annotation (Placement(transformation(extent={{-36,-62},{-16,-42}})));
-  UnitTests.Confidential.FlowControlled_m_flow pumpHea(
-    inputType=UnitTests.Confidential.BaseClasses.InputType.Constant,
-    redeclare package Medium = IDEAS.Media.Water,
-    energyDynamics=Modelica.Fluid.Types.Dynamics.SteadyState,
-    m_flow_nominal=1,
-    addPowerToMedium=false,
-    nominalValuesDefineDefaultPressureCurve=true,
-    use_inputFilter=false,
-    dp_nominal=1000) annotation (Placement(transformation(
-        extent={{10,-10},{-10,10}},
-        rotation=0,
-        origin={-112,-18})));
   ComponentModels.Thermal.SimpleTank tan(
     addDummyEquation=false,
     m_flow_nominal=1,
@@ -65,15 +53,6 @@ model TestSimple
     nPorts=4,
     redeclare replaceable package Medium = IDEAS.Media.Water)
     annotation (Placement(transformation(extent={{-96,18},{-76,38}})));
-  IDEAS.Fluid.HeatExchangers.HeaterCooler_u hea(
-    redeclare package Medium = IDEAS.Media.Water,
-    m_flow_nominal=1,
-    dp_nominal=1000,
-    energyDynamics=Modelica.Fluid.Types.Dynamics.SteadyState,
-    Q_flow_nominal=300000) annotation (Placement(transformation(
-        extent={{-10,-10},{10,10}},
-        rotation=90,
-        origin={-166,8})));
   IDEAS.Fluid.Sensors.TemperatureTwoPort senTHeaOut(
     redeclare package Medium = IDEAS.Media.Water,
     m_flow_nominal=1,
@@ -98,6 +77,8 @@ model TestSimple
     columns={2},
     timeEvents=Modelica.Blocks.Types.TimeEvents.NoTimeEvents)
     annotation (Placement(transformation(extent={{-16,36},{-2,50}})));
+  ComponentModels.Thermal.AsHp AsHp(addDummyEquation=false, Qnom_AsHp=300000)
+    annotation (Placement(transformation(extent={{-178,-2},{-198,18}})));
 equation
 
 
@@ -111,24 +92,22 @@ equation
     annotation (Line(points={{30,-26},{52,-26},{52,0}}, color={0,127,255}));
   connect(pum.port_a, res.port_b)
     annotation (Line(points={{-10,-52},{-16,-52}}, color={0,127,255}));
-  connect(pumpHea.port_a, tan.ports[1]) annotation (Line(points={{-102,-18},{
-          -89,-18},{-89,18}}, color={0,127,255}));
-  connect(tan.ports[2], res.port_a) annotation (Line(points={{-87,18},{-82,18},
+  connect(tan.ports[1], res.port_a) annotation (Line(points={{-89,18},{-82,18},
           {-82,-50},{-36,-50},{-36,-52}}, color={0,127,255}));
-  connect(senTVolOut.port_b, tan.ports[3]) annotation (Line(points={{18,-26},{
-          -85,-26},{-85,18}},                     color={0,127,255}));
+  connect(senTVolOut.port_b, tan.ports[2]) annotation (Line(points={{18,-26},{
+          -87,-26},{-87,18}},                     color={0,127,255}));
   connect(bou.ports[1], senTVolOut.port_b) annotation (Line(points={{8,8},{10,8},
           {10,-16},{18,-16},{18,-26}}, color={0,127,255}));
-  connect(hea.port_b, senTHeaOut.port_a) annotation (Line(points={{-166,18},{
-          -166,24},{-152,24}}, color={0,127,255}));
-  connect(senTHeaOut.port_b, tan.ports[4]) annotation (Line(points={{-140,24},{
-          -114,24},{-114,14},{-83,14},{-83,18}}, color={0,127,255}));
-  connect(pumpHea.port_b, senTHeaIn.port_a)
-    annotation (Line(points={{-122,-18},{-138,-18}}, color={0,127,255}));
-  connect(senTHeaIn.port_b, hea.port_a) annotation (Line(points={{-150,-18},{
-          -158,-18},{-158,-16},{-166,-16},{-166,-2}}, color={0,127,255}));
+  connect(senTHeaOut.port_b, tan.ports[3]) annotation (Line(points={{-140,24},{
+          -114,24},{-114,14},{-85,14},{-85,18}}, color={0,127,255}));
   connect(pulse.y[1], prescribedHeatFlow.Q_flow)
     annotation (Line(points={{-1.3,43},{-1.3,44},{10,44}}, color={0,0,127}));
+  connect(senTHeaIn.port_b, AsHp.port_a) annotation (Line(points={{-150,-18},{
+          -194,-18},{-194,-2}}, color={0,127,255}));
+  connect(AsHp.port_b, senTHeaOut.port_a) annotation (Line(points={{-182,-2},{
+          -182,-8},{-168,-8},{-168,24},{-152,24}}, color={0,127,255}));
+  connect(senTHeaIn.port_a, tan.ports[4]) annotation (Line(points={{-138,-18},{
+          -83,-18},{-83,18}}, color={0,127,255}));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
         coordinateSystem(preserveAspectRatio=false)),
     experiment(

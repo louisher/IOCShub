@@ -4,20 +4,32 @@ optimization TestSimple(objectiveIntegrand=ObjInt, startTime=0, finalTime=startT
 											priceSim.path_economic_params_json="/mnt/software/IOCShub/COSINE/input_data/economic_params.json",
                                             priceSim.path_dynamic_elec_prices=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/ElectricityPrices/2025_Dynamic_consumer_prices.txt"),
                                             priceSim.use_dyn_elec_p=false,
-						vol( energyDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial, T_start=303.15),
-                                                tan.vol(energyDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial, T_start=303.15),
-											hea.u=uHea
+                                                tan.vol(energyDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial, T_start=303.15)
 											);
 
 	// Optimisation variables
 	// Already included in the models
 
-	input Real uHea(free=true, min=-1, max=1, nominal=1/300000, start=0);
-	//output Real uHea = uHeaTable.y[1];
 
 	////////////////////////////////
 	// Demand Output variables    //
 	////////////////////////////////
+
+	// ASHP
+	output Real QNom_ASHP = AsHp.Qnom_AsHp;
+	output Real P_ASHP = AsHp.AsHp.PEl;
+	output Real E_ASHP_kWh = AsHp.EAsHp_kWh.y;
+	output Real QCon_ASHP = AsHp.AsHp.QCon;
+	output Real QEva_ASHP = -AsHp.AsHp.HP.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_ASHP = AsHp.AsHp.COP;
+
+	output Real TAsHpConIn = AsHp.senTAsHpConIn.T - 273.15; //°C
+	output Real TAsHpConOut = AsHp.senTAsHpConOut.T - 273.15; //°C
+	output Real TAsHpEvaIn = AsHp.AsHp.HP.TEvaIn.T - 273.15; //°C
+	output Real TAsHpEvaOut = AsHp.AsHp.HP.TEvaOut.T - 273.15; //°C
+
+	output Real mFlowAsHpCon = AsHp.AsHp.HP.m2_flow;
+
 	output Real tOut = time;
 	output Real QvolProbe = pulse.y[1];
 
@@ -40,12 +52,6 @@ optimization TestSimple(objectiveIntegrand=ObjInt, startTime=0, finalTime=startT
 	// Heater
 	output Real THeaIn = senTHeaIn.T -273.15;
 	output Real THeaOut = senTHeaOut.T -273.15;
-	output Real QHea = hea.Q_flow;
-	output Real mFlowHea = hea.m_flow;
-	output Real n1 = -0.0645; // first COP coeff
-	output Real n2 = 0.395; // second COP coeff
-	output Real COPHea = n1 + n2 / (1 - (sim.Te/tan.vol.T));
-	output Real PHea = QHea/COPHea;
 
 
 	// temperature data for COP calculation	
@@ -67,7 +73,7 @@ optimization TestSimple(objectiveIntegrand=ObjInt, startTime=0, finalTime=startT
 	///////////////////////////////////
 
 	/// Electricity ///
-	output Real TotalPower = PHea;
+	output Real TotalPower = P_ASHP;
 
 	output Real tariff_scaler = 36000000;
 	output Real p_offtake = priceSim.priceBus.elec_offtake_price/(3600*1e6);
