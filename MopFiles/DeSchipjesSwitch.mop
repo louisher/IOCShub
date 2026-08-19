@@ -1,5 +1,5 @@
 optimization DeSchipjesSwitch(tolerance=1e-3, objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+31536000, timeStep=3600, intervalLengths="292*1", truncationDelta=1e-2)
-	extends IOCSmod.Optimization.DeSchipjes(addDummyEquation=false,
+	extends IOCSmod.Optimization.DeSchipjesSwitch(addDummyEquation=false,
 											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//BEL_VLG_Uccle.064470_TMYx.2007-2021.mos"),
 											priceSim.path_economic_params_json="/homenvme/louis/software/IOCShub/COSINE/input_data/economic_params.json",
 											priceSim.path_dynamic_elec_prices=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/ElectricityPrices/2025_Dynamic_consumer_prices.txt"),
@@ -41,12 +41,6 @@ optimization DeSchipjesSwitch(tolerance=1e-3, objectiveIntegrand=ObjInt, startTi
 	output Real smoothPrice = p_injSca + (p_offtakeSca - p_injSca) * 0.5 *(1 + TotalPower / (sqrt(TotalPower^2 + b^2)) );
 
 	output Real ObjIntElecCost = TotalPower*smoothPrice;
-
-	// Battery //
-	output Real weight_bat = 100000;
-	output Real ObjBatMax = weight_bat*max(0, Bat_soc - Bat_SOCmax)^2;
-	output Real ObjBatMin = weight_bat*max(0, Bat_SOCmin - Bat_soc)^2;
-	output Real ObjIntBat = ObjBatMax + ObjBatMin;
 	
 	// Supply temperature	
 	output Real TSupMax = 60;
@@ -95,7 +89,7 @@ optimization DeSchipjesSwitch(tolerance=1e-3, objectiveIntegrand=ObjInt, startTi
 		DiscmfCoo_zone__158_badkamer^2   + DiscmfCoo_zone__158_keuken^2   + DiscmfCoo_zone__158_slaapkamer^2   + DiscmfCoo_zone__158_woonruimte^2);	
 
 	/// Overall objective ///
-	output Real ObjInt = ObjIntElecCost + ObjIntComfSCoo + ObjIntComfSHea + ObjIntBat + ObjIntTSupMax + ObjIntTSupMin + ObjIntTBorMin + ObjIntTBorMax;
+	output Real ObjInt = ObjIntElecCost + ObjIntComfSCoo + ObjIntComfSHea + ObjIntTSupMax + ObjIntTSupMin + ObjIntTBorMin + ObjIntTBorMax;
 
 
 	///////////////////////////////////
