@@ -44,9 +44,9 @@ optimization DeSchipjesSwitch(tolerance=1e-3, objectiveIntegrand=ObjInt, startTi
 	
 	// Supply temperature	
 	output Real TSupMax = 60;
-	output Real ObjIntTSupMax = 10000*max(0, Ttank - TSupMax)^2;
+	output Real ObjIntTSupMax = 10000*max(0, Ttank2 - TSupMax)^2;
 	output Real TSupMin = 17;
-	output Real ObjIntTSupMin = 10000*max(0, TSupMin - Ttank)^2;
+	output Real ObjIntTSupMin = 10000*max(0, TSupMin - Ttank2)^2;
 
 	// Borefield temperature
 	output Real TBorMin_degC = enerHub.GsHp.TBorMin - 273.15;
