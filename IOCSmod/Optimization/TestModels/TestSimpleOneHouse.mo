@@ -63,7 +63,7 @@ model TestSimpleOneHouse
     dp_nominal=15000,
     m_flowMin=0.2,
     nParCir=1,
-    A_floor=floor.A,
+    A_floor=zone.A,
     nDiscr=1,
     m_flow_nominal=6000/4180/5,
     redeclare package Medium = IDEAS.Media.Water,
@@ -154,8 +154,8 @@ equation
           {146,-50},{146,-59},{160,-59}},      color={191,0,0}));
   connect(enerHub.port_b, senTSup.port_a)
     annotation (Line(points={{-24,0},{-24,-20},{-10,-20}}, color={0,127,255}));
-  connect(bou.ports[1], senTSup.port_b) annotation (Line(points={{14,-4},{14,
-          -20},{10,-20}},         color={0,127,255}));
+  connect(bou.ports[1], senTSup.port_b) annotation (Line(points={{14,-4},{14,-20},
+          {10,-20}},              color={0,127,255}));
   connect(jun.port_2, senTRet.port_a)
     annotation (Line(points={{20,-80},{10,-80}}, color={0,127,255}));
   connect(senTRet.port_b, enerHub.port_a)
