@@ -1,4 +1,4 @@
-within IOCSmod.Optimization;
+within IOCSmod.Optimization.TestModels;
 model TestSimple
   extends IOCSmod.Optimization.Interface;
 
@@ -7,7 +7,6 @@ model TestSimple
         extent={{-10,-10},{10,10}},
         rotation=270,
         origin={8,18})));
-
 
   IDEAS.Fluid.MixingVolumes.MixingVolume vol(
     redeclare package Medium = IDEAS.Media.Water,
@@ -80,7 +79,6 @@ model TestSimple
   ComponentModels.Thermal.AsHp AsHp(addDummyEquation=false, Qnom_AsHp=300000)
     annotation (Placement(transformation(extent={{-178,-2},{-198,18}})));
 equation
-
 
   connect(prescribedHeatFlow.port, vol.heatPort) annotation (Line(points={{30,44},
           {34,44},{34,10},{40,10}}, color={191,0,0}));

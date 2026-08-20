@@ -1,17 +1,15 @@
-within IOCSmod.Optimization;
+within IOCSmod.Optimization.TestModels;
 model TestBor
   extends IOCSmod.Optimization.Interface;
   Blocks.Demand.SingleBuildings.OneHouse buildings(addDummyEquation=
         addDummyEquation)
     annotation (Placement(transformation(extent={{40,0},{60,20}})));
 
-
   IDEAS.Fluid.Sources.Boundary_pT bou(redeclare package Medium =
         IDEAS.Media.Water, nPorts=1) annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=270,
         origin={8,18})));
-
 
   UnitTests.Confidential.HeatPump_WaterWater hp(redeclare package Medium1 =
         IDEAS.Media.Water, redeclare package Medium2 = IDEAS.Media.Water,

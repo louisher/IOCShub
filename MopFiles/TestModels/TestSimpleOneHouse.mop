@@ -1,0 +1,284 @@
+optimization TestSimpleOneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="8760*1", tolerance=1e-1, truncationDelta=1e-2)
+	extends IOCSmod.Optimization.TestModels.TestSimpleOneHouse(addDummyEquation=false,
+											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//BEL_VLG_Uccle.064470_TMYx.2007-2021.mos"),
+											priceSim.path_economic_params_json="/homenvme/louis/software/IOCShub/COSINE/input_data/economic_params.json",
+                                            priceSim.path_dynamic_elec_prices=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/ElectricityPrices/2025_Dynamic_consumer_prices.txt"),
+                                            priceSim.use_dyn_elec_p=false,
+											enerHub.Size_AsHp=3,
+											enerHub.isRev_ashp=true,
+											enerHub.Size_GsHp=3,
+											enerHub.Size_AsChi=0.01,
+											enerHub.Size_Tank=1.62,
+											enerHub.Size_PV=20,
+											enerHub.Size_STC=10,
+											enerHub.Size_PVT=10,
+											enerHub.hasBat=true,
+											enerHub.Size_Bat=10,
+											enerHub.P_max_bat_kW=5,
+											enerHub.TBorMin=273.15,
+											enerHub.TBorMax=290.15,
+											enerHub.borFieDat.conDat.hBor=60,
+											enerHub.borFieDat.conDat.nBor=2,
+											enerHub.groTemResDat.rCel.rCel={1.0,2.0,4.0,8.0,16.0,32.0,64.0,128.0,256.0,512.0,1024.0,2048.0, 4096.0,8192.0,16384.0,32768.0,65536.0,44129.0},
+                                            enerHub.groTemResDat.kappa.kappa={0.0006056508274070543, 0.0002648678443762049, 0.0002387572333120856, 0.00023358207978937799, 0.00023362952022202687, 0.00023472867919461355, 0.00023533998888077869, 0.00023487236265632523, 0.00023593849180282046, 0.0002536864115756797, 0.00029429324709274833, 0.0003337132019485731, 0.00034960723567171656, 0.00033751295208841276, 0.00030063445015042576, 0.00024295617863329382, 0.00017136477646730822, 5.033780393561352e-05},
+                                            enerHub.hasBeoBoo=true,
+											enerHub.borFieDat.conDat.cooBor=[0,0; 0,6]
+											);
+
+	// Optimisation variables
+	// Already included in the models
+
+	////////////////////////////////
+	// Demand Output variables    //
+	////////////////////////////////
+
+	/// Electrical ///
+	// House1 //
+	output Real P_pum = pump.P;
+	output Real mFlowFloHea = embeddedPipe.m_flow;
+	output Real mFlowTan = threeWayLinear.res1.m_flow;
+	output Real mFlowByPass = threeWayLinear.res3.m_flow;
+	output Real QFlowFloHea = embeddedPipe.QTot;
+	output Real TFloHeaIn = senTIn.T - 273.15;
+	output Real TFloHeaOut = senTOut.T - 273.15;
+	output Real TSup = senTSup.T - 273.15;
+	output Real TRet = senTRet.T - 273.15;
+	output Real TZone = zone.TSensor - 273.15;
+
+	output Real TSetSH = 21;
+	output Real TSetSC = 24;
+	output Real DiscmfHea = max(0,TSetSH-TZone);
+	output Real DiscmfCoo = max(0, TZone - TSetSC);
+
+	
+	//Overall //
+	output Real P_Net_Houses = P_pum; // Powitive value means net offtake
+
+	
+	//////////////////////////////////
+	// Energy Hub Output variables	//
+	//////////////////////////////////
+
+	// General
+	output Real P_Net_enerHub = enerHub.P;
+	output Real Q_enerHub = enerHub.QEnergyHub;
+	
+	// GSHP
+	output Real QNom_GSHP = enerHub.Qnom_GsHp;
+	output Real P_GSHP = enerHub.GsHp.GsHp.PEl;
+	output Real E_GSHP_kWh = enerHub.GsHp.EGsHp_kWh.y;
+	output Real QCon_GSHP = enerHub.GsHp.GsHp.QCon;
+	output Real QEva_GSHP = -enerHub.GsHp.GsHp.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_GSHP = enerHub.GsHp.GsHp.COP;
+
+	output Real P_pumCoo = enerHub.GsHp.pumHexCooEva.P;
+	output Real E_pumCoo_kWh = enerHub.GsHp.EpumCoo_kWh.y;
+	output Real QhexCoo = enerHub.GsHp.hexCoo.Q2_flow; // will be positive if heat is added to the borefield i.e. cooling of buffertank is happening
+
+	output Real TGsHpConIn = enerHub.GsHp.senTGsHpConIn.T - 273.15; //°C
+	output Real TGsHpConOut = enerHub.GsHp.senTGsHpConOut.T - 273.15; //°C
+	output Real TGsHpEvaIn = enerHub.GsHp.senTGsHpEvaIn.T - 273.15; //°C
+	output Real TGsHpEvaOut = enerHub.GsHp.senTGsHpEvaOut.T - 273.15; //°C
+
+	output Real TBorIn = enerHub.GsHp.senTBorIn.T - 273.15; //°C
+	output Real TBorOut = enerHub.GsHp.senTBorOut.T - 273.15; //°C
+
+	output Real THexCooConIn = enerHub.GsHp.senTHexCooConIn.T - 273.15; //°C
+	output Real THexCooConOut = enerHub.GsHp.senTHexCooConOut.T - 273.15; //°C
+	output Real THexCooEvaIn = enerHub.GsHp.senTHexCooEvaIn.T - 273.15; //°C
+	output Real THexCooEvaOut = enerHub.GsHp.senTHexCooEvaOut.T - 273.15; //°C
+
+	output Real mFlowGsHpCon = enerHub.GsHp.GsHp.m2_flow;
+	output Real mFlowGsHpEva = enerHub.GsHp.GsHp.m1_flow;
+	output Real mFlowBor = enerHub.GsHp.pumBor.m_flow;
+
+	output Real mFlowHexCooCon = enerHub.GsHp.hexCoo.m2_flow;
+	output Real mFlowHexCooEva = enerHub.GsHp.hexCoo.m1_flow;
+
+	output Real chBor_delTBor = enerHub.GsHp.borefield.groTemRes.delTBor;
+	output Real chBor_QAggFlow1 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[1];
+	output Real chBor_QAggFlow2 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[2];
+	output Real chBor_QAggFlow3 = enerHub.GsHp.borefield.groTemRes.QAgg_flow[3];
+
+	// ASHP
+	output Real QNom_ASHP = enerHub.Qnom_AsHp;
+	output Real P_ASHP = enerHub.AsHp.AsHp.PEl;
+	output Real E_ASHP_kWh = enerHub.AsHp.EAsHp_kWh.y;
+	output Real QCon_ASHP = enerHub.AsHp.AsHp.QCon;
+	output Real QEva_ASHP = -enerHub.AsHp.AsHp.HP.Q_eva.y; // !!! Add a minus sign to make positive
+	output Real COP_ASHP = enerHub.AsHp.AsHp.COP;
+	
+	output Real QEva_ASHP_chi = enerHub.AsHp.AsChi.QEva;
+ 	output Real QCon_ASHP_chi = enerHub.AsHp.AsChi.Chi.con.Q_flow;
+	output Real EER_ASHP_chi = enerHub.AsHp.AsChi.EER;
+
+	output Real TAsHpIn = enerHub.AsHp.senTAsHpIn.T - 273.15; //°C
+	output Real TAsHpOut = enerHub.AsHp.senTAsHpOut.T - 273.15; //°C
+	output Real TAsHpHeaCooBtwn = enerHub.AsHp.senTAsHpHeaCooBtwn.T - 273.15; //°C
+	output Real TAsHpEvaIn = enerHub.AsHp.AsHp.HP.TEvaIn.T - 273.15; //°C
+	output Real TAsHpEvaOut = enerHub.AsHp.AsHp.HP.TEvaOut.T - 273.15; //°C
+
+	output Real mFlowAsHpCon = enerHub.AsHp.AsHp.HP.m2_flow;
+
+	// ASCHI
+	output Real QNom_ASCHI = enerHub.Qnom_AsChi;
+	output Real P_ASCHI = enerHub.AsChi.AsChi.PEl;
+	output Real E_ASCHI_kWh = enerHub.AsChi.EAsChi_kWh.y;
+	output Real QCon_ASCHI = enerHub.AsChi.AsChi.Chi.con.Q_flow;
+	output Real QEva_ASCHI = enerHub.AsChi.AsChi.QEva; // !!! Positive value
+	output Real EER_ASHP = enerHub.AsChi.AsChi.EER;
+
+	output Real TAsChiEvaIn = enerHub.AsChi.senTAsChiEvaIn.T - 273.15; //°C
+	output Real TAsChiEvaOut = enerHub.AsChi.senTAsChiEvaOut.T - 273.15; //°C
+	output Real TAsChiConIn = enerHub.AsChi.AsChi.Chi.TConIn.T - 273.15; //°C
+	output Real TAsChiConOut = enerHub.AsChi.AsChi.Chi.TConOut.T - 273.15; //°C
+
+	output Real mFlowAsChiEva = enerHub.AsChi.AsChi.Chi.m1_flow;
+
+	// Tank
+	output Real Ttank = enerHub.tan.vol.T - 273.15; //°C
+	output Real Vtank = enerHub.tan.VTan;
+
+	// PV panels
+	output Real A_PV = enerHub.Size_PV;
+	output Real P_PV_DC = enerHub.pv.solarPower.y;
+	output Real P_PV_AC = enerHub.pv.P;
+
+	// Battery 
+	output Real Bat_cap = enerHub.bat.EBat_max ;
+	output Real Bat_soc = enerHub.bat.SoC ;
+	output Real Bat_eff = enerHub.bat.eff ;
+	output Real Bat_Pcha = enerHub.bat.PCha ;
+	output Real Bat_PDem = enerHub.bat.PDem ;
+	output Real Bat_PGrid = enerHub.bat.PGrid ;
+	output Real Bat_SOCmax = enerHub.SoC_max;
+	output Real Bat_SOCmin = enerHub.SoC_min;
+
+	// STC panels
+	output Real A_STC = enerHub.stc.panels.totalArea;
+	output Real QStc = enerHub.stc.panels.QTot;
+
+	output Real QStcHex = enerHub.stc.hex.Q2_flow;
+
+	output Real TStcIn = enerHub.stc.senTPanelsIn.T - 273.15; //°C
+	output Real TStcOut = enerHub.stc.senTPanelsOut.T - 273.15; //°C
+	output Real TStcRegIn = enerHub.stc.senTRegIn.T - 273.15; //°C
+	output Real TStcRegOut = enerHub.stc.senTRegOut.T - 273.15; //°C
+	output Real TStcHeaIn = enerHub.stc.senTHeaIn.T - 273.15; //°C
+	output Real TStcHeaOut = enerHub.stc.senTHeaOut.T - 273.15; //°C
+	output Real TStcHexIn = enerHub.stc.senTHexIn.T -273.15; //°C
+	output Real TStcHexOut = enerHub.stc.senTHexOut.T -273.15; //°C
+
+	output Real mFlowStc = enerHub.stc.pumPanels.m_flow;
+	output Real mFlowStcHex = enerHub.stc.hex.m2_flow;
+	output Real mFlowStcHeaIn = enerHub.stc.valSupHea.m_flow;
+	output Real mFlowStcHeaOut = enerHub.stc.valRetHea.m_flow;
+	output Real mFlowStcRegIn = enerHub.stc.valSupReg.m_flow;
+	output Real mFlowStcRegOut = enerHub.stc.valRetReg.m_flow;
+
+	// PVT
+	output Real A_PVT = enerHub.pvt.panels.totalArea;
+	output Real QPvt = enerHub.pvt.panels.QTot;
+	output Real PPvt = enerHub.pvt.P;
+	
+	output Real QPvtHex = enerHub.pvt.hex.Q2_flow;
+
+	output Real TPvtIn = enerHub.pvt.senTPanelsIn.T - 273.15; //°C
+	output Real TPvtOut = enerHub.pvt.senTPanelsOut.T - 273.15; //°C
+	output Real TPvtHexIn = enerHub.pvt.senTHexIn.T - 273.15; //°C
+	output Real TPvtHexOut = enerHub.pvt.senTHexOut.T - 273.15; //°C
+	output Real TPvtRegIn = enerHub.pvt.senTRegIn.T - 273.15; //°C
+	output Real TPvtRegOut = enerHub.pvt.senTRegOut.T - 273.15; //°C
+	output Real TPvtHeaIn = enerHub.pvt.senTHeaIn.T - 273.15; //°C
+	output Real TPvtHeaOut = enerHub.pvt.senTHeaOut.T - 273.15; //°C
+
+	output Real mFlowPvt = enerHub.pvt.pumPanels.m_flow;
+	output Real mFlowPvtHex = enerHub.pvt.hex.m2_flow;
+	output Real mFlowPvtHeaIn = enerHub.pvt.valSupHea.m_flow;
+	output Real mFlowPvtHeaOut = enerHub.pvt.valRetHea.m_flow;
+	output Real mFlowPvtRegIn = enerHub.pvt.valSupReg.m_flow;
+	output Real mFlowPVtRegOut = enerHub.pvt.valRetReg.m_flow;
+	
+	// BeoBooster
+	output Real TBeoBooGreyIn = enerHub.beoBooster.senTGreyIn.T - 273.15;
+	output Real TBeoBooGreyOut = enerHub.beoBooster.senTGreyOut.T - 273.15;
+	output Real TBeoBooHexOut = enerHub.beoBooster.senTHexOut.T - 273.15;
+	output Real TBeoBooHexIn = enerHub.beoBooster.senTHexIn.T - 273.15;
+
+	output Real mFlowBeoBooGrey = enerHub.beoBooster.hex.m1_flow;
+	output Real mFlowBeoBooHex = enerHub.beoBooster.hex.m2_flow;
+
+
+	///////////////////////////////////
+	// IOCS definitions //
+	///////////////////////////////////
+	// input data:
+    output Real QDem = Q_enerHub;         // Demand profile for heat and cold: heat should be positive, cold should be negative
+    output Real PDem = P_Net_Houses;     // Demand profile for electricity in the buildings only, offtake should be positive
+	output Real QBor = enerHub.GsHp.QBorefield;
+	output Real QBeoBoo = if enerHub.hasBeoBoo then enerHub.beoBooster.hex.Q2_flow else 0; // Set this value to zero if there is no beo booster
+	
+	// temperature data for COP calculation	
+	output Real T_COP_Sup = Ttank; 			// Temperatures should be in °C
+	output Real T_COP_Bor = TBorOut; 		// Temperatures should be in °C
+	output Real T_COP_Air = TAsHpEvaIn; 	// Temperatures should be in °C
+
+	// Electricity prices
+	output Real elecPriceOfftake = priceSim.priceBus.elec_offtake_price; // Prices should be in €/MWh
+	output Real elecPriceInjection = priceSim.priceBus.elec_inj_price; // Prices should be in €/MWh
+
+	// overall result data:
+	output Real DiscmfHea = DiscmfHea; // Heating discomort in Kh
+	output Real DiscmfCoo = DiscmfCoo; // Cooling discomfort in Kh
+	output Real ElecUse = TotalPower; // Overall energy use of the entire district (buildings + energy hub), offtake should be positive
+	
+
+	///////////////////////////////////
+	// Objective function definition //
+	///////////////////////////////////
+
+	/// Electricity ///
+	output Real TotalPower = P_Net_enerHub + P_Net_Houses;
+
+	output Real tariff_scaler = 36000000;
+	output Real p_offtake = priceSim.priceBus.elec_offtake_price/(3600*1e6);
+	output Real p_offtakeSca = p_offtake * tariff_scaler;
+	output Real p_inj = priceSim.priceBus.elec_inj_price/(3600*1e6);
+	output Real p_injSca = p_inj * tariff_scaler;
+	output Real b = 50;
+	output Real smoothPrice = p_injSca + (p_offtakeSca - p_injSca) * 0.5 *(1 + TotalPower / (sqrt(TotalPower^2 + b^2)) );
+
+	output Real ObjIntElecCost = TotalPower*smoothPrice;
+
+	// Battery //
+	output Real weight_bat = 100000;
+	output Real ObjBatMax = weight_bat*max(0, Bat_soc - Bat_SOCmax)^2;
+	output Real ObjBatMin = weight_bat*max(0, Bat_SOCmin - Bat_soc)^2;
+	output Real ObjIntBat = ObjBatMax + ObjBatMin;
+
+	// Supply temperature	
+	output Real TSupMax = 60;
+	output Real ObjIntTSupMax = 10000*max(0, Ttank - TSupMax)^2;
+	output Real TSupMin = 5;
+	output Real ObjIntTSupMin = 10000*max(0, TSupMin - Ttank)^2;
+
+	// Borefield temperature
+	output Real TBorMin_degC = enerHub.TBorMin - 273.15;
+	output Real TBorMax_degC = enerHub.TBorMax - 273.15;
+	output Real TBorAvg = (TBorIn + TBorOut)/2;
+	output Real ObjIntTBorMin = 1000*max(0, TBorMin_degC - TBorAvg)^2;
+	output Real ObjIntTBorMax = 1000*max(0, TBorAvg - TBorMax_degC)^2;
+
+	/// Comfort ///
+	output Real weight_hea = 10000;
+	output Real weight_coo = 10000;
+	
+	output Real ObjIntComfSHea = weight_hea*(DiscmfHea^2); /// Kh/jaar
+	output Real ObjIntComfSCoo = weight_coo*(DiscmfCoo^2);
+	
+
+	/// Overall objective ///
+	output Real ObjInt = ObjIntElecCost + ObjIntComfSCoo + ObjIntComfSHea + ObjIntBat + ObjIntTSupMax + ObjIntTSupMin + ObjIntTBorMin + ObjIntTBorMax;
+
+
+end TestSimpleOneHouse;
