@@ -47,8 +47,8 @@ optimization TestSimpleOneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTim
 
 	output Real TSetSH = 21;
 	output Real TSetSC = 24;
-	output Real DiscmfHea = max(0,TSetSH-TZone);
-	output Real DiscmfCoo = max(0, TZone - TSetSC);
+	output Real DiscmfSH = max(0,TSetSH-TZone);
+	output Real DiscmfSC = max(0, TZone - TSetSC);
 
 	
 	//Overall //
@@ -228,8 +228,8 @@ optimization TestSimpleOneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTim
 	output Real elecPriceInjection = priceSim.priceBus.elec_inj_price; // Prices should be in €/MWh
 
 	// overall result data:
-	output Real DiscmfHea = DiscmfHea; // Heating discomort in Kh
-	output Real DiscmfCoo = DiscmfCoo; // Cooling discomfort in Kh
+	output Real DiscmfHea = DiscmfSH; // Heating discomort in Kh
+	output Real DiscmfCoo = DiscmfSC; // Cooling discomfort in Kh
 	output Real ElecUse = TotalPower; // Overall energy use of the entire district (buildings + energy hub), offtake should be positive
 	
 

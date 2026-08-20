@@ -65,7 +65,6 @@ model TestSimpleOneHouse
     nParCir=1,
     A_floor=floor.A,
     nDiscr=1,
-    R_c=(floor.constructionType.mats[1].d/floor.constructionType.mats[1].k)/2,
     m_flow_nominal=6000/4180/5,
     redeclare package Medium = IDEAS.Media.Water,
     computeFlowResistance=true,
