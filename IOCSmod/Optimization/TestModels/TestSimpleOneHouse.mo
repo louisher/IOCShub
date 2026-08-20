@@ -92,13 +92,13 @@ model TestSimpleOneHouse
         origin={100,-20})));
   UnitTests.Confidential.ThreeWayLinear                      threeWayLinear(
     redeclare package Medium = IDEAS.Media.Water,
+    m_flow_nominal=embeddedPipe.m_flow_nominal,
     addDummyEquation=addDummyEquation,
     deltaM=0.1,
     dpValve_nominal=5000,
     energyDynamics=Modelica.Fluid.Types.Dynamics.SteadyState,
     fraK=1,
     from_dp=true,
-    m_flow_nominal=embeddedPipe.m_flow_nominal,
     portFlowDirection_1=Modelica.Fluid.Types.PortFlowDirection.Entering,
     portFlowDirection_2=Modelica.Fluid.Types.PortFlowDirection.Leaving,
     portFlowDirection_3=Modelica.Fluid.Types.PortFlowDirection.Entering,
@@ -115,8 +115,8 @@ model TestSimpleOneHouse
         rotation=180,
         origin={0,-20})));
   IDEAS.Fluid.FixedResistances.Junction jun(
-    m_flow_nominal=embeddedPipe.m_flow_nominal,
-    dp_nominal={0,0,0},
+    m_flow_nominal={embeddedPipe.m_flow_nominal,embeddedPipe.m_flow_nominal,embeddedPipe.m_flow_nominal},
+    dp_nominal={1,1,1},
     energyDynamics=Modelica.Fluid.Types.Dynamics.SteadyState,
     portFlowDirection_1=Modelica.Fluid.Types.PortFlowDirection.Entering,
     portFlowDirection_2=Modelica.Fluid.Types.PortFlowDirection.Leaving,
