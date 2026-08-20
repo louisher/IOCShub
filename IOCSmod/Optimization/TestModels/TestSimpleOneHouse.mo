@@ -2,6 +2,7 @@ within IOCSmod.Optimization.TestModels;
 model TestSimpleOneHouse
   extends IOCSmod.Optimization.Interface;
                                                                      output Real QPvtHex = enerHub.pvt.hex.Q2_flow;
+
   Blocks.EnergyHub.GeneralHub enerHub(
     addDummyEquation=addDummyEquation,
     borFieDat(conDat(
@@ -17,7 +18,7 @@ model TestSimpleOneHouse
         IDEAS.Media.Water, nPorts=1) annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=270,
-        origin={8,18})));
+        origin={14,6})));
 
   IDEAS.Buildings.Components.RectangularZoneTemplate zone(
     redeclare package Medium = IDEAS.Media.Specialized.DryAir,
@@ -65,7 +66,7 @@ model TestSimpleOneHouse
     A_floor=floor.A,
     nDiscr=1,
     R_c=(floor.constructionType.mats[1].d/floor.constructionType.mats[1].k)/2,
-    m_flow_nominal=embeddedPipe.m_flow_nominal,
+    m_flow_nominal=6000/4180/5,
     redeclare package Medium = IDEAS.Media.Water,
     computeFlowResistance=true,
     from_dp=true)
@@ -123,6 +124,15 @@ model TestSimpleOneHouse
     portFlowDirection_3=Modelica.Fluid.Types.PortFlowDirection.Leaving,
     redeclare package Medium = IDEAS.Media.Water)
     annotation (Placement(transformation(extent={{40,-70},{20,-90}})));
+  IDEAS.Fluid.Sensors.TemperatureTwoPort senTRet(
+    m_flow_nominal=embeddedPipe.m_flow_nominal,
+    allowFlowReversal=false,
+    tau=0,
+    redeclare package Medium = IDEAS.Media.Water) annotation (Placement(
+        transformation(
+        extent={{-10,10},{10,-10}},
+        rotation=180,
+        origin={0,-80})));
 equation
   connect(senTSup.port_b, threeWayLinear.port_1)
     annotation (Line(points={{10,-20},{20,-20}},
@@ -145,10 +155,12 @@ equation
           {146,-50},{146,-59},{160,-59}},      color={191,0,0}));
   connect(enerHub.port_b, senTSup.port_a)
     annotation (Line(points={{-24,0},{-24,-20},{-10,-20}}, color={0,127,255}));
-  connect(jun.port_2, enerHub.port_a)
-    annotation (Line(points={{20,-80},{-36,-80},{-36,0}}, color={0,127,255}));
-  connect(bou.ports[1], senTSup.port_b) annotation (Line(points={{8,8},{8,-6},{
-          14,-6},{14,-20},{10,-20}}, color={0,127,255}));
+  connect(bou.ports[1], senTSup.port_b) annotation (Line(points={{14,-4},{14,
+          -20},{10,-20}},         color={0,127,255}));
+  connect(jun.port_2, senTRet.port_a)
+    annotation (Line(points={{20,-80},{10,-80}}, color={0,127,255}));
+  connect(senTRet.port_b, enerHub.port_a)
+    annotation (Line(points={{-10,-80},{-36,-80},{-36,0}}, color={0,127,255}));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
         coordinateSystem(preserveAspectRatio=false)));
 end TestSimpleOneHouse;
