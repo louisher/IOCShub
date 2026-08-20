@@ -1,4 +1,4 @@
-optimization TestSimpleOneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="8760*1", tolerance=1e-1, truncationDelta=1e-2)
+optimization TestSimpleOneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTime=startTime+1, timeStep=3600, intervalLengths="744*1", tolerance=1e-1, truncationDelta=1e-2)
 	extends IOCSmod.Optimization.TestModels.TestSimpleOneHouse(addDummyEquation=false,
 											sim.filNam=Modelica.Utilities.Files.loadResource("modelica://IOCSmod/Resources/weatherdata//BEL_VLG_Uccle.064470_TMYx.2007-2021.mos"),
 											priceSim.path_economic_params_json="/homenvme/louis/software/IOCShub/COSINE/input_data/economic_params.json",
@@ -36,8 +36,6 @@ optimization TestSimpleOneHouse(objectiveIntegrand=ObjInt, startTime=0, finalTim
 	// House1 //
 	output Real P_pum = pump.P;
 	output Real mFlowFloHea = embeddedPipe.m_flow;
-	output Real mFlowTan = threeWayLinear.res1.m_flow;
-	output Real mFlowByPass = threeWayLinear.res3.m_flow;
 	output Real QFlowFloHea = embeddedPipe.QTot;
 	output Real TFloHeaIn = senTIn.T - 273.15;
 	output Real TFloHeaOut = senTOut.T - 273.15;

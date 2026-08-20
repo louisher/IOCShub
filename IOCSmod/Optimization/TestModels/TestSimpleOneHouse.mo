@@ -90,21 +90,6 @@ model TestSimpleOneHouse
         extent={{10,10},{-10,-10}},
         rotation=180,
         origin={100,-20})));
-  UnitTests.Confidential.ThreeWayLinear                      threeWayLinear(
-    redeclare package Medium = IDEAS.Media.Water,
-    m_flow_nominal=embeddedPipe.m_flow_nominal,
-    addDummyEquation=addDummyEquation,
-    deltaM=0.1,
-    dpValve_nominal=5000,
-    energyDynamics=Modelica.Fluid.Types.Dynamics.SteadyState,
-    fraK=1,
-    from_dp=true,
-    portFlowDirection_1=Modelica.Fluid.Types.PortFlowDirection.Entering,
-    portFlowDirection_2=Modelica.Fluid.Types.PortFlowDirection.Leaving,
-    portFlowDirection_3=Modelica.Fluid.Types.PortFlowDirection.Entering,
-    y_max=1,
-    y_min=0.1)
-    annotation (Placement(transformation(extent={{20,-30},{40,-10}})));
   IDEAS.Fluid.Sensors.TemperatureTwoPort senTSup(
     m_flow_nominal=embeddedPipe.m_flow_nominal,
     allowFlowReversal=false,
@@ -114,15 +99,6 @@ model TestSimpleOneHouse
         extent={{10,10},{-10,-10}},
         rotation=180,
         origin={0,-20})));
-  IDEAS.Fluid.FixedResistances.Junction jun(
-    m_flow_nominal={embeddedPipe.m_flow_nominal,embeddedPipe.m_flow_nominal,embeddedPipe.m_flow_nominal},
-    dp_nominal={1,1,1},
-    energyDynamics=Modelica.Fluid.Types.Dynamics.SteadyState,
-    portFlowDirection_1=Modelica.Fluid.Types.PortFlowDirection.Entering,
-    portFlowDirection_2=Modelica.Fluid.Types.PortFlowDirection.Leaving,
-    portFlowDirection_3=Modelica.Fluid.Types.PortFlowDirection.Leaving,
-    redeclare package Medium = IDEAS.Media.Water)
-    annotation (Placement(transformation(extent={{40,-70},{20,-90}})));
   IDEAS.Fluid.Sensors.TemperatureTwoPort senTRet(
     m_flow_nominal=embeddedPipe.m_flow_nominal,
     allowFlowReversal=false,
@@ -133,33 +109,25 @@ model TestSimpleOneHouse
         rotation=180,
         origin={0,-80})));
 equation
-  connect(senTSup.port_b, threeWayLinear.port_1)
-    annotation (Line(points={{10,-20},{20,-20}},
-                                               color={0,127,255}));
   connect(embeddedPipe.port_a, senTIn.port_b)
     annotation (Line(points={{130,-40},{130,-20},{110,-20}},
                                                          color={0,127,255}));
   connect(senTIn.port_a, pump.port_b)
     annotation (Line(points={{90,-20},{80,-20}}, color={0,127,255}));
-  connect(pump.port_a, threeWayLinear.port_2)
-    annotation (Line(points={{60,-20},{40,-20}},
-                                               color={0,127,255}));
   connect(embeddedPipe.port_b, senTOut.port_a) annotation (Line(points={{130,-60},
           {130,-80},{110,-80}}, color={0,127,255}));
-  connect(senTOut.port_b, jun.port_1)
-    annotation (Line(points={{90,-80},{40,-80}},  color={0,127,255}));
-  connect(jun.port_3, threeWayLinear.port_3)
-    annotation (Line(points={{30,-70},{30,-30}},color={0,127,255}));
   connect(embeddedPipe.heatPortEmb, zone.gainEmb) annotation (Line(points={{140,-50},
           {146,-50},{146,-59},{160,-59}},      color={191,0,0}));
   connect(enerHub.port_b, senTSup.port_a)
     annotation (Line(points={{-24,0},{-24,-20},{-10,-20}}, color={0,127,255}));
   connect(bou.ports[1], senTSup.port_b) annotation (Line(points={{14,-4},{14,-20},
           {10,-20}},              color={0,127,255}));
-  connect(jun.port_2, senTRet.port_a)
-    annotation (Line(points={{20,-80},{10,-80}}, color={0,127,255}));
   connect(senTRet.port_b, enerHub.port_a)
     annotation (Line(points={{-10,-80},{-36,-80},{-36,0}}, color={0,127,255}));
+  connect(senTSup.port_b, pump.port_a)
+    annotation (Line(points={{10,-20},{60,-20}}, color={0,127,255}));
+  connect(senTOut.port_b, senTRet.port_a)
+    annotation (Line(points={{90,-80},{10,-80}}, color={0,127,255}));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
         coordinateSystem(preserveAspectRatio=false)));
 end TestSimpleOneHouse;
